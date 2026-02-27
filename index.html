@@ -1610,16 +1610,50 @@ async function confirmApprove() {
   if (!currentAction) return;
   const { reqId, isApprove } = currentAction;
 
-  // In production, POST to Apps Script here
-  // For demo: just remove from pending
+  const btn = document.getElementById('modal-confirm-btn');
+  btn.textContent = 'Processing...';
+  btn.disabled = true;
+
+  try {
+    const action = isApprove ? 'approveRequest' : 'rejectRequest';
+    await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action,
+        requestId: reqId,
+        password: CONFIG.ADMIN_PASSWORD,
+        approvedBy: 'Media Team',
+        rejectedBy: 'Media Team',
+      })
+    });
+  } catch (e) {
+    console.warn('Could not reach Apps Script:', e);
+  }
+
   pendingRequests = pendingRequests.filter(r => r.id !== reqId);
   closeModal();
+  btn.textContent = isApprove ? 'Approve' : 'Reject';
+  btn.disabled = false;
+  await loadAdminData();
   renderAdminDashboard();
 }
 
-function markReturned(chkId) {
-  // In production, POST to Apps Script
+async function markReturned(chkId) {
+  try {
+    await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'markReturned',
+        checkoutId: chkId,
+        password: CONFIG.ADMIN_PASSWORD,
+      })
+    });
+  } catch (e) {
+    console.warn('Could not reach Apps Script:', e);
+  }
+
   activeCheckouts = activeCheckouts.filter(c => c.id !== chkId);
+  await loadAdminData();
   renderAdminDashboard();
 }
 

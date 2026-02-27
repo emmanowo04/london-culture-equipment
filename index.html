@@ -1,0 +1,1584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>London Culture — Equipment Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@300;400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #0f0f0f;
+    --paper: #f5f2eb;
+    --card: #ffffff;
+    --accent: #c8410a;
+    --accent-light: #f4ede6;
+    --accent2: #1a6b4a;
+    --accent2-light: #e6f2ec;
+    --muted: #7a7570;
+    --border: #e2ddd6;
+    --warn: #c8410a;
+    --success: #1a6b4a;
+    --shadow: 0 2px 16px rgba(15,15,15,0.08);
+    --shadow-lg: 0 8px 40px rgba(15,15,15,0.14);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    min-height: 100vh;
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    border-bottom: 3px solid var(--accent);
+  }
+
+  .logo {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.25rem;
+    letter-spacing: -0.01em;
+  }
+
+  .logo span { color: var(--accent); font-style: italic; }
+
+  nav { display: flex; gap: 0.25rem; }
+
+  nav button {
+    background: none;
+    border: 1px solid transparent;
+    color: #a09a93;
+    padding: 0.4rem 1rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.72rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    transition: all 0.2s;
+  }
+
+  nav button:hover { color: var(--paper); border-color: #3a3530; }
+  nav button.active { color: var(--paper); background: var(--accent); border-color: var(--accent); }
+
+  /* ── PAGES ── */
+  .page { display: none; padding: 2.5rem 2rem; max-width: 900px; margin: 0 auto; }
+  .page.active { display: block; animation: fadeUp 0.3s ease; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── PAGE HEADERS ── */
+  .page-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+  .page-header h1 { font-family: 'DM Serif Display', serif; font-size: 2rem; font-weight: 400; letter-spacing: -0.02em; }
+  .page-header p { color: var(--muted); margin-top: 0.35rem; font-size: 0.9rem; }
+
+  /* ── CARDS ── */
+  .card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: var(--shadow);
+    margin-bottom: 1.25rem;
+  }
+
+  .card-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .card-title::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── FORM ELEMENTS ── */
+  .form-group { margin-bottom: 1.25rem; }
+
+  label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    margin-bottom: 0.4rem;
+    color: var(--ink);
+  }
+
+  label .req { color: var(--accent); margin-left: 2px; }
+
+  input, select, textarea {
+    width: 100%;
+    padding: 0.65rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.9rem;
+    background: #faf9f7;
+    color: var(--ink);
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+  }
+
+  input:focus, select:focus, textarea:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(200, 65, 10, 0.1);
+    background: #fff;
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+
+  .hint { font-size: 0.78rem; color: var(--muted); margin-top: 0.3rem; }
+
+  /* ── BUTTONS ── */
+  .btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.7rem 1.4rem;
+    border-radius: 6px;
+    border: none;
+    cursor: pointer;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 500;
+    transition: all 0.2s;
+    text-decoration: none;
+  }
+
+  .btn-primary { background: var(--accent); color: #fff; }
+  .btn-primary:hover { background: #a83308; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(200,65,10,0.3); }
+
+  .btn-secondary { background: var(--ink); color: var(--paper); }
+  .btn-secondary:hover { background: #2a2520; }
+
+  .btn-ghost { background: transparent; color: var(--ink); border: 1px solid var(--border); }
+  .btn-ghost:hover { background: var(--paper); }
+
+  .btn-success { background: var(--success); color: #fff; }
+  .btn-success:hover { background: #135438; }
+
+  .btn-danger { background: #c0392b; color: #fff; }
+  .btn-danger:hover { background: #a93226; }
+
+  .btn-sm { padding: 0.4rem 0.85rem; font-size: 0.8rem; }
+  .btn-full { width: 100%; justify-content: center; padding: 0.85rem; }
+
+  /* ── BADGES ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-size: 0.72rem;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .badge-available { background: var(--accent2-light); color: var(--accent2); }
+  .badge-checked-out { background: #fdecea; color: #c0392b; }
+  .badge-pending { background: #fef9e7; color: #b7950b; }
+  .badge-overdue { background: #fdedec; color: #c0392b; border: 1px solid #e74c3c; }
+
+  /* ── EQUIPMENT GRID ── */
+  .equipment-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 0.85rem;
+  }
+
+  .equipment-item {
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--card);
+    position: relative;
+  }
+
+  .equipment-item:hover:not(.unavailable) {
+    border-color: var(--accent);
+    box-shadow: 0 2px 12px rgba(200,65,10,0.12);
+    transform: translateY(-1px);
+  }
+
+  .equipment-item.selected {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .equipment-item.unavailable {
+    opacity: 0.4;
+    cursor: not-allowed;
+    background: #f0ede8;
+  }
+
+  .equipment-item.suggested {
+    border-color: var(--accent2);
+    background: var(--accent2-light);
+  }
+
+  .equipment-item.selected.suggested {
+    border-color: var(--accent);
+    background: var(--accent-light);
+  }
+
+  .item-name {
+    font-weight: 500;
+    font-size: 0.88rem;
+    margin-bottom: 0.25rem;
+    padding-right: 1.5rem;
+  }
+
+  .item-meta {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.7rem;
+    color: var(--muted);
+  }
+
+  .item-check {
+    position: absolute;
+    top: 0.75rem;
+    right: 0.75rem;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    border: 1.5px solid var(--border);
+    background: #fff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+    font-size: 0.65rem;
+    color: transparent;
+  }
+
+  .equipment-item.selected .item-check {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+
+  .suggest-tag {
+    display: inline-block;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.62rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    color: var(--accent2);
+    background: var(--accent2-light);
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+    margin-top: 0.3rem;
+  }
+
+  /* ── FILTERS ── */
+  .filter-bar {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    margin-bottom: 1.25rem;
+    align-items: center;
+  }
+
+  .filter-btn {
+    padding: 0.35rem 0.85rem;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    background: var(--card);
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: 'DM Sans', sans-serif;
+    color: var(--muted);
+  }
+
+  .filter-btn.active { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  .filter-btn:hover:not(.active) { border-color: var(--ink); color: var(--ink); }
+
+  .search-input {
+    flex: 1;
+    min-width: 180px;
+    padding: 0.38rem 0.8rem;
+    border-radius: 20px;
+    font-size: 0.82rem;
+  }
+
+  /* ── SELECTED SUMMARY ── */
+  .selected-summary {
+    position: sticky;
+    bottom: 1.5rem;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 10px;
+    padding: 1rem 1.25rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    box-shadow: var(--shadow-lg);
+    margin-top: 1.5rem;
+    transition: all 0.3s;
+    transform: translateY(0);
+    opacity: 1;
+  }
+
+  .selected-summary.hidden {
+    transform: translateY(20px);
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .selected-count {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.8rem;
+    color: #a09a93;
+  }
+
+  .selected-count strong { color: var(--paper); font-size: 1rem; }
+
+  /* ── STEP INDICATOR ── */
+  .steps {
+    display: flex;
+    gap: 0;
+    margin-bottom: 2rem;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+    background: var(--card);
+  }
+
+  .step {
+    flex: 1;
+    padding: 0.75rem 1rem;
+    text-align: center;
+    font-size: 0.78rem;
+    color: var(--muted);
+    border-right: 1px solid var(--border);
+    position: relative;
+    transition: all 0.2s;
+  }
+
+  .step:last-child { border-right: none; }
+
+  .step.active { background: var(--accent); color: #fff; font-weight: 600; }
+  .step.done { background: var(--accent-light); color: var(--accent); }
+
+  .step-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.65rem;
+    display: block;
+    opacity: 0.7;
+    margin-bottom: 0.1rem;
+  }
+
+  /* ── CHECKOUT FORM STEPS ── */
+  .checkout-step { display: none; }
+  .checkout-step.active { display: block; animation: fadeUp 0.25s ease; }
+
+  /* ── SUGGESTIONS BOX ── */
+  .suggestions-box {
+    background: var(--accent2-light);
+    border: 1px solid #a8d5b8;
+    border-radius: 8px;
+    padding: 1rem 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+
+  .suggestions-box h4 {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--accent2);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+  }
+
+  .suggestions-box p { font-size: 0.82rem; color: var(--accent2); }
+
+  /* ── ADMIN TABLE ── */
+  .data-table { width: 100%; border-collapse: collapse; font-size: 0.84rem; }
+  .data-table th {
+    text-align: left;
+    padding: 0.6rem 1rem;
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    border-bottom: 2px solid var(--border);
+    background: #faf9f7;
+  }
+
+  .data-table td {
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+
+  .data-table tr:hover td { background: #faf9f7; }
+  .data-table tr:last-child td { border-bottom: none; }
+
+  .items-list { font-size: 0.78rem; color: var(--muted); }
+  .items-list span { display: inline-block; background: #f0ede8; border-radius: 3px; padding: 0.1rem 0.4rem; margin: 0.1rem; font-family: 'DM Mono', monospace; font-size: 0.7rem; }
+
+  /* ── STATS ROW ── */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+
+  .stat-card {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.25rem;
+    text-align: center;
+  }
+
+  .stat-num { font-family: 'DM Serif Display', serif; font-size: 2.2rem; color: var(--ink); line-height: 1; }
+  .stat-label { font-family: 'DM Mono', monospace; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-top: 0.3rem; }
+  .stat-card.accent .stat-num { color: var(--accent); }
+  .stat-card.success .stat-num { color: var(--success); }
+  .stat-card.warn .stat-num { color: #b7950b; }
+
+  /* ── SUCCESS STATE ── */
+  .success-state {
+    text-align: center;
+    padding: 3rem 2rem;
+  }
+
+  .success-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: var(--accent2-light);
+    color: var(--accent2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.75rem;
+    margin: 0 auto 1.25rem;
+  }
+
+  .success-state h2 { font-family: 'DM Serif Display', serif; font-size: 1.75rem; margin-bottom: 0.5rem; }
+  .success-state p { color: var(--muted); max-width: 380px; margin: 0 auto; }
+
+  /* ── MODAL ── */
+  .modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(15,15,15,0.6);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+  }
+
+  .modal-overlay.open { display: flex; }
+
+  .modal {
+    background: var(--card);
+    border-radius: 12px;
+    padding: 2rem;
+    max-width: 500px;
+    width: 100%;
+    box-shadow: var(--shadow-lg);
+    animation: fadeUp 0.2s ease;
+  }
+
+  .modal h3 { font-family: 'DM Serif Display', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+  .modal p { color: var(--muted); font-size: 0.88rem; margin-bottom: 1.5rem; }
+  .modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+  /* ── NOTICE ── */
+  .notice {
+    border-radius: 6px;
+    padding: 0.75rem 1rem;
+    font-size: 0.84rem;
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: flex-start;
+    gap: 0.6rem;
+  }
+
+  .notice-warn { background: #fef9e7; border: 1px solid #f9e79f; color: #7d6608; }
+  .notice-info { background: #ebf5fb; border: 1px solid #aed6f1; color: #1a5276; }
+  .notice-success { background: var(--accent2-light); border: 1px solid #a8d5b8; color: var(--accent2); }
+
+  /* ── ADMIN LOGIN ── */
+  .admin-login {
+    max-width: 400px;
+    margin: 4rem auto;
+  }
+
+  /* ── MISC ── */
+  .divider { height: 1px; background: var(--border); margin: 1.5rem 0; }
+
+  .tag {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: #f0ede8;
+    border-radius: 4px;
+    padding: 0.15rem 0.5rem;
+    font-size: 0.75rem;
+    color: var(--muted);
+    font-family: 'DM Mono', monospace;
+    margin: 0.15rem;
+  }
+
+  .tag .remove {
+    cursor: pointer;
+    color: var(--accent);
+    font-size: 0.85rem;
+    line-height: 1;
+  }
+
+  .empty-state {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: var(--muted);
+  }
+
+  .empty-state .icon { font-size: 2.5rem; margin-bottom: 0.75rem; }
+  .empty-state p { font-size: 0.88rem; }
+
+  .section-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 0.75rem;
+    margin-top: 1.5rem;
+  }
+
+  @media (max-width: 640px) {
+    header { padding: 0 1rem; }
+    .logo { font-size: 1rem; }
+    nav button { padding: 0.35rem 0.6rem; font-size: 0.65rem; }
+    .page { padding: 1.5rem 1rem; }
+    .form-row { grid-template-columns: 1fr; }
+    .stats-row { grid-template-columns: 1fr 1fr; }
+    .equipment-grid { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">London <span>Culture</span> — Equipment</div>
+  <nav>
+    <button class="active" onclick="showPage('checkout')">Checkout</button>
+    <button onclick="showPage('status')">Browse</button>
+    <button onclick="showPage('admin')">Admin</button>
+  </nav>
+</header>
+
+<!-- ══════════════════════════════════════════════════════
+     CHECKOUT PAGE
+══════════════════════════════════════════════════════ -->
+<div id="page-checkout" class="page active">
+  <div class="page-header">
+    <h1>Equipment Checkout</h1>
+    <p>Request equipment from the London Culture media team.</p>
+  </div>
+
+  <!-- Step Indicators -->
+  <div class="steps">
+    <div class="step active" id="step-ind-1"><span class="step-num">01</span>Your Details</div>
+    <div class="step" id="step-ind-2"><span class="step-num">02</span>Event Info</div>
+    <div class="step" id="step-ind-3"><span class="step-num">03</span>Select Equipment</div>
+    <div class="step" id="step-ind-4"><span class="step-num">04</span>Confirm</div>
+  </div>
+
+  <!-- STEP 1: Your Details -->
+  <div class="checkout-step active" id="checkout-step-1">
+    <div class="card">
+      <div class="card-title">Your Details</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Full Name <span class="req">*</span></label>
+          <input type="text" id="req-name" placeholder="e.g. John Smith">
+        </div>
+        <div class="form-group">
+          <label>Telegram Username <span class="req">*</span></label>
+          <input type="text" id="req-telegram" placeholder="@yourusername">
+          <div class="hint">So we can send you reminders directly</div>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Email Address <span class="req">*</span></label>
+          <input type="email" id="req-email" placeholder="you@example.com">
+        </div>
+        <div class="form-group">
+          <label>Phone Number</label>
+          <input type="tel" id="req-phone" placeholder="+44 7700 000000">
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Are you part of the London Culture team? <span class="req">*</span></label>
+        <select id="req-internal">
+          <option value="">Select...</option>
+          <option value="internal">Yes — I'm an internal team member</option>
+          <option value="external">No — I'm an external borrower</option>
+        </select>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:flex-end;">
+      <button class="btn btn-primary" onclick="nextStep(1)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 2: Event Info -->
+  <div class="checkout-step" id="checkout-step-2">
+    <div class="card">
+      <div class="card-title">Event Information</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Event Type <span class="req">*</span></label>
+          <select id="req-event-type" onchange="updateSuggestions()">
+            <option value="">Select event type...</option>
+            <option value="worship">Worship Night</option>
+            <option value="prayer">Prayer Meeting</option>
+            <option value="youth">Youth Event</option>
+            <option value="mens-womens">Men's / Women's Group Event</option>
+            <option value="other">Other</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Event Name / Description <span class="req">*</span></label>
+          <input type="text" id="req-event-name" placeholder="e.g. Friday Night Worship">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Event Date <span class="req">*</span></label>
+          <input type="date" id="req-event-date">
+        </div>
+        <div class="form-group">
+          <label>Event Location / Venue</label>
+          <input type="text" id="req-venue" placeholder="e.g. Education Hall">
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-group">
+          <label>Collection Date <span class="req">*</span></label>
+          <input type="date" id="req-collect-date">
+        </div>
+        <div class="form-group">
+          <label>Return Date <span class="req">*</span></label>
+          <input type="date" id="req-return-date">
+          <div class="hint">Please be realistic — overdue items affect others</div>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Estimated number of people at the event</label>
+        <select id="req-attendance">
+          <option value="">Select range...</option>
+          <option value="small">1–20 people</option>
+          <option value="medium">20–50 people</option>
+          <option value="large">50–100 people</option>
+          <option value="xlarge">100+ people</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Additional Notes</label>
+        <textarea id="req-notes" placeholder="Anything else the media team should know..."></textarea>
+      </div>
+    </div>
+    <div style="display:flex; justify-content:space-between;">
+      <button class="btn btn-ghost" onclick="prevStep(2)">← Back</button>
+      <button class="btn btn-primary" onclick="nextStep(2)">Continue →</button>
+    </div>
+  </div>
+
+  <!-- STEP 3: Select Equipment -->
+  <div class="checkout-step" id="checkout-step-3">
+    <div id="suggestions-box" class="suggestions-box" style="display:none;">
+      <h4>✦ Suggested for your event</h4>
+      <p id="suggestions-text"></p>
+    </div>
+
+    <div class="filter-bar">
+      <input type="text" class="search-input" placeholder="Search equipment..." oninput="filterEquipment()" id="eq-search">
+      <button class="filter-btn active" onclick="filterCat('all', this)">All</button>
+      <button class="filter-btn" onclick="filterCat('Audio', this)">Audio</button>
+      <button class="filter-btn" onclick="filterCat('Photo & Video', this)">Photo & Video</button>
+      <button class="filter-btn" onclick="filterCat('Computing', this)">Computing</button>
+      <button class="filter-btn" onclick="filterCat('Lighting', this)">Lighting</button>
+      <button class="filter-btn" onclick="filterCat('Power & Batteries', this)">Power</button>
+    </div>
+
+    <div class="equipment-grid" id="equipment-grid"></div>
+
+    <div class="selected-summary hidden" id="selected-summary">
+      <div class="selected-count">
+        <strong id="selected-count-num">0</strong> items selected
+      </div>
+      <div style="display:flex; gap:0.5rem; align-items:center;">
+        <span id="selected-names" style="font-size:0.75rem; color:#a09a93; max-width:300px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"></span>
+        <button class="btn btn-primary btn-sm" onclick="nextStep(3)">Review →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- STEP 4: Review & Confirm -->
+  <div class="checkout-step" id="checkout-step-4">
+    <div class="card">
+      <div class="card-title">Request Summary</div>
+      <div id="review-content"></div>
+    </div>
+
+    <div class="notice notice-info">
+      ℹ️ Your request will be sent to the media team for approval via Telegram. You'll receive a confirmation message once reviewed.
+    </div>
+
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <button class="btn btn-ghost" onclick="prevStep(4)">← Back</button>
+      <button class="btn btn-primary" onclick="submitRequest()" id="submit-btn">
+        Submit Request ✦
+      </button>
+    </div>
+  </div>
+
+  <!-- SUCCESS -->
+  <div class="checkout-step" id="checkout-step-success">
+    <div class="success-state">
+      <div class="success-icon">✓</div>
+      <h2>Request Submitted</h2>
+      <p>The media team has been notified via Telegram and will review your request shortly. You'll hear back soon!</p>
+      <div style="margin-top:1.5rem;">
+        <button class="btn btn-secondary" onclick="resetForm()">Make Another Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     BROWSE / STATUS PAGE
+══════════════════════════════════════════════════════ -->
+<div id="page-status" class="page">
+  <div class="page-header">
+    <h1>Equipment Status</h1>
+    <p>Browse all items and their current availability.</p>
+  </div>
+
+  <div class="filter-bar">
+    <input type="text" class="search-input" placeholder="Search..." oninput="filterStatusPage()" id="status-search">
+    <button class="filter-btn active" onclick="filterStatusCat('all', this)">All</button>
+    <button class="filter-btn" onclick="filterStatusCat('Audio', this)">Audio</button>
+    <button class="filter-btn" onclick="filterStatusCat('Photo & Video', this)">Photo & Video</button>
+    <button class="filter-btn" onclick="filterStatusCat('Computing', this)">Computing</button>
+    <button class="filter-btn" onclick="filterStatusCat('Lighting', this)">Lighting</button>
+    <button class="filter-btn active-only" onclick="filterStatusAvail(this)">Available Only</button>
+  </div>
+
+  <div class="card" style="padding:0; overflow:hidden;">
+    <table class="data-table" id="status-table">
+      <thead>
+        <tr>
+          <th>Item Name</th>
+          <th>Category</th>
+          <th>Location</th>
+          <th>Status</th>
+          <th>Due Back</th>
+        </tr>
+      </thead>
+      <tbody id="status-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════════════════
+     ADMIN PAGE
+══════════════════════════════════════════════════════ -->
+<div id="page-admin" class="page">
+
+  <!-- Login Gate -->
+  <div id="admin-login-gate">
+    <div class="admin-login">
+      <div class="page-header">
+        <h1>Admin Access</h1>
+        <p>Media team only.</p>
+      </div>
+      <div class="card">
+        <div class="form-group">
+          <label>Admin Password</label>
+          <input type="password" id="admin-password" placeholder="Enter password" onkeyup="if(event.key==='Enter') adminLogin()">
+        </div>
+        <button class="btn btn-secondary btn-full" onclick="adminLogin()">Sign In</button>
+        <div class="hint" style="margin-top:0.75rem; text-align:center;">Default password: <code style="font-family:'DM Mono',monospace;">mediaadmin2024</code><br>Change this in the Apps Script config.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Admin Dashboard -->
+  <div id="admin-dashboard" style="display:none;">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:flex-start;">
+      <div>
+        <h1>Admin Dashboard</h1>
+        <p>Manage requests, checkouts and returns.</p>
+      </div>
+      <button class="btn btn-ghost btn-sm" onclick="adminLogout()">Sign Out</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-row">
+      <div class="stat-card warn">
+        <div class="stat-num" id="stat-pending">0</div>
+        <div class="stat-label">Pending</div>
+      </div>
+      <div class="stat-card accent">
+        <div class="stat-num" id="stat-active">0</div>
+        <div class="stat-label">Checked Out</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num" id="stat-overdue">0</div>
+        <div class="stat-label">Overdue</div>
+      </div>
+      <div class="stat-card success">
+        <div class="stat-num" id="stat-available">0</div>
+        <div class="stat-label">Available</div>
+      </div>
+    </div>
+
+    <!-- Pending Requests -->
+    <div class="card-title" style="margin-bottom:0.75rem;">Pending Requests</div>
+    <div class="card" style="padding:0; overflow:hidden; margin-bottom:1.5rem;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Requestor</th>
+            <th>Event</th>
+            <th>Items Requested</th>
+            <th>Dates</th>
+            <th>Type</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="pending-tbody"></tbody>
+      </table>
+    </div>
+
+    <!-- Active Checkouts -->
+    <div class="card-title" style="margin-bottom:0.75rem;">Active Checkouts</div>
+    <div class="card" style="padding:0; overflow:hidden;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Borrower</th>
+            <th>Items Out</th>
+            <th>Checked Out</th>
+            <th>Due Back</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="active-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- Approve/Reject Modal -->
+<div class="modal-overlay" id="approve-modal">
+  <div class="modal">
+    <h3 id="modal-title">Approve Request</h3>
+    <p id="modal-body">Are you sure you want to approve this request? The borrower will be notified via Telegram.</p>
+    <div class="modal-actions">
+      <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-success" id="modal-confirm-btn" onclick="confirmApprove()">Approve</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════
+// CONFIG — Replace with your actual values
+// ══════════════════════════════════════════════════════
+const CONFIG = {
+  // Your Google Apps Script Web App URL (fill in after deploying Apps Script)
+  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwA86mqargcUKG4wtxPFtFRH8th8aDalxHAnzyo5gVryxK5umZvnGzJviLhtMJZ6D_p0g/exec',
+  SHEET_ID: '1FWY-jAJVXtl13SwZ590VwyKq5cV6jnv6fTSoRfVZW-w',
+  // Admin password (also set in Apps Script)
+  ADMIN_PASSWORD: 'mediaadmin2024',
+};
+
+// ══════════════════════════════════════════════════════
+// EQUIPMENT DATA
+// This loads from your Google Sheet via Apps Script.
+// For demo purposes, sample data is shown below.
+// Replace loadEquipment() to fetch from Apps Script.
+// ══════════════════════════════════════════════════════
+let allEquipment = [];
+let selectedItems = new Set();
+let currentCatFilter = 'all';
+let pendingRequests = [];
+let activeCheckouts = [];
+let currentAction = null;
+
+// Sample equipment — replace with live fetch from Apps Script
+const SAMPLE_EQUIPMENT = [
+  { id: 1, name: 'Shure QLXD4UK Receiver - 01', category: 'Audio', subcategory: 'Mics & Receivers', location: 'E4', status: 'available' },
+  { id: 2, name: 'Shure QLXD4UK Receiver - 02', category: 'Audio', subcategory: 'Mics & Receivers', location: 'E4', status: 'available' },
+  { id: 3, name: 'Shure QLXD2 Handheld Mic - 01', category: 'Audio', subcategory: 'Mics & Receivers', location: '1st Floor', status: 'available' },
+  { id: 4, name: 'Shure QLXD2 Handheld Mic - 02', category: 'Audio', subcategory: 'Mics & Receivers', location: '1st Floor', status: 'checked-out', dueBack: '2026-03-01' },
+  { id: 5, name: 'Shure SLXD24/B87A Handheld Mic - 01', category: 'Audio', subcategory: 'Mics & Receivers', location: 'U15', status: 'available' },
+  { id: 6, name: 'Shure SLXD24/B87A Handheld Mic - 02', category: 'Audio', subcategory: 'Mics & Receivers', location: 'U15', status: 'available' },
+  { id: 7, name: 'Shure SLXD24/B87A Handheld Mic - 03', category: 'Audio', subcategory: 'Mics & Receivers', location: 'U15', status: 'available' },
+  { id: 8, name: 'Shure GLXD4+ Z4 Handheld Mic - 01', category: 'Audio', subcategory: 'Mics & Receivers', location: '2nd Floor', status: 'available' },
+  { id: 9, name: 'Shure GLXD4+ Z4 Handheld Mic - 02', category: 'Audio', subcategory: 'Mics & Receivers', location: '2nd Floor', status: 'available' },
+  { id: 10, name: 'Shure SM31FH Headset Mic - 01', category: 'Audio', subcategory: 'Mics & Receivers', location: '', status: 'available' },
+  { id: 11, name: 'Shure MX153T Earset Mic - 01', category: 'Audio', subcategory: 'Mics & Receivers', location: '', status: 'available' },
+  { id: 12, name: 'Soundboks Gen3 Speaker - 01', category: 'Audio', subcategory: 'Speakers & Amps', location: '', status: 'available' },
+  { id: 13, name: 'Soundboks Gen3 Speaker - 02', category: 'Audio', subcategory: 'Speakers & Amps', location: '', status: 'checked-out', dueBack: '2026-02-28' },
+  { id: 14, name: 'Soundboks Gen3 Speaker - 03', category: 'Audio', subcategory: 'Speakers & Amps', location: '', status: 'available' },
+  { id: 15, name: 'JBL Professional Speaker - 01', category: 'Audio', subcategory: 'Speakers & Amps', location: 'EH Culture Office', status: 'available' },
+  { id: 16, name: 'JBL Professional Speaker - 02', category: 'Audio', subcategory: 'Speakers & Amps', location: 'EH Culture Office', status: 'available' },
+  { id: 17, name: 'Soundcraft EPM8 8-Channel Mixer - 01', category: 'Audio', subcategory: 'Mixers', location: '', status: 'available' },
+  { id: 18, name: 'Yamaha EMX512sc 8-Channel Mixer', category: 'Audio', subcategory: 'Mixers', location: 'EH Culture Office', status: 'available' },
+  { id: 19, name: 'Soundcraft LX7 16-Channel Mixer', category: 'Audio', subcategory: 'Mixers', location: 'EH Culture Office', status: 'available' },
+  { id: 20, name: 'Behringer Europower Amp - 01', category: 'Audio', subcategory: 'Speakers & Amps', location: '1st Floor', status: 'available' },
+  { id: 21, name: 'Sony A7 IV Mirrorless Camera - 01', category: 'Photo & Video', subcategory: 'Cameras', location: 'EH Culture Office', status: 'available' },
+  { id: 22, name: 'Sony A7 IV Mirrorless Camera - 02', category: 'Photo & Video', subcategory: 'Cameras', location: 'EH Culture Office', status: 'available' },
+  { id: 23, name: 'Sony AX700 4K Camcorder - 01', category: 'Photo & Video', subcategory: 'Camcorders', location: '1st Floor', status: 'available' },
+  { id: 24, name: 'Sony AX700 4K Camcorder - 02', category: 'Photo & Video', subcategory: 'Camcorders', location: 'B4', status: 'available' },
+  { id: 25, name: 'Blackmagic ATEM Mini Extreme - 01', category: 'Photo & Video', subcategory: 'Switchers & Transmission', location: 'EH Culture Office', status: 'available' },
+  { id: 26, name: 'DJI RS2 Pro Gimbal - 01', category: 'Photo & Video', subcategory: 'Cameras', location: 'EH Culture Office', status: 'available' },
+  { id: 27, name: 'Tamron 28-75mm F/2.8 Lens - 01', category: 'Photo & Video', subcategory: 'Lenses', location: 'B3', status: 'available' },
+  { id: 28, name: 'K&F Concept Tripod - 01', category: 'Photo & Video', subcategory: 'Tripods', location: '', status: 'available' },
+  { id: 29, name: 'K&F Concept Tripod - 02', category: 'Photo & Video', subcategory: 'Tripods', location: '', status: 'available' },
+  { id: 30, name: 'Hollyland Cosmo C1 Transmitter - 01', category: 'Photo & Video', subcategory: 'Switchers & Transmission', location: 'EH Culture Office', status: 'available' },
+  { id: 31, name: 'MSI Katana Notebook Laptop - 01', category: 'Computing', subcategory: 'PCs & Laptops', location: 'D2', status: 'available' },
+  { id: 32, name: 'Aorus PC Tower', category: 'Computing', subcategory: 'PCs & Laptops', location: 'Education Hall', status: 'available' },
+  { id: 33, name: 'Epson EB-L520U Laser Projector - 01', category: 'Computing', subcategory: 'Projectors', location: 'U15', status: 'available' },
+  { id: 34, name: 'Godox SL Series Video Light - 01', category: 'Lighting', subcategory: 'LED Lights', location: 'EH Culture Office', status: 'available' },
+  { id: 35, name: 'Godox SL Series Video Light - 02', category: 'Lighting', subcategory: 'LED Lights', location: 'EH Culture Office', status: 'available' },
+  { id: 36, name: 'Millenium BS-2211B Speaker Stand - 01', category: 'Audio', subcategory: 'Speakers & Amps', location: '', status: 'available' },
+  { id: 37, name: 'Millenium BS-2211B Speaker Stand - 02', category: 'Audio', subcategory: 'Speakers & Amps', location: '', status: 'available' },
+  { id: 38, name: 'Extension Cable 15m - 01', category: 'Power & Batteries', subcategory: 'Extensions', location: '', status: 'available' },
+  { id: 39, name: 'Masterplug 5m Extension Lead - 01', category: 'Power & Batteries', subcategory: 'Extensions', location: 'U15', status: 'available' },
+  { id: 40, name: 'Insta360 X3 360 Action Cam', category: 'Photo & Video', subcategory: 'Cameras', location: 'U15', status: 'available' },
+];
+
+// Smart suggestions by event type (maps to equipment subcategories)
+const SUGGESTIONS = {
+  worship: {
+    label: 'Worship Night',
+    subcats: ['Mics & Receivers', 'Speakers & Amps', 'Mixers', 'LED Lights', 'PCs & Laptops'],
+    hint: 'Wireless mics, speakers, mixer, lighting and a laptop are typically needed.'
+  },
+  prayer: {
+    label: 'Prayer Meeting',
+    subcats: ['Mics & Receivers', 'Speakers & Amps', 'Mixers', 'LED Lights', 'PCs & Laptops'],
+    hint: 'Similar to worship — mics, speakers, mixer and lighting.'
+  },
+  youth: {
+    label: 'Youth Event',
+    subcats: ['Mics & Receivers', 'Speakers & Amps', 'Mixers', 'LED Lights', 'PCs & Laptops'],
+    hint: 'Mics, speakers, mixer, lighting and a laptop are recommended.'
+  },
+  'mens-womens': {
+    label: "Men's / Women's Group Event",
+    subcats: ['Mics & Receivers', 'Speakers & Amps', 'Mixers', 'LED Lights', 'PCs & Laptops'],
+    hint: 'Core AV setup — mics, speakers, mixer and lighting.'
+  },
+  other: {
+    label: 'Other Event',
+    subcats: [],
+    hint: ''
+  }
+};
+
+// Sample pending requests & active checkouts for admin demo
+const SAMPLE_PENDING = [
+  {
+    id: 'REQ-001',
+    name: 'Sarah Johnson',
+    telegram: '@sarahj',
+    event: 'Friday Worship Night',
+    eventType: 'worship',
+    items: ['Shure QLXD2 Handheld Mic - 01', 'Soundboks Gen3 Speaker - 01', 'Soundcraft EPM8 Mixer - 01'],
+    collectDate: '2026-03-01',
+    returnDate: '2026-03-03',
+    internal: 'internal',
+    notes: 'For the youth hall upstairs'
+  },
+  {
+    id: 'REQ-002',
+    name: 'Marcus Williams',
+    telegram: '@marcusw',
+    event: "Women's Group Prayer Meeting",
+    eventType: 'prayer',
+    items: ['Godox SL Series Video Light - 01', 'K&F Concept Tripod - 01'],
+    collectDate: '2026-03-05',
+    returnDate: '2026-03-06',
+    internal: 'external',
+    notes: ''
+  }
+];
+
+const SAMPLE_ACTIVE = [
+  {
+    id: 'CHK-001',
+    name: 'James Okafor',
+    telegram: '@jameso',
+    items: ['Sony A7 IV Mirrorless Camera - 01', 'Tamron 28-75mm Lens - 01', 'K&F Concept Tripod - 02'],
+    checkedOut: '2026-02-20',
+    dueBack: '2026-02-28',
+    overdue: true
+  },
+  {
+    id: 'CHK-002',
+    name: 'Rachel Kim',
+    telegram: '@rachelk',
+    items: ['Soundboks Gen3 Speaker - 02'],
+    checkedOut: '2026-02-24',
+    dueBack: '2026-03-01',
+    overdue: false
+  }
+];
+
+// ══════════════════════════════════════════════════════
+// INIT
+// ══════════════════════════════════════════════════════
+document.addEventListener('DOMContentLoaded', async () => {
+  // Set min dates
+  const today = new Date().toISOString().split('T')[0];
+  document.getElementById('req-collect-date').min = today;
+  document.getElementById('req-return-date').min = today;
+  document.getElementById('req-event-date').min = today;
+
+  // Load live equipment from Apps Script, fall back to sample data
+  await loadEquipment();
+  pendingRequests = SAMPLE_PENDING;
+  activeCheckouts = SAMPLE_ACTIVE;
+
+  renderEquipmentGrid();
+  renderStatusTable();
+});
+
+async function loadEquipment() {
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL + '?action=getEquipment');
+    const data = await res.json();
+    if (data.success && data.items && data.items.length > 0) {
+      allEquipment = data.items;
+    } else {
+      allEquipment = SAMPLE_EQUIPMENT;
+    }
+  } catch (e) {
+    console.warn('Could not load live equipment, using sample data:', e);
+    allEquipment = SAMPLE_EQUIPMENT;
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// PAGE NAVIGATION
+// ══════════════════════════════════════════════════════
+function showPage(page) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+  document.getElementById('page-' + page).classList.add('active');
+  event.target.classList.add('active');
+
+  if (page === 'admin' && document.getElementById('admin-dashboard').style.display === 'block') {
+    renderAdminDashboard();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// CHECKOUT STEPS
+// ══════════════════════════════════════════════════════
+let currentStep = 1;
+
+function nextStep(from) {
+  if (!validateStep(from)) return;
+  currentStep = from + 1;
+  updateSteps(currentStep);
+
+  if (from === 3) buildReview();
+}
+
+function prevStep(from) {
+  currentStep = from - 1;
+  updateSteps(currentStep);
+}
+
+function updateSteps(step) {
+  document.querySelectorAll('.checkout-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('checkout-step-' + step).classList.add('active');
+  document.querySelectorAll('.step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 === step) s.classList.add('active');
+    if (i + 1 < step) s.classList.add('done');
+  });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function validateStep(step) {
+  if (step === 1) {
+    const name = document.getElementById('req-name').value.trim();
+    const telegram = document.getElementById('req-telegram').value.trim();
+    const email = document.getElementById('req-email').value.trim();
+    const internal = document.getElementById('req-internal').value;
+    if (!name || !telegram || !email || !internal) {
+      alert('Please fill in all required fields.');
+      return false;
+    }
+  }
+  if (step === 2) {
+    const eventType = document.getElementById('req-event-type').value;
+    const eventName = document.getElementById('req-event-name').value.trim();
+    const collectDate = document.getElementById('req-collect-date').value;
+    const returnDate = document.getElementById('req-return-date').value;
+    if (!eventType || !eventName || !collectDate || !returnDate) {
+      alert('Please fill in all required fields.');
+      return false;
+    }
+    if (returnDate < collectDate) {
+      alert('Return date must be after collection date.');
+      return false;
+    }
+  }
+  if (step === 3) {
+    if (selectedItems.size === 0) {
+      alert('Please select at least one item.');
+      return false;
+    }
+  }
+  return true;
+}
+
+// ══════════════════════════════════════════════════════
+// EQUIPMENT GRID
+// ══════════════════════════════════════════════════════
+function renderEquipmentGrid(items = null) {
+  const grid = document.getElementById('equipment-grid');
+  const toShow = items || getFilteredEquipment();
+  const eventType = document.getElementById('req-event-type')?.value;
+  const suggestedSubcats = eventType && SUGGESTIONS[eventType] ? SUGGESTIONS[eventType].subcats : [];
+
+  if (toShow.length === 0) {
+    grid.innerHTML = '<div class="empty-state" style="grid-column:1/-1"><div class="icon">📦</div><p>No items match your search.</p></div>';
+    return;
+  }
+
+  grid.innerHTML = toShow.map(item => {
+    const isUnavailable = item.status !== 'available';
+    const isSelected = selectedItems.has(item.id);
+    const isSuggested = suggestedSubcats.includes(item.subcategory) && !isUnavailable;
+    const classes = ['equipment-item',
+      isUnavailable ? 'unavailable' : '',
+      isSelected ? 'selected' : '',
+      isSuggested && !isSelected ? 'suggested' : ''
+    ].filter(Boolean).join(' ');
+
+    const dueInfo = isUnavailable && item.dueBack
+      ? `<div class="item-meta">Due back: ${formatDate(item.dueBack)}</div>` : '';
+
+    const suggestTag = isSuggested && !isSelected
+      ? `<div class="suggest-tag">✦ suggested</div>` : '';
+
+    return `
+      <div class="${classes}" onclick="${isUnavailable ? '' : `toggleItem(${item.id})`}" data-cat="${item.category}">
+        <div class="item-check">✓</div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-meta">${item.subcategory}${item.location ? ' · ' + item.location : ''}</div>
+        ${isUnavailable ? '<div class="item-meta" style="color:#c0392b; margin-top:0.25rem;">● Checked out</div>' : ''}
+        ${dueInfo}
+        ${suggestTag}
+      </div>
+    `;
+  }).join('');
+}
+
+function getFilteredEquipment() {
+  const search = document.getElementById('eq-search')?.value.toLowerCase() || '';
+  return allEquipment.filter(item => {
+    const matchCat = currentCatFilter === 'all' || item.category === currentCatFilter;
+    const matchSearch = !search || item.name.toLowerCase().includes(search) || item.subcategory.toLowerCase().includes(search);
+    return matchCat && matchSearch;
+  });
+}
+
+function toggleItem(id) {
+  if (selectedItems.has(id)) {
+    selectedItems.delete(id);
+  } else {
+    selectedItems.add(id);
+  }
+  renderEquipmentGrid();
+  updateSummaryBar();
+}
+
+function updateSummaryBar() {
+  const summary = document.getElementById('selected-summary');
+  const count = document.getElementById('selected-count-num');
+  const names = document.getElementById('selected-names');
+
+  if (selectedItems.size === 0) {
+    summary.classList.add('hidden');
+    return;
+  }
+
+  summary.classList.remove('hidden');
+  count.textContent = selectedItems.size;
+  const selectedNames = allEquipment
+    .filter(i => selectedItems.has(i.id))
+    .map(i => i.name)
+    .join(', ');
+  names.textContent = selectedNames;
+}
+
+function filterCat(cat, btn) {
+  currentCatFilter = cat;
+  document.querySelectorAll('#checkout-step-3 .filter-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderEquipmentGrid();
+}
+
+function filterEquipment() {
+  renderEquipmentGrid();
+}
+
+function updateSuggestions() {
+  const eventType = document.getElementById('req-event-type').value;
+  const box = document.getElementById('suggestions-box');
+  const text = document.getElementById('suggestions-text');
+
+  if (eventType && SUGGESTIONS[eventType] && SUGGESTIONS[eventType].hint) {
+    box.style.display = 'block';
+    text.textContent = SUGGESTIONS[eventType].hint + ' Items highlighted in green below are suggested for your event.';
+    renderEquipmentGrid();
+  } else {
+    box.style.display = 'none';
+    renderEquipmentGrid();
+  }
+}
+
+// ══════════════════════════════════════════════════════
+// STATUS TABLE
+// ══════════════════════════════════════════════════════
+let statusCatFilter = 'all';
+let showAvailOnly = false;
+
+function renderStatusTable(items = null) {
+  const tbody = document.getElementById('status-tbody');
+  let toShow = items || allEquipment;
+
+  if (statusCatFilter !== 'all') toShow = toShow.filter(i => i.category === statusCatFilter);
+  if (showAvailOnly) toShow = toShow.filter(i => i.status === 'available');
+
+  const search = document.getElementById('status-search')?.value.toLowerCase() || '';
+  if (search) toShow = toShow.filter(i => i.name.toLowerCase().includes(search));
+
+  if (toShow.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No items found.</td></tr>';
+    return;
+  }
+
+  tbody.innerHTML = toShow.map(item => {
+    const badge = item.status === 'available'
+      ? '<span class="badge badge-available">Available</span>'
+      : '<span class="badge badge-checked-out">Checked Out</span>';
+    const due = item.dueBack ? formatDate(item.dueBack) : '—';
+
+    return `
+      <tr>
+        <td style="font-weight:500;">${item.name}</td>
+        <td><span class="tag">${item.category}</span></td>
+        <td style="color:var(--muted); font-size:0.82rem;">${item.location || '—'}</td>
+        <td>${badge}</td>
+        <td style="font-family:'DM Mono',monospace; font-size:0.8rem; color:var(--muted);">${due}</td>
+      </tr>
+    `;
+  }).join('');
+}
+
+function filterStatusCat(cat, btn) {
+  statusCatFilter = cat;
+  document.querySelectorAll('#page-status .filter-btn:not(.active-only)').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderStatusTable();
+}
+
+function filterStatusAvail(btn) {
+  showAvailOnly = !showAvailOnly;
+  btn.classList.toggle('active', showAvailOnly);
+  renderStatusTable();
+}
+
+function filterStatusPage() {
+  renderStatusTable();
+}
+
+// ══════════════════════════════════════════════════════
+// REVIEW & SUBMIT
+// ══════════════════════════════════════════════════════
+function buildReview() {
+  const name = document.getElementById('req-name').value;
+  const telegram = document.getElementById('req-telegram').value;
+  const email = document.getElementById('req-email').value;
+  const internal = document.getElementById('req-internal').value;
+  const eventType = document.getElementById('req-event-type').value;
+  const eventName = document.getElementById('req-event-name').value;
+  const eventDate = document.getElementById('req-event-date').value;
+  const venue = document.getElementById('req-venue').value;
+  const collectDate = document.getElementById('req-collect-date').value;
+  const returnDate = document.getElementById('req-return-date').value;
+  const notes = document.getElementById('req-notes').value;
+
+  const selectedItemsList = allEquipment.filter(i => selectedItems.has(i.id));
+
+  const html = `
+    <div class="section-label">Requestor</div>
+    <div class="form-row" style="margin-bottom:1rem;">
+      <div><strong>${name}</strong><div style="font-size:0.82rem;color:var(--muted);">${email}</div></div>
+      <div><strong>${telegram}</strong><div style="font-size:0.82rem;color:var(--muted);">${internal === 'internal' ? 'Internal team member' : 'External borrower'}</div></div>
+    </div>
+
+    <div class="section-label">Event</div>
+    <div style="margin-bottom:1rem;">
+      <strong>${eventName}</strong>
+      <span class="tag" style="margin-left:0.5rem;">${SUGGESTIONS[eventType]?.label || eventType}</span>
+      ${eventDate ? `<div style="font-size:0.82rem;color:var(--muted);margin-top:0.25rem;">📅 ${formatDate(eventDate)}${venue ? ' · ' + venue : ''}</div>` : ''}
+    </div>
+
+    <div class="section-label">Dates</div>
+    <div class="form-row" style="margin-bottom:1rem;">
+      <div><span style="font-size:0.78rem;color:var(--muted);">Collection</span><div style="font-family:'DM Mono',monospace;font-size:0.88rem;">${formatDate(collectDate)}</div></div>
+      <div><span style="font-size:0.78rem;color:var(--muted);">Return</span><div style="font-family:'DM Mono',monospace;font-size:0.88rem;">${formatDate(returnDate)}</div></div>
+    </div>
+
+    <div class="section-label">${selectedItemsList.length} Items Requested</div>
+    <div style="margin-bottom:${notes ? '1rem' : '0'};">
+      ${selectedItemsList.map(i => `<span class="tag">✦ ${i.name}</span>`).join('')}
+    </div>
+
+    ${notes ? `<div class="section-label">Notes</div><div style="font-size:0.88rem;color:var(--muted);">${notes}</div>` : ''}
+  `;
+
+  document.getElementById('review-content').innerHTML = html;
+}
+
+async function submitRequest() {
+  const btn = document.getElementById('submit-btn');
+  btn.textContent = 'Sending...';
+  btn.disabled = true;
+
+  const payload = {
+    action: 'newRequest',
+    name: document.getElementById('req-name').value,
+    telegram: document.getElementById('req-telegram').value,
+    email: document.getElementById('req-email').value,
+    phone: document.getElementById('req-phone').value,
+    internal: document.getElementById('req-internal').value,
+    eventType: document.getElementById('req-event-type').value,
+    eventName: document.getElementById('req-event-name').value,
+    eventDate: document.getElementById('req-event-date').value,
+    venue: document.getElementById('req-venue').value,
+    collectDate: document.getElementById('req-collect-date').value,
+    returnDate: document.getElementById('req-return-date').value,
+    attendance: document.getElementById('req-attendance').value,
+    notes: document.getElementById('req-notes').value,
+    items: allEquipment.filter(i => selectedItems.has(i.id)).map(i => i.name),
+  };
+
+  try {
+    if (CONFIG.APPS_SCRIPT_URL !== 'YOUR_APPS_SCRIPT_URL_HERE') {
+      await fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      });
+    }
+    // Show success regardless (in demo mode)
+    currentStep = 'success';
+    document.querySelectorAll('.checkout-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('checkout-step-success').classList.add('active');
+    document.querySelectorAll('.step').forEach(s => s.classList.add('done'));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {
+    btn.textContent = 'Submit Request ✦';
+    btn.disabled = false;
+    alert('There was an error submitting your request. Please try again.');
+  }
+}
+
+function resetForm() {
+  document.getElementById('req-name').value = '';
+  document.getElementById('req-telegram').value = '';
+  document.getElementById('req-email').value = '';
+  document.getElementById('req-phone').value = '';
+  document.getElementById('req-internal').value = '';
+  document.getElementById('req-event-type').value = '';
+  document.getElementById('req-event-name').value = '';
+  document.getElementById('req-event-date').value = '';
+  document.getElementById('req-venue').value = '';
+  document.getElementById('req-collect-date').value = '';
+  document.getElementById('req-return-date').value = '';
+  document.getElementById('req-attendance').value = '';
+  document.getElementById('req-notes').value = '';
+  selectedItems.clear();
+  currentStep = 1;
+  updateSteps(1);
+  document.getElementById('submit-btn').textContent = 'Submit Request ✦';
+  document.getElementById('submit-btn').disabled = false;
+  document.getElementById('suggestions-box').style.display = 'none';
+}
+
+// ══════════════════════════════════════════════════════
+// ADMIN
+// ══════════════════════════════════════════════════════
+function adminLogin() {
+  const pw = document.getElementById('admin-password').value;
+  if (pw === CONFIG.ADMIN_PASSWORD) {
+    document.getElementById('admin-login-gate').style.display = 'none';
+    document.getElementById('admin-dashboard').style.display = 'block';
+    renderAdminDashboard();
+  } else {
+    alert('Incorrect password.');
+  }
+}
+
+function adminLogout() {
+  document.getElementById('admin-login-gate').style.display = 'block';
+  document.getElementById('admin-dashboard').style.display = 'none';
+  document.getElementById('admin-password').value = '';
+}
+
+function renderAdminDashboard() {
+  // Stats
+  const available = allEquipment.filter(i => i.status === 'available').length;
+  const checkedOut = allEquipment.filter(i => i.status === 'checked-out').length;
+  const overdue = activeCheckouts.filter(c => c.overdue).length;
+  document.getElementById('stat-pending').textContent = pendingRequests.length;
+  document.getElementById('stat-active').textContent = checkedOut;
+  document.getElementById('stat-overdue').textContent = overdue;
+  document.getElementById('stat-available').textContent = available;
+
+  // Pending
+  const pendingTbody = document.getElementById('pending-tbody');
+  if (pendingRequests.length === 0) {
+    pendingTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>';
+  } else {
+    pendingTbody.innerHTML = pendingRequests.map(req => `
+      <tr>
+        <td><strong>${req.name}</strong><div style="font-size:0.75rem;color:var(--muted);">${req.telegram}</div></td>
+        <td>${req.event}<div style="font-size:0.75rem;color:var(--muted);">${SUGGESTIONS[req.eventType]?.label || req.eventType}</div></td>
+        <td class="items-list">${req.items.map(i => `<span>${i}</span>`).join('')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:0.78rem;">${formatDate(req.collectDate)}<br><span style="color:var(--muted);">→ ${formatDate(req.returnDate)}</span></td>
+        <td><span class="badge ${req.internal === 'internal' ? 'badge-available' : 'badge-pending'}">${req.internal}</span></td>
+        <td>
+          <div style="display:flex;gap:0.4rem;">
+            <button class="btn btn-success btn-sm" onclick="openApproveModal('${req.id}', true)">✓ Approve</button>
+            <button class="btn btn-danger btn-sm" onclick="openApproveModal('${req.id}', false)">✕ Reject</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+
+  // Active
+  const activeTbody = document.getElementById('active-tbody');
+  if (activeCheckouts.length === 0) {
+    activeTbody.innerHTML = '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>';
+  } else {
+    activeTbody.innerHTML = activeCheckouts.map(chk => `
+      <tr>
+        <td><strong>${chk.name}</strong><div style="font-size:0.75rem;color:var(--muted);">${chk.telegram}</div></td>
+        <td class="items-list">${chk.items.map(i => `<span>${i}</span>`).join('')}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:0.78rem;color:var(--muted);">${formatDate(chk.checkedOut)}</td>
+        <td style="font-family:'DM Mono',monospace;font-size:0.78rem;${chk.overdue ? 'color:#c0392b;font-weight:600;' : ''}">${formatDate(chk.dueBack)}</td>
+        <td>${chk.overdue ? '<span class="badge badge-overdue">⚠ Overdue</span>' : '<span class="badge badge-checked-out">Out</span>'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="markReturned('${chk.id}')">Mark Returned</button></td>
+      </tr>
+    `).join('');
+  }
+}
+
+function openApproveModal(reqId, isApprove) {
+  currentAction = { reqId, isApprove };
+  const modal = document.getElementById('approve-modal');
+  const title = document.getElementById('modal-title');
+  const body = document.getElementById('modal-body');
+  const btn = document.getElementById('modal-confirm-btn');
+  const req = pendingRequests.find(r => r.id === reqId);
+
+  if (isApprove) {
+    title.textContent = 'Approve Request';
+    body.textContent = `Approve ${req?.name}'s request for ${req?.items.length} item(s)? They will be notified via Telegram.`;
+    btn.textContent = 'Approve';
+    btn.className = 'btn btn-success';
+  } else {
+    title.textContent = 'Reject Request';
+    body.textContent = `Reject ${req?.name}'s request? They will be notified via Telegram.`;
+    btn.textContent = 'Reject';
+    btn.className = 'btn btn-danger';
+  }
+
+  modal.classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('approve-modal').classList.remove('open');
+  currentAction = null;
+}
+
+async function confirmApprove() {
+  if (!currentAction) return;
+  const { reqId, isApprove } = currentAction;
+
+  // In production, POST to Apps Script here
+  // For demo: just remove from pending
+  pendingRequests = pendingRequests.filter(r => r.id !== reqId);
+  closeModal();
+  renderAdminDashboard();
+}
+
+function markReturned(chkId) {
+  // In production, POST to Apps Script
+  activeCheckouts = activeCheckouts.filter(c => c.id !== chkId);
+  renderAdminDashboard();
+}
+
+// ══════════════════════════════════════════════════════
+// UTILITIES
+// ══════════════════════════════════════════════════════
+function formatDate(dateStr) {
+  if (!dateStr) return '—';
+  const d = new Date(dateStr + 'T00:00:00');
+  return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+}
+</script>
+</body>
+</html>

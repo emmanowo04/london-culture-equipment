@@ -1080,8 +1080,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   // Load live equipment from Apps Script, fall back to sample data
   await loadEquipment();
-  pendingRequests = SAMPLE_PENDING;
-  activeCheckouts = SAMPLE_ACTIVE;
 
   renderEquipmentGrid();
   renderStatusTable();
@@ -1459,14 +1457,68 @@ function resetForm() {
 // ══════════════════════════════════════════════════════
 // ADMIN
 // ══════════════════════════════════════════════════════
-function adminLogin() {
+async function adminLogin() {
   const pw = document.getElementById('admin-password').value;
   if (pw === CONFIG.ADMIN_PASSWORD) {
     document.getElementById('admin-login-gate').style.display = 'none';
     document.getElementById('admin-dashboard').style.display = 'block';
+    await loadAdminData();
     renderAdminDashboard();
   } else {
     alert('Incorrect password.');
+  }
+}
+
+async function loadAdminData() {
+  try {
+    const [pendingRes, activeRes] = await Promise.all([
+      fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getPending', password: CONFIG.ADMIN_PASSWORD })
+      }),
+      fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'getActive', password: CONFIG.ADMIN_PASSWORD })
+      })
+    ]);
+
+    const pendingData = await pendingRes.json();
+    const activeData = await activeRes.json();
+
+    if (pendingData.success && pendingData.requests) {
+      pendingRequests = pendingData.requests.map(r => ({
+        id: r.requestId,
+        name: r.name,
+        telegram: r.telegram,
+        event: r.eventName,
+        eventType: r.eventType,
+        items: Array.isArray(r.items) ? r.items : r.items.split(', '),
+        collectDate: r.collectDate,
+        returnDate: r.returnDate,
+        internal: r.internal,
+        notes: r.notes,
+      }));
+    } else {
+      pendingRequests = SAMPLE_PENDING;
+    }
+
+    if (activeData.success && activeData.checkouts) {
+      activeCheckouts = activeData.checkouts.map(c => ({
+        id: c.checkoutId,
+        name: c.name,
+        telegram: c.telegram,
+        items: Array.isArray(c.items) ? c.items : c.items.split(', '),
+        checkedOut: c.checkoutDate,
+        dueBack: c.dueDate,
+        overdue: c.overdue,
+      }));
+    } else {
+      activeCheckouts = SAMPLE_ACTIVE;
+    }
+  } catch (e) {
+    console.warn('Could not load live admin data, using sample data:', e);
+    pendingRequests = SAMPLE_PENDING;
+    activeCheckouts = SAMPLE_ACTIVE;
   }
 }
 

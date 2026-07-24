@@ -1746,14 +1746,15 @@ function toggleEquipExternal(val) {
 }
 
 function togglePropsExternal(type, val) {
- const fieldsId = type === 'rental' ? 'props-rental-external-fields' : 'props-new-external-fields';
- const el = document.getElementById(fieldsId);
- if (el) el.style.display = 'block';
- // Update label for rental
- if (type === 'rental') {
- const label = document.getElementById('props-rental-fields-label');
- if (label) label.textContent = val.trim() === 'External' ? 'External event details:' : 'Where will the props be used?';
- }
+  // If work cooperation is selected, never show event details in props — already captured
+  if (selectedReqTypes.has('cooperation')) return;
+  const fieldsId = type === 'rental' ? 'props-rental-external-fields' : 'props-new-external-fields';
+  const el = document.getElementById(fieldsId);
+  if (el) el.style.display = 'block';
+  if (type === 'rental') {
+    const label = document.getElementById('props-rental-fields-label');
+    if (label) label.textContent = val.trim() === 'External' ? 'External event details:' : 'Where will the props be used?';
+  }
 }
 
 //
@@ -1816,13 +1817,68 @@ function updateReqStepUI(step) {
 }
 
 function validateReqStep(step) {
- if (step === 1) {
- if (!get('req-fullname') || !get('req-dept') || !get('req-position') || !get('req-meeting-date')) {
- alert('Please fill in all required fields including a meeting date.'); return false;
- }
- if (selectedReqTypes.size === 0) { alert("Please select at least one request type."); return false; }
- }
- return true;
+  if (step === 1) {
+    if (!get('req-fullname') || !get('req-dept') || !get('req-position') || !get('req-meeting-date')) {
+      alert('Please fill in all required fields including a meeting date.'); return false;
+    }
+    if (!get('req-purpose')) {
+      alert('Please enter a purpose for your request.'); return false;
+    }
+    if (selectedReqTypes.size === 0) {
+      alert('Please select at least one request type.'); return false;
+    }
+  }
+
+  if (step === 2) {
+    // Validate Work Cooperation required fields
+    if (selectedReqTypes.has('cooperation')) {
+      if (!get('coop-event-name')) { alert('Work Cooperation: please enter an event name.'); return false; }
+      if (!get('coop-event-date')) { alert('Work Cooperation: please enter an event date.'); return false; }
+      if (!get('coop-venue')) { alert('Work Cooperation: please enter a venue.'); return false; }
+      if (selectedAssistance.size === 0) { alert('Work Cooperation: please select at least one type of assistance needed.'); return false; }
+      if (!get('coop-doc-link')) { alert('Work Cooperation: please attach a meeting plan / agenda document link.'); return false; }
+    }
+
+    // Validate Equipment Rental required fields
+    if (selectedReqTypes.has('equipment')) {
+      if (!get('equip-purpose')) { alert('Equipment Rental: please enter a purpose of use.'); return false; }
+      if (!get('equip-pickup')) { alert('Equipment Rental: please enter a pickup date.'); return false; }
+      if (!get('equip-return')) { alert('Equipment Rental: please enter a return date.'); return false; }
+      const equipSummary = get('equip-items');
+      if (!equipSummary) { alert('Equipment Rental: please select at least one item.'); return false; }
+    }
+
+    // Validate Props Rental required fields
+    if (selectedReqTypes.has('props')) {
+      const subType = get('props-sub-type');
+      if (subType === 'rental') {
+        if (!get('props-rental-purpose')) { alert('Props Rental: please enter a purpose of use.'); return false; }
+        if (!get('props-rental-items')) { alert('Props Rental: please list the items needed.'); return false; }
+        if (!get('props-rental-pickup')) { alert('Props Rental: please enter a pickup date.'); return false; }
+        if (!get('props-rental-return')) { alert('Props Rental: please enter a return date.'); return false; }
+      } else {
+        if (!get('props-new-scene')) { alert('New Props Request: please enter a scene description.'); return false; }
+        if (!get('props-new-items')) { alert('New Props Request: please list the props needed.'); return false; }
+      }
+    }
+
+    // Validate Video Production required fields
+    if (selectedReqTypes.has('video')) {
+      if (!get('video-title')) { alert('Video Production: please enter a title.'); return false; }
+      if (!get('video-purpose')) { alert('Video Production: please enter a purpose.'); return false; }
+      if (!get('video-completion-date')) { alert('Video Production: please enter a completion date.'); return false; }
+      if (!get('video-content')) { alert('Video Production: please enter the content & narrative arc.'); return false; }
+      if (!get('video-example-link')) { alert('Video Production: please attach an example draft link.'); return false; }
+    }
+
+    // Validate Design Work required fields
+    if (selectedReqTypes.has('design')) {
+      if (!get('design-purpose')) { alert('Design Work: please enter a purpose.'); return false; }
+      if (!get('design-draft-deadline')) { alert('Design Work: please enter a draft deadline.'); return false; }
+    }
+  }
+
+  return true;
 }
 
 function showReqSections() {
@@ -1963,7 +2019,6 @@ function buildReqReview() {
  html += `<div class="section-label"> Equipment Rental</div>
  <div class="review-row"><span class="review-key">Pickup</span><span class="review-val">${formatDate(get('equip-pickup'))}</span></div>
  <div class="review-row"><span class="review-key">Return</span><span class="review-val">${formatDate(get('equip-return'))}</span></div>
- <div class="review-row"><span class="review-key">Type</span><span class="review-val">${getSelectedToggleMulti('equip-type-toggle') || '—'}</span></div>
  <div class="review-row"><span class="review-key">Scope</span><span class="review-val">${get('equip-scope') || '—'}</span></div>
  <div class="review-row"><span class="review-key">Items</span><span class="review-val">${get('equip-items')}</span></div>`;
  }
@@ -2040,7 +2095,6 @@ async function submitCultureRequest() {
  // Equipment
  equipPurpose: get('equip-purpose'),
  equipPickup: get('equip-pickup'), equipReturn: get('equip-return'),
- equipType: getSelectedToggleMulti('equip-type-toggle'),
  equipScope: get('equip-scope'), equipItems: get('equip-items'),
  equipUsage: get('equip-usage'),
  // Material

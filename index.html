@@ -1607,6 +1607,79 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
 </div>
 
+<!-- STANDALONE ADMIN (accessed via #admin) -->
+<div id="standalone-admin">
+  <header>
+    <div class="header-logo" style="color:var(--black);">Mun-Hwa Bu <span style="font-size:0.7rem;color:var(--muted);font-family:'Syne Mono',monospace;letter-spacing:0.1em;margin-left:0.5rem;">ADMIN</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="window.location.hash=''; location.reload();">Exit</button>
+  </header>
+
+  <div style="max-width:960px;margin:0 auto;padding:2rem;">
+    <!-- Login Gate -->
+    <div id="sa-login-gate">
+      <div style="max-width:400px;margin:4rem auto;">
+        <div class="page-header"><h1>Admin Access</h1><p>Mun-Hwa Bu team only.</p></div>
+        <div class="card">
+          <div class="form-group">
+            <label>Password</label>
+            <input type="password" id="sa-admin-pw" placeholder="Enter password" onkeyup="if(event.key==='Enter')saAdminLogin()">
+          </div>
+          <button class="btn btn-dark btn-full" onclick="saAdminLogin()">Sign In</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Dashboard -->
+    <div id="sa-dashboard" style="display:none;">
+      <div class="page-header" style="display:flex;justify-content:space-between;align-items:flex-start;">
+        <div><h1>Admin Dashboard</h1><p>Manage requests, checkouts and returns.</p></div>
+        <button class="btn btn-ghost btn-sm" onclick="saAdminLogout()">Sign Out</button>
+      </div>
+
+      <div class="stats-row">
+        <div class="stat-card warn"><div class="stat-num" id="sa-stat-pending">0</div><div class="stat-lbl">Pending</div></div>
+        <div class="stat-card accent"><div class="stat-num" id="sa-stat-active">0</div><div class="stat-lbl">Checked Out</div></div>
+        <div class="stat-card"><div class="stat-num" id="sa-stat-overdue">0</div><div class="stat-lbl">Overdue</div></div>
+        <div class="stat-card success"><div class="stat-num" id="sa-stat-available">0</div><div class="stat-lbl">Available</div></div>
+      </div>
+
+      <!-- Tabs -->
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
+        <button class="btn btn-dark btn-sm" onclick="showSATab('requests',this)">Pending Requests</button>
+        <button class="btn btn-ghost btn-sm" onclick="showSATab('checkouts',this)">Active Checkouts</button>
+        <button class="btn btn-ghost btn-sm" onclick="showSATab('support',this)">Support Requests</button>
+      </div>
+
+      <div id="sa-tab-requests">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Requestor</th><th>Items</th><th>Collect</th><th>Return</th><th>Actions</th></tr></thead>
+            <tbody id="sa-pending-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="sa-tab-checkouts" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Borrower</th><th>Items</th><th>Due Back</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="sa-active-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="sa-tab-support" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>From</th><th>Types</th><th>Meeting</th><th>Status</th></tr></thead>
+            <tbody id="sa-support-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No support requests yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="main-modal">
  <div class="modal">
@@ -1660,6 +1733,106 @@ let currentModalAction = null;
 // 
 // INIT
 // 
+// ── HASH ROUTING ──────────────────────────────────────────────────────────────
+window.addEventListener('DOMContentLoaded', () => {
+  if (window.location.hash === '#admin') {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app-culture').style.display = 'none';
+    document.getElementById('app-external').style.display = 'none';
+    document.getElementById('standalone-admin').style.display = 'block';
+  }
+});
+
+// ── STANDALONE ADMIN JS ───────────────────────────────────────────────────────
+async function saAdminLogin() {
+  if (document.getElementById('sa-admin-pw').value !== CONFIG.ADMIN_PASSWORD) {
+    alert('Incorrect password.'); return;
+  }
+  document.getElementById('sa-login-gate').style.display = 'none';
+  document.getElementById('sa-dashboard').style.display = 'block';
+  await loadSAData();
+  renderSADashboard();
+}
+
+function saAdminLogout() {
+  document.getElementById('sa-login-gate').style.display = 'block';
+  document.getElementById('sa-dashboard').style.display = 'none';
+  document.getElementById('sa-admin-pw').value = '';
+}
+
+function showSATab(tab, btn) {
+  ['requests','checkouts','support'].forEach(t => {
+    document.getElementById('sa-tab-' + t).style.display = t === tab ? 'block' : 'none';
+  });
+  document.querySelectorAll('#standalone-admin .btn').forEach(b => b.className = 'btn btn-ghost btn-sm');
+  if (btn) btn.className = 'btn btn-dark btn-sm';
+}
+
+let saPendingRequests = [];
+let saActiveCheckouts = [];
+
+async function loadSAData() {
+  try {
+    const [pr, ar] = await Promise.all([
+      fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getPending', password: CONFIG.ADMIN_PASSWORD }) }),
+      fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getActive', password: CONFIG.ADMIN_PASSWORD }) }),
+    ]);
+    const pd = await pr.json(); const ad = await ar.json();
+    saPendingRequests = pd.success ? pd.requests : [];
+    saActiveCheckouts = ad.success ? ad.checkouts : [];
+  } catch(e) { console.warn('Admin data error:', e); }
+}
+
+function renderSADashboard() {
+  document.getElementById('sa-stat-pending').textContent = saPendingRequests.length;
+  document.getElementById('sa-stat-active').textContent = saActiveCheckouts.length;
+  document.getElementById('sa-stat-overdue').textContent = saActiveCheckouts.filter(c => c.overdue).length;
+  document.getElementById('sa-stat-available').textContent = '—';
+
+  document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
+    : saPendingRequests.map(req => `<tr>
+        <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
+        <td><strong>${req.name}</strong></td>
+        <td class="items-list">${(Array.isArray(req.items) ? req.items : []).map(i=>`<span class="chip">${i}</span>`).join('')}</td>
+        <td style="font-size:0.78rem;">${formatDate(req.collectDate)}</td>
+        <td style="font-size:0.78rem;">${formatDate(req.returnDate)}</td>
+        <td><div style="display:flex;gap:0.4rem;">
+          <button class="btn btn-green btn-sm" onclick="saApprove('${req.requestId}')">Approve</button>
+          <button class="btn btn-red btn-sm" onclick="saReject('${req.requestId}')">Reject</button>
+        </div></td>
+      </tr>`).join('');
+
+  document.getElementById('sa-active-tbody').innerHTML = saActiveCheckouts.length === 0
+    ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
+    : saActiveCheckouts.map(chk => `<tr>
+        <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${chk.checkoutId}</td>
+        <td><strong>${chk.name}</strong></td>
+        <td class="items-list">${(Array.isArray(chk.items) ? chk.items : []).map(i=>`<span class="chip">${i}</span>`).join('')}</td>
+        <td style="font-size:0.78rem;${chk.overdue?'color:var(--red);font-weight:600;':''}">${formatDate(chk.dueBack)}</td>
+        <td>${chk.overdue?'<span class="badge badge-overdue">Overdue</span>':'<span class="badge badge-out">Out</span>'}</td>
+        <td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned('${chk.checkoutId}')">Mark Returned</button></td>
+      </tr>`).join('');
+}
+
+async function saApprove(reqId) {
+  if (!confirm('Approve this request?')) return;
+  await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'approveRequest', requestId: reqId, password: CONFIG.ADMIN_PASSWORD, approvedBy: 'Admin' }) });
+  await loadSAData(); renderSADashboard();
+}
+
+async function saReject(reqId) {
+  if (!confirm('Reject this request?')) return;
+  await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'rejectRequest', requestId: reqId, password: CONFIG.ADMIN_PASSWORD, rejectedBy: 'Admin' }) });
+  await loadSAData(); renderSADashboard();
+}
+
+async function saMarkReturned(chkId) {
+  if (!confirm('Mark as returned?')) return;
+  await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'markReturned', checkoutId: chkId, password: CONFIG.ADMIN_PASSWORD }) });
+  await loadSAData(); renderSADashboard();
+}
+
 document.addEventListener('DOMContentLoaded', async () => {
  const today = new Date().toISOString().split('T')[0];
  ['co-return','el-date','sup-event-date','eq-event-date','eq-collect','eq-return','dmg-date']

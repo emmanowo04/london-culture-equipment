@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -1324,6 +1325,22 @@ textarea { resize: vertical; min-height: 90px; }
 </div>
 
 <script>
+
+// ── ALL STATE VARIABLES ───────────────────────────────────────────────────────
+const REQUEST_TYPE_ORDER = ['cooperation', 'equipment', 'props', 'video', 'design', 'material'];
+let selectedReqTypes = new Set();
+let selectedAssistance = new Set();
+let reqStep = 1;
+let elStep = 1;
+let supStep = 1;
+let eqStep = 1;
+let allItems = [];
+let pendingRequests = [];
+let activeCheckouts = [];
+let saPendingRequests = [];
+let saActiveCheckouts = [];
+let saSupportRequests = [];
+
 //
 // CONFIG
 //
@@ -1341,12 +1358,6 @@ const EVENT_LABELS = {
 //
 // STATE
 //
-let allItems = [];
-let pendingRequests = [];
-let activeCheckouts = [];
-const REQUEST_TYPE_ORDER = ['cooperation', 'equipment', 'props', 'video', 'design', 'material'];
-let selectedReqTypes = new Set();
-let selectedAssistance = new Set();
 
 //
 // INIT
@@ -1416,11 +1427,6 @@ function showSATab(tab, btn) {
   document.querySelectorAll('#standalone-admin .btn').forEach(b => b.className = 'btn btn-ghost btn-sm');
   if (btn) btn.className = 'btn btn-dark btn-sm';
 }
-
-let saPendingRequests = [];
-let saActiveCheckouts = [];
-
-let saSupportRequests = [];
 
 async function loadSAData() {
   try {
@@ -1691,7 +1697,6 @@ function getMoodTags() {
 //
 // STEP NAVIGATION — CULTURE TEAM EVENT LIST
 //
-let elStep = 1;
 function nextElStep(from) {
  if (from === 1 && !get('el-name')) { alert('Please enter an event name.'); return; }
  if (from === 2 && elSelected.size === 0) { alert('Please select at least one item.'); return; }
@@ -1715,7 +1720,6 @@ function updateElStepUI(step) {
 //
 // STEP NAVIGATION — SUPPORT REQUEST
 //
-let supStep = 1;
 function nextSupStep(from) {
  if (!validateSupStep(from)) return;
  if (from === 5) buildSupReview();
@@ -1742,7 +1746,6 @@ function validateSupStep(step) {
 //
 // STEP NAVIGATION — BORROW EQUIPMENT
 //
-let eqStep = 1;
 function nextEqStep(from) {
  if (from === 1 && (!get('eq-name') || !get('eq-telegram') || !get('eq-email'))) { alert('Please fill in all required fields.'); return; }
  if (from === 2 && (!get('eq-collect') || !get('eq-return'))) { alert('Please enter collection and return dates.'); return; }
@@ -1878,8 +1881,6 @@ function togglePropsExternal(type, val) {
 //
 // CULTURE DEPARTMENT REQUEST FORM
 //
-
-let reqStep = 1;
 
 function startRequest() {
  showExternalPage('ext-request', null);

@@ -1342,12 +1342,11 @@ const EVENT_LABELS = {
 // STATE
 //
 let allItems = [];
-let coSelected = new Set();
-let elSelected = new Set();
-let dmgSelected = null;
 let pendingRequests = [];
 let activeCheckouts = [];
-let currentModalAction = null;
+const REQUEST_TYPE_ORDER = ['cooperation', 'equipment', 'props', 'video', 'design', 'material'];
+let selectedReqTypes = new Set();
+let selectedAssistance = new Set();
 
 //
 // INIT
@@ -1879,9 +1878,7 @@ function togglePropsExternal(type, val) {
 //
 // CULTURE DEPARTMENT REQUEST FORM
 //
-const REQUEST_TYPE_ORDER = ['cooperation', 'equipment', 'props', 'video', 'design', 'material'];
-let selectedReqTypes = new Set();
-let selectedAssistance = new Set();
+
 let reqStep = 1;
 
 function startRequest() {

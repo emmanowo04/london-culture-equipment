@@ -1017,6 +1017,11 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
  <div class="form-group">
+ <label>Telegram Username <span class="opt">(optional)</span></label>
+ <input type="text" id="req-telegram" placeholder="@yourusername">
+ <div class="hint">You will be notified directly on Telegram when your request is actioned</div>
+ </div>
+ <div class="form-group">
  <label>Meeting Date & Time <span class="req">*</span></label>
  <div class="form-row">
  <input type="date" id="req-meeting-date">
@@ -1680,6 +1685,20 @@ textarea { resize: vertical; min-height: 90px; }
   </div>
 </div>
 
+<!-- SUPPORT REQUEST MODAL -->
+<div id="sa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center;padding:1rem;">
+  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+    <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:1rem;">Request Details</h3>
+    <div id="sa-modal-body" style="font-size:0.88rem;line-height:1.8;margin-bottom:1.5rem;color:#333;"></div>
+    <input type="hidden" id="sa-modal-id">
+    <div style="display:flex;gap:0.75rem;justify-content:flex-end;flex-wrap:wrap;">
+      <button class="btn btn-ghost btn-sm" onclick="closeSAModal()">Close</button>
+      <button class="btn btn-sm" style="background:#c0392b;color:#fff;" onclick="updateSupportStatus('Rejected')">Reject</button>
+      <button class="btn btn-sm" style="background:#2563a8;color:#fff;" onclick="updateSupportStatus('Approved')">Approve</button>
+    </div>
+  </div>
+</div>
+
 <!-- MODAL -->
 <div class="modal-overlay" id="main-modal">
  <div class="modal">
@@ -1760,6 +1779,45 @@ function saAdminLogout() {
   document.getElementById('sa-admin-pw').value = '';
 }
 
+function viewSupportRequest(requestId) {
+  const req = saSupportRequests.find(r => r.requestId === requestId);
+  if (!req) return;
+  const typeLabels = {
+    cooperation: 'Work Cooperation', equipment: 'Equipment Rental',
+    props: 'Props Request', video: 'Video Production',
+    design: 'Design Work', material: 'Material Request'
+  };
+  const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
+  const details = `
+    <div style="margin-bottom:0.5rem;"><strong>ID:</strong> ${req.requestId}</div>
+    <div style="margin-bottom:0.5rem;"><strong>From:</strong> ${req.name} ${req.position || ''} — ${req.department || ''}</div>
+    <div style="margin-bottom:0.5rem;"><strong>Request Types:</strong> ${types}</div>
+    <div style="margin-bottom:0.5rem;"><strong>Meeting:</strong> ${req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) : '—'} ${req.meetingTime || ''}</div>
+    <div style="margin-bottom:0.5rem;"><strong>Purpose:</strong> ${req.purpose || '—'}</div>
+    <div style="margin-bottom:0.5rem;"><strong>Status:</strong> ${req.status || 'New'}</div>
+  `;
+  document.getElementById('sa-modal-body').innerHTML = details;
+  document.getElementById('sa-modal-id').value = requestId;
+  document.getElementById('sa-modal').style.display = 'flex';
+}
+
+function closeSAModal() {
+  document.getElementById('sa-modal').style.display = 'none';
+}
+
+async function updateSupportStatus(status) {
+  const requestId = document.getElementById('sa-modal-id').value;
+  try {
+    await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({ action: 'updateSupportStatus', requestId, status, password: CONFIG.ADMIN_PASSWORD })
+    });
+  } catch(e) { console.warn('Update error:', e); }
+  closeSAModal();
+  await loadSAData();
+  renderSADashboard();
+}
+
 function showSATab(tab, btn) {
   ['requests','checkouts','support'].forEach(t => {
     document.getElementById('sa-tab-' + t).style.display = t === tab ? 'block' : 'none';
@@ -1798,13 +1856,22 @@ function renderSADashboard() {
   if (supportTbody) {
     supportTbody.innerHTML = saSupportRequests.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No support requests yet.</td></tr>'
-      : saSupportRequests.map(req => `<tr>
+      : saSupportRequests.map(req => {
+        const typeLabels = {
+          cooperation: 'Work Cooperation', equipment: 'Equipment Rental',
+          props: 'Props Request', video: 'Video Production',
+          design: 'Design Work', material: 'Material Request'
+        };
+        const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
+        const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
+        return `<tr style="cursor:pointer;" onclick="viewSupportRequest('${req.requestId}')">
           <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
           <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.position || ''} — ${req.department || ''}</div></td>
-          <td style="font-size:0.78rem;">${req.requestTypes || '—'}</td>
-          <td style="font-size:0.78rem;">${req.meetingDate || '—'}${req.meetingTime ? ' at ' + req.meetingTime : ''}</td>
+          <td style="font-size:0.78rem;">${types || '—'}</td>
+          <td style="font-size:0.78rem;">${meetingDisplay}</td>
           <td><span class="badge badge-pending">${req.status || 'New'}</span></td>
-        </tr>`).join('');
+        </tr>`;
+      }).join('');
   }
 
   document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
@@ -2571,23 +2638,86 @@ function validateReqStep(step) {
 }
 
 function showReqSections() {
- // Show sections in priority order
- REQUEST_TYPE_ORDER.forEach(type => {
- const section = document.getElementById('section-' + type);
- if (section) section.style.display = selectedReqTypes.has(type) ? 'block' : 'none';
- });
- // Update progress indicator
- const types = REQUEST_TYPE_ORDER
- .filter(t => selectedReqTypes.has(t))
- .map(t => ({
- cooperation: ' Work Cooperation',
- equipment: ' Equipment Rental',
- props: ' Props Request',
- video: ' Video Production',
- design: ' Design Work Request',
- material: ' Material Request'
- }[t]));
- document.getElementById('req-progress-indicator').textContent = 'Completing: ' + types.join(' · ');
+  const hasCooperation = selectedReqTypes.has('cooperation');
+
+  // Show sections in priority order
+  REQUEST_TYPE_ORDER.forEach(type => {
+    const section = document.getElementById('section-' + type);
+    if (section) section.style.display = selectedReqTypes.has(type) ? 'block' : 'none';
+  });
+
+  // If work cooperation is selected alongside other types,
+  // hide scope + event detail fields in all other sections
+  // since they are already captured in the cooperation section
+
+  // Equipment Rental
+  const equipScopeGroup = document.querySelector('#section-equipment .form-row:nth-child(3)');
+  const equipEventFields = document.getElementById('equip-event-fields');
+  if (hasCooperation && selectedReqTypes.has('equipment')) {
+    if (equipScopeGroup) equipScopeGroup.style.display = 'none';
+    if (equipEventFields) equipEventFields.style.display = 'none';
+    document.getElementById('equip-scope').value = 'Via Work Cooperation';
+  } else {
+    if (equipScopeGroup) equipScopeGroup.style.display = '';
+  }
+
+  // Props Rental — hide scope + event fields
+  const propsRentalScopeGroup = document.querySelector('#props-rental-fields .form-group:first-child');
+  const propsRentalExternal = document.getElementById('props-rental-external-fields');
+  if (hasCooperation && selectedReqTypes.has('props')) {
+    if (propsRentalScopeGroup) propsRentalScopeGroup.style.display = 'none';
+    if (propsRentalExternal) propsRentalExternal.style.display = 'none';
+    const ps = document.getElementById('props-rental-scope');
+    if (ps) ps.value = 'Via Work Cooperation';
+    // Also hide new props scope/event
+    const propsNewScopeGroup = document.querySelector('#props-new-fields .form-group:first-child');
+    const propsNewExternal = document.getElementById('props-new-external-fields');
+    if (propsNewScopeGroup) propsNewScopeGroup.style.display = 'none';
+    if (propsNewExternal) propsNewExternal.style.display = 'none';
+    const pns = document.getElementById('props-new-scope');
+    if (pns) pns.value = 'Via Work Cooperation';
+  } else {
+    if (propsRentalScopeGroup) propsRentalScopeGroup.style.display = '';
+  }
+
+  // Material Request — hide scope
+  const materialScopeGroup = document.querySelector('#section-material .toggle-group');
+  if (materialScopeGroup) {
+    const materialScopeWrap = materialScopeGroup.closest('.form-group');
+    if (materialScopeWrap) materialScopeWrap.style.display = hasCooperation ? 'none' : '';
+    if (hasCooperation) {
+      const ms = document.getElementById('material-scope');
+      if (ms) ms.value = 'Via Work Cooperation';
+    }
+  }
+
+  // Show a note in affected sections
+  ['section-equipment', 'section-props', 'section-material'].forEach(id => {
+    const section = document.getElementById(id);
+    if (!section) return;
+    let note = section.querySelector('.coop-note');
+    if (hasCooperation && selectedReqTypes.has(id.replace('section-', ''))) {
+      if (!note) {
+        note = document.createElement('div');
+        note.className = 'coop-note notice notice-blue';
+        note.style.marginBottom = '1rem';
+        note.textContent = 'Event location and scope details are taken from your Work Cooperation section.';
+        const card = section.querySelector('.card');
+        if (card) card.insertBefore(note, card.children[1]);
+      }
+    } else {
+      if (note) note.remove();
+    }
+  });
+
+  // Update progress indicator
+  const typeLabels = {
+    cooperation: 'Work Cooperation', equipment: 'Equipment Rental',
+    props: 'Props Request', video: 'Video Production',
+    design: 'Design Work Request', material: 'Material Request'
+  };
+  const types = REQUEST_TYPE_ORDER.filter(t => selectedReqTypes.has(t)).map(t => typeLabels[t]);
+  document.getElementById('req-progress-indicator').textContent = 'Completing: ' + types.join(' · ');
 }
 
 function getSelectedToggleMulti(containerId) {
@@ -2605,7 +2735,8 @@ function buildReqReview() {
  <div class="review-row"><span class="review-key">Position</span><span class="review-val">${get('req-position')}</span></div>
  ${get('req-contact-person') ? `<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">${get('req-contact-person')}</span></div>` : ''}
  ${get('req-meeting-date') ? `<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">${formatDate(get('req-meeting-date'))}${get('req-meeting-time') ? ' at ' + get('req-meeting-time') : ''}</span></div>` : ''}
-    <div class="review-row"><span class="review-key">Purpose</span><span class="review-val">${get('req-purpose')}</span></div>`;
+    <div class="review-row"><span class="review-key">Purpose</span><span class="review-val">${get('req-purpose')}</span></div>
+    ${get('req-telegram') ? `<div class="review-row"><span class="review-key">Telegram</span><span class="review-val">${get('req-telegram')}</span></div>` : ''}`;
 
  html += `<div class="section-label">Request Types</div>
  <div class="review-row"><span class="review-key">Requesting</span><span class="review-val">${[...selectedReqTypes].map(t => ({cooperation:'Work Cooperation',equipment:'Equipment Rental',props:'Props Request',video:'Video Production',design:'Design Work Request',material:'Material Request'}[t])).join(', ')}</span></div>`;
@@ -2686,6 +2817,7 @@ async function submitCultureRequest() {
  name: get('req-fullname'),
  department: get('req-dept'), position: get('req-position'),
  contactPerson: get('req-contact-person'),
+ telegram: get('req-telegram'),
  purpose: get('req-purpose'),
  meetingDate: get('req-meeting-date'),
  meetingTime: get('req-meeting-time'),

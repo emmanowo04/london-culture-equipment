@@ -1024,6 +1024,10 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  <div class="hint">We will contact you at this time to discuss your request</div>
  </div>
+ <div class="form-group">
+ <label>Purpose of Request <span class="req">*</span></label>
+ <textarea id="req-purpose" placeholder="Briefly summarise the purpose of your request..."></textarea>
+ </div>
  </div>
 
  <div class="card">
@@ -2409,7 +2413,8 @@ function buildReqReview() {
  <div class="review-row"><span class="review-key">Department</span><span class="review-val">${get('req-dept')}</span></div>
  <div class="review-row"><span class="review-key">Position</span><span class="review-val">${get('req-position')}</span></div>
  ${get('req-contact-person') ? `<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">${get('req-contact-person')}</span></div>` : ''}
- ${get('req-meeting-date') ? `<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">${formatDate(get('req-meeting-date'))}${get('req-meeting-time') ? ' at ' + get('req-meeting-time') : ''}</span></div>` : ''}`;
+ ${get('req-meeting-date') ? `<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">${formatDate(get('req-meeting-date'))}${get('req-meeting-time') ? ' at ' + get('req-meeting-time') : ''}</span></div>` : ''}
+    <div class="review-row"><span class="review-key">Purpose</span><span class="review-val">${get('req-purpose')}</span></div>`;
 
  html += `<div class="section-label">Request Types</div>
  <div class="review-row"><span class="review-key">Requesting</span><span class="review-val">${[...selectedReqTypes].map(t => ({cooperation:'Work Cooperation',equipment:'Equipment Rental',props:'Props Request',video:'Video Production',design:'Design Work Request',material:'Material Request'}[t])).join(', ')}</span></div>`;
@@ -2487,10 +2492,12 @@ async function submitCultureRequest() {
 
  const payload = {
  action: 'newSupportRequest',
- name: get('req-fullname'), church: get('req-church'),
+ name: get('req-fullname'),
  department: get('req-dept'), position: get('req-position'),
- email: get('req-email-addr'), contactPerson: get('req-contact-person'),
+ contactPerson: get('req-contact-person'),
  purpose: get('req-purpose'),
+ meetingDate: get('req-meeting-date'),
+ meetingTime: get('req-meeting-time'),
  requestTypes: [...selectedReqTypes].join(', '),
  // Props
  propsSubType: get('props-sub-type'),

@@ -1215,7 +1215,6 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="notice notice-gold"> Your request will be sent to the culture team immediately via Telegram. They will be in touch to confirm.</div>
  <div style="display:flex;justify-content:space-between;">
  <button class="btn btn-ghost" onclick="prevReqStep(3)">← Back</button>
- <button class="btn btn-gold" onclick="submitCultureRequest()" id="req-submit-btn">Submit Request </button>
  </div>
  </div>
 
@@ -1334,16 +1333,6 @@ const CONFIG = {
  ADMIN_PASSWORD: 'mediaadmin2024',
 };
 
-const EQUIPMENT_CATEGORIES = [
- { id: 'wireless-mics', label: 'Wireless Mics', icon: '' },
- { id: 'earset-mics', label: 'Earset / Headset Mics', icon: '' },
- { id: 'speakers', label: 'Speakers', icon: '' },
- { id: 'mixer', label: 'Mixer / Sound Desk', icon: '' },
- { id: 'lighting', label: 'Lighting', icon: '' },
- { id: 'camcorders', label: 'Camcorders', icon: '' },
- { id: 'cables', label: 'Cables & Extensions', icon: '' },
-];
-
 const EVENT_LABELS = {
  worship: 'Worship Night', prayer: 'Prayer Meeting',
  youth: 'Youth Event', 'mens-womens': "Men's / Women's Group", other: 'Other',
@@ -1356,8 +1345,6 @@ let allItems = [];
 let coSelected = new Set();
 let elSelected = new Set();
 let dmgSelected = null;
-let eqQuantities = {};
-let eqSelectedCats = new Set();
 let pendingRequests = [];
 let activeCheckouts = [];
 let currentModalAction = null;
@@ -1456,35 +1443,32 @@ function renderSADashboard() {
   document.getElementById('sa-stat-overdue').textContent = saActiveCheckouts.filter(c => c.overdue).length;
   document.getElementById('sa-stat-available').textContent = saSupportRequests.length;
 
-  // Support requests tab
+  // Support requests
   const supportTbody = document.getElementById('sa-support-tbody');
   if (supportTbody) {
     supportTbody.innerHTML = saSupportRequests.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No support requests yet.</td></tr>'
       : saSupportRequests.map(req => {
-        const typeLabels = {
-          cooperation: 'Work Cooperation', equipment: 'Equipment Rental',
-          props: 'Props Request', video: 'Video Production',
-          design: 'Design Work', material: 'Material Request'
-        };
-        const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
-        const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
-        return `<tr style="cursor:pointer;" onclick="viewSupportRequest('${req.requestId}')">
-          <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
-          <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.position || ''} — ${req.department || ''}</div></td>
-          <td style="font-size:0.78rem;">${types || '—'}</td>
-          <td style="font-size:0.78rem;">${meetingDisplay}</td>
-          <td><span class="badge badge-pending">${req.status || 'New'}</span></td>
-        </tr>`;
-      }).join('');
+          const typeLabels = { cooperation:'Work Cooperation', equipment:'Equipment Rental', props:'Props Request', video:'Video Production', design:'Design Work', material:'Material Request' };
+          const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
+          const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
+          return `<tr style="cursor:pointer;" onclick="viewSupportRequest('${req.requestId}')">
+            <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
+            <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.position || ''} — ${req.department || ''}</div></td>
+            <td style="font-size:0.78rem;">${types || '—'}</td>
+            <td style="font-size:0.78rem;">${meetingDisplay}</td>
+            <td><span class="badge badge-pending">${req.status || 'New'}</span></td>
+          </tr>`;
+        }).join('');
   }
 
+  // Pending equipment requests
   document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
     : saPendingRequests.map(req => `<tr>
         <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
         <td><strong>${req.name}</strong></td>
-        <td class="items-list">${(Array.isArray(req.items) ? req.items : []).map(i=>`<span class="chip">${i}</span>`).join('')}</td>
+        <td class="items-list">${(Array.isArray(req.items) ? req.items : []).map(i => `<span class="chip">${i}</span>`).join('')}</td>
         <td style="font-size:0.78rem;">${formatDate(req.collectDate)}</td>
         <td style="font-size:0.78rem;">${formatDate(req.returnDate)}</td>
         <td><div style="display:flex;gap:0.4rem;">
@@ -1493,14 +1477,15 @@ function renderSADashboard() {
         </div></td>
       </tr>`).join('');
 
+  // Active checkouts
   document.getElementById('sa-active-tbody').innerHTML = saActiveCheckouts.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
     : saActiveCheckouts.map(chk => `<tr>
         <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${chk.checkoutId}</td>
         <td><strong>${chk.name}</strong></td>
-        <td class="items-list">${(Array.isArray(chk.items) ? chk.items : []).map(i=>`<span class="chip">${i}</span>`).join('')}</td>
-        <td style="font-size:0.78rem;${chk.overdue?'color:var(--red);font-weight:600;':''}">${formatDate(chk.dueBack)}</td>
-        <td>${chk.overdue?'<span class="badge badge-overdue">Overdue</span>':'<span class="badge badge-out">Out</span>'}</td>
+        <td class="items-list">${(Array.isArray(chk.items) ? chk.items : []).map(i => `<span class="chip">${i}</span>`).join('')}</td>
+        <td style="font-size:0.78rem;${chk.overdue ? 'color:var(--red);font-weight:600;' : ''}">${formatDate(chk.dueDate)}</td>
+        <td>${chk.overdue ? '<span class="badge badge-overdue">Overdue</span>' : '<span class="badge badge-out">Out</span>'}</td>
         <td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned('${chk.checkoutId}')">Mark Returned</button></td>
       </tr>`).join('');
 }
@@ -1532,21 +1517,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     return; // Don't run the rest of the init
   }
  const today = new Date().toISOString().split('T')[0];
- ['co-return','el-date','sup-event-date','eq-event-date','eq-collect','eq-return','dmg-date']
- .forEach(id => { const el = document.getElementById(id); if(el) el.min = today; });
- document.getElementById('dmg-date').value = today;
- await loadItems();
- renderEqCatList();
 
- // Show/hide slides detail
- document.getElementById('sup-slides').addEventListener('change', () => {
- document.getElementById('slides-detail').style.display =
- document.getElementById('sup-slides').value === 'Yes' ? 'block' : 'none';
- });
- document.getElementById('sup-videos').addEventListener('change', () => {
- document.getElementById('videos-detail').style.display =
- document.getElementById('sup-videos').value === 'Yes' ? 'block' : 'none';
- });
 });
 
 async function loadItems() {
@@ -1564,7 +1535,6 @@ async function loadItems() {
 //
 function goHome() {
  document.getElementById('landing').style.display = 'flex';
- document.getElementById('app-culture').classList.remove('active');
  document.getElementById('app-external').classList.remove('active');
 }
 
@@ -1648,13 +1618,8 @@ function toggleLocationGroup(header) {
  header.nextElementSibling.classList.toggle('open');
 }
 
-function toggleCatGroup(header) {
- header.nextElementSibling.classList.toggle('open');
-}
-
 function toggleExpandAll() {
  allGroupsExpanded = !allGroupsExpanded;
- document.getElementById('expand-all-btn').textContent = allGroupsExpanded ? 'Collapse All' : 'Expand All';
  document.querySelectorAll('.location-header').forEach(h => h.classList.toggle('open', allGroupsExpanded));
  document.querySelectorAll('.location-body').forEach(b => b.classList.toggle('open', allGroupsExpanded));
  document.querySelectorAll('.cat-group-items').forEach(b => b.classList.toggle('open', allGroupsExpanded));
@@ -1668,7 +1633,6 @@ function selectElItem(id) {
 function selectItem(prefix, id) {
  if (prefix === 'dmg') {
  dmgSelected = dmgSelected === id ? null : id;
- document.getElementById('dmg-details-card').style.display = dmgSelected ? 'block' : 'none';
  } else if (prefix === 'co') {
  coSelected.has(id) ? coSelected.delete(id) : coSelected.add(id);
  }
@@ -1684,39 +1648,6 @@ function updateSelectedCount(prefix) {
  el.textContent = `${count} item${count !== 1 ? 's' : ''} selected`;
 }
 
-//
-// EQUIPMENT CATEGORIES (External borrow)
-//
-function renderEqCatList() {
- const list = document.getElementById('eq-cat-list');
- if (!list) return;
- list.innerHTML = EQUIPMENT_CATEGORIES.map(cat => {
- const qty = eqQuantities[cat.id] || 0;
- const selected = eqSelectedCats.has(cat.id);
- return `<div style="display:flex;align-items:center;gap:1rem;padding:0.85rem;border:1.5px solid ${selected ? 'var(--gold)' : 'var(--border)'};border-radius:8px;margin-bottom:0.6rem;background:${selected ? 'var(--gold-light)' : '#fff'};transition:all 0.2s;">
- <div style="font-size:1.3rem;">${cat.icon}</div>
- <div style="flex:1;font-weight:500;font-size:0.88rem;">${cat.label}</div>
- <div style="display:flex;align-items:center;gap:0.5rem;">
- <button onclick="changeEqQty('${cat.id}',-1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:var(--cream);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">−</button>
- <span style="font-family:'Syne Mono',monospace;font-size:0.95rem;min-width:24px;text-align:center;" id="eqqty-${cat.id}">${qty}</span>
- <button onclick="changeEqQty('${cat.id}',1)" style="width:30px;height:30px;border-radius:50%;border:1.5px solid var(--border);background:var(--cream);cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;">+</button>
- </div>
- </div>`;
- }).join('');
-}
-
-function changeEqQty(catId, delta) {
- eqQuantities[catId] = Math.max(0, (eqQuantities[catId] || 0) + delta);
- if (eqQuantities[catId] > 0) eqSelectedCats.add(catId);
- else eqSelectedCats.delete(catId);
- const el = document.getElementById('eqqty-' + catId);
- if (el) el.textContent = eqQuantities[catId];
- renderEqCatList();
-}
-
-//
-// FORM HELPERS
-//
 function toggleOpt(el, hiddenId) {
  el.closest('.toggle-group').querySelectorAll('.toggle-opt').forEach(o => o.classList.remove('selected','selected-red'));
  el.classList.add('selected');
@@ -1735,12 +1666,11 @@ function setYN(hiddenId, isYes, btn) {
  document.getElementById(hiddenId).value = isYes ? 'Yes' : 'No';
 
  // Show/hide conditional fields
- if (hiddenId === 'sup-slides') document.getElementById('slides-detail').style.display = isYes ? 'block' : 'none';
- if (hiddenId === 'sup-videos') document.getElementById('videos-detail').style.display = isYes ? 'block' : 'none';
+
 }
 
 function toggleWorshipFields(show) {
- document.getElementById('worship-fields').style.display = show ? 'block' : 'none';
+
 }
 
 function get(id) { return document.getElementById(id)?.value || ''; }
@@ -1782,18 +1712,6 @@ function updateElStepUI(step) {
  if(step === 2) renderElGrouped();
  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function buildElReview() {
- const items = allItems.filter(i => elSelected.has(i.id));
- document.getElementById('el-review').innerHTML = `
- <div class="review-row"><span class="review-key">Event</span><span class="review-val">${get('el-name')}</span></div>
- <div class="review-row"><span class="review-key">Date</span><span class="review-val">${formatDate(get('el-date'))}</span></div>
- <div class="review-row"><span class="review-key">Venue</span><span class="review-val">${get('el-venue') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Collection From</span><span class="review-val">${get('el-location') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Prepared By</span><span class="review-val">${get('el-preparer') || '—'}</span></div>
- <div class="section-label">${items.length} Items</div>
- ${items.map(i => `<div class="review-row"><span class="review-key">${i.subcategory||i.category}</span><span class="review-val">${i.name}</span></div>`).join('')}
- `;
-}
 
 //
 // STEP NAVIGATION — SUPPORT REQUEST
@@ -1821,44 +1739,6 @@ function validateSupStep(step) {
  if (step === 2 && (!get('sup-event-name') || !get('sup-event-date') || !get('sup-venue') || !get('sup-internal'))) { alert('Please fill in all required fields.'); return false; }
  return true;
 }
-function buildSupReview() {
- document.getElementById('sup-review').innerHTML = `
- <div class="section-label">Requestor</div>
- <div class="review-row"><span class="review-key">Name</span><span class="review-val">${get('sup-name')}</span></div>
- <div class="review-row"><span class="review-key">Telegram</span><span class="review-val">${get('sup-telegram')}</span></div>
- <div class="review-row"><span class="review-key">Role</span><span class="review-val">${get('sup-role') || '—'}</span></div>
-
- <div class="section-label">Event</div>
- <div class="review-row"><span class="review-key">Event Name</span><span class="review-val">${get('sup-event-name')}</span></div>
- <div class="review-row"><span class="review-key">Date & Time</span><span class="review-val">${formatDate(get('sup-event-date'))}${get('sup-start-time') ? ', ' + get('sup-start-time') : ''}</span></div>
- <div class="review-row"><span class="review-key">Venue</span><span class="review-val">${get('sup-venue')}</span></div>
- <div class="review-row"><span class="review-key">Attendance</span><span class="review-val">${get('sup-attendance') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Type</span><span class="review-val">${get('sup-internal')}</span></div>
-
- <div class="section-label">AV & Tech</div>
- <div class="review-row"><span class="review-key">Photography</span><span class="review-val">${get('sup-photos')}</span></div>
- <div class="review-row"><span class="review-key">Video Recording</span><span class="review-val">${get('sup-recording')}</span></div>
- <div class="review-row"><span class="review-key">Online Stream</span><span class="review-val">${get('sup-stream')}</span></div>
- <div class="review-row"><span class="review-key">Audience Interaction</span><span class="review-val">${get('sup-interaction')}</span></div>
- <div class="review-row"><span class="review-key">Presentation / Slides</span><span class="review-val">${get('sup-slides')}${get('sup-slides-detail') ? ' — ' + get('sup-slides-detail') : ''}</span></div>
- <div class="review-row"><span class="review-key">Additional Videos</span><span class="review-val">${get('sup-videos')}</span></div>
-
- <div class="section-label">Worship</div>
- <div class="review-row"><span class="review-key">Worship Element</span><span class="review-val">${get('sup-worship')}</span></div>
- ${get('sup-worship') === 'Yes' ? `
- <div class="review-row"><span class="review-key">Singers</span><span class="review-val">${get('sup-singers') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Instruments</span><span class="review-val">${get('sup-instruments')}${get('sup-own-instruments') ? ' (' + get('sup-own-instruments') + ')' : ''}</span></div>
- <div class="review-row"><span class="review-key">Songs</span><span class="review-val">${get('sup-songs') || 'TBC'}</span></div>
- <div class="review-row"><span class="review-key">Lyrics Prepared By</span><span class="review-val">${get('sup-lyrics-person') || '—'}</span></div>
- ` : ''}
-
- <div class="section-label">Atmosphere</div>
- <div class="review-row"><span class="review-key">Mood</span><span class="review-val">${getMoodTags() || '—'}</span></div>
- <div class="review-row"><span class="review-key">Lighting</span><span class="review-val">${get('sup-lighting') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Background Music</span><span class="review-val">${get('sup-bgmusic') || '—'}</span></div>
- ${get('sup-atmosphere-notes') ? `<div class="review-row"><span class="review-key">Notes</span><span class="review-val">${get('sup-atmosphere-notes')}</span></div>` : ''}
- `;
-}
 
 //
 // STEP NAVIGATION — BORROW EQUIPMENT
@@ -1867,7 +1747,6 @@ let eqStep = 1;
 function nextEqStep(from) {
  if (from === 1 && (!get('eq-name') || !get('eq-telegram') || !get('eq-email'))) { alert('Please fill in all required fields.'); return; }
  if (from === 2 && (!get('eq-collect') || !get('eq-return'))) { alert('Please enter collection and return dates.'); return; }
- if (from === 3 && eqSelectedCats.size === 0) { alert('Please select at least one equipment category.'); return; }
  if (from === 3) buildEqReview();
  eqStep = from + 1;
  updateEqStepUI(eqStep);
@@ -1883,25 +1762,6 @@ function updateEqStepUI(step) {
  });
  window.scrollTo({ top: 0, behavior: 'smooth' });
 }
-function buildEqReview() {
- const eqList = EQUIPMENT_CATEGORIES.filter(c => eqSelectedCats.has(c.id))
- .map(c => `${c.icon} ${eqQuantities[c.id]}× ${c.label}`).join('<br>');
- document.getElementById('eq-review').innerHTML = `
- <div class="section-label">Requestor</div>
- <div class="review-row"><span class="review-key">Name</span><span class="review-val">${get('eq-name')}</span></div>
- <div class="review-row"><span class="review-key">Telegram</span><span class="review-val">${get('eq-telegram')}</span></div>
- <div class="review-row"><span class="review-key">Email</span><span class="review-val">${get('eq-email')}</span></div>
- <div class="section-label">Event</div>
- <div class="review-row"><span class="review-key">Event</span><span class="review-val">${get('eq-event-name') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Date</span><span class="review-val">${formatDate(get('eq-event-date'))}</span></div>
- <div class="review-row"><span class="review-key">Venue</span><span class="review-val">${get('eq-venue') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Collection</span><span class="review-val">${formatDate(get('eq-collect'))}</span></div>
- <div class="review-row"><span class="review-key">Return</span><span class="review-val">${formatDate(get('eq-return'))}</span></div>
- <div class="section-label">Equipment Needed</div>
- <div style="font-size:0.9rem;line-height:2.2;">${eqList}</div>
- ${get('eq-notes') ? `<div class="section-label">Notes</div><div style="font-size:0.85rem;color:var(--muted);">${get('eq-notes')}</div>` : ''}
- `;
-}
 
 //
 // SUBMIT FUNCTIONS
@@ -1913,7 +1773,6 @@ async
 async 
 
 async function submitSupportRequest() {
- const btn = document.getElementById('sup-submit-btn');
  btn.textContent = 'Sending...'; btn.disabled = true;
  const payload = {
  action: 'newSupportRequest',
@@ -1937,15 +1796,11 @@ async function submitSupportRequest() {
  await postToScript(payload);
  supStep = 7;
  document.querySelectorAll('#ext-support .form-step').forEach(s => s.classList.remove('active'));
- document.getElementById('sup-form-success').classList.add('active');
  btn.textContent = 'Submit Request '; btn.disabled = false;
 }
 
 async function submitEquipmentRequest() {
- const btn = document.getElementById('eq-submit-btn');
  btn.textContent = 'Sending...'; btn.disabled = true;
- const equipmentList = EQUIPMENT_CATEGORIES.filter(c => eqSelectedCats.has(c.id))
- .map(c => `${eqQuantities[c.id]}x ${c.label}`).join(', ');
  await postToScript({
  action: 'newRequest', name: get('eq-name'), telegram: get('eq-telegram'),
  email: get('eq-email'), phone: get('eq-phone'), internal: get('eq-internal') || 'external',
@@ -1954,7 +1809,6 @@ async function submitEquipmentRequest() {
  notes: get('eq-notes'), items: equipmentList,
  });
  document.querySelectorAll('#ext-equipment .form-step').forEach(s => s.classList.remove('active'));
- document.getElementById('eq-form-success').classList.add('active');
  btn.textContent = 'Submit Request '; btn.disabled = false;
 }
 
@@ -2267,7 +2121,6 @@ function buildReqReview() {
 }
 
 async function submitCultureRequest() {
- const btn = document.getElementById('req-submit-btn');
  btn.textContent = 'Sending...'; btn.disabled = true;
 
  const payload = {
@@ -2356,7 +2209,6 @@ function resetSupportForm() {
  document.querySelectorAll('#ext-support .yn-btn.no').forEach(el => el.classList.add('active'));
 }
 function resetEqForm() {
- eqStep = 1; eqQuantities = {}; eqSelectedCats.clear(); updateEqStepUI(1); renderEqCatList();
  document.querySelectorAll('#ext-equipment input, #ext-equipment textarea, #ext-equipment select')
  .forEach(el => el.value = '');
  document.querySelectorAll('#ext-equipment .toggle-opt').forEach(el => el.classList.remove('selected'));
@@ -2365,18 +2217,10 @@ function resetEqForm() {
 //
 // ADMIN
 //
-async function adminLogin() {
- if (get('admin-pw') !== CONFIG.ADMIN_PASSWORD) { alert('Incorrect password.'); return; }
- document.getElementById('admin-gate-inner').style.display = 'none';
- document.getElementById('admin-panel').style.display = 'block';
- await loadAdminData();
- renderAdminDashboard();
-}
+async 
 
 function adminLogout() {
- document.getElementById('admin-gate-inner').style.display = 'block';
- document.getElementById('admin-panel').style.display = 'none';
- document.getElementById('admin-pw').value = '';
+
 }
 
 function showAdminTab(tab, btn) {
@@ -2386,97 +2230,6 @@ function showAdminTab(tab, btn) {
  });
 }
 
-async function loadAdminData() {
- try {
- const [pr, ar] = await Promise.all([
- fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getPending', password: CONFIG.ADMIN_PASSWORD }) }),
- fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getActive', password: CONFIG.ADMIN_PASSWORD }) }),
- ]);
- const pd = await pr.json(); const ad = await ar.json();
- pendingRequests = pd.success ? pd.requests.map(r => ({
- id: r.requestId, name: r.name, telegram: r.telegram, event: r.eventName,
- eventType: r.eventType, items: Array.isArray(r.items) ? r.items.join(', ') : r.items,
- collectDate: r.collectDate, returnDate: r.returnDate, internal: r.internal,
- })) : [];
- activeCheckouts = ad.success ? ad.checkouts.map(c => ({
- id: c.checkoutId, name: c.name, telegram: c.telegram,
- items: Array.isArray(c.items) ? c.items.join(', ') : c.items,
- checkedOut: c.checkoutDate, dueBack: c.dueDate, overdue: c.overdue,
- })) : [];
- } catch(e) { console.warn('Admin data error:', e); }
-}
-
-function renderAdminDashboard() {
- document.getElementById('st-pending').textContent = pendingRequests.length;
- document.getElementById('st-active').textContent = activeCheckouts.length;
- document.getElementById('st-overdue').textContent = activeCheckouts.filter(c => c.overdue).length;
- document.getElementById('st-available').textContent = allItems.filter(i => i.status === 'available').length;
-
- document.getElementById('pending-tbody').innerHTML = pendingRequests.length === 0
- ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
- : pendingRequests.map(req => `<tr>
- <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.telegram}</div></td>
- <td class="items-list">${(req.items||'').split(', ').map(i=>`<span class="chip">${i}</span>`).join('')}</td>
- <td>${req.event || '—'}</td>
- <td style="font-family:'Syne Mono',monospace;font-size:0.75rem;">${formatDate(req.collectDate)}<br><span style="color:var(--muted);">→ ${formatDate(req.returnDate)}</span></td>
- <td><span class="badge ${req.internal==='internal'?'badge-internal':'badge-external'}">${req.internal||'—'}</span></td>
- <td><div style="display:flex;gap:0.35rem;">
- <button class="btn btn-green btn-sm" onclick="openModal('${req.id}',true)"></button>
- <button class="btn btn-red btn-sm" onclick="openModal('${req.id}',false)"></button>
- </div></td>
- </tr>`).join('');
-
- document.getElementById('active-tbody').innerHTML = activeCheckouts.length === 0
- ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
- : activeCheckouts.map(chk => `<tr>
- <td><strong>${chk.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${chk.telegram}</div></td>
- <td class="items-list">${(chk.items||'').split(', ').map(i=>`<span class="chip">${i}</span>`).join('')}</td>
- <td style="font-family:'Syne Mono',monospace;font-size:0.75rem;color:var(--muted);">${formatDate(chk.checkedOut)}</td>
- <td style="font-family:'Syne Mono',monospace;font-size:0.75rem;${chk.overdue?'color:var(--red);font-weight:600;':''}">${formatDate(chk.dueBack)}</td>
- <td>${chk.overdue?'<span class="badge badge-overdue"> Overdue</span>':'<span class="badge badge-out">Out</span>'}</td>
- <td><button class="btn btn-ghost btn-sm" onclick="markReturned('${chk.id}')">Mark Returned</button></td>
- </tr>`).join('');
-}
-
-function openModal(reqId, isApprove) {
- currentModalAction = { reqId, isApprove };
- const req = pendingRequests.find(r => r.id === reqId);
- document.getElementById('modal-title').textContent = isApprove ? 'Approve Request' : 'Reject Request';
- document.getElementById('modal-body').textContent = isApprove
- ? `Approve ${req?.name}'s request? They will be notified via Telegram.`
- : `Reject ${req?.name}'s request? They will be notified via Telegram.`;
- const btn = document.getElementById('modal-confirm');
- btn.textContent = isApprove ? 'Approve' : 'Reject';
- btn.className = isApprove ? 'btn btn-green' : 'btn btn-red';
- document.getElementById('main-modal').classList.add('open');
-}
-
-function closeModal() { document.getElementById('main-modal').classList.remove('open'); currentModalAction = null; }
-
-async function confirmModal() {
- if (!currentModalAction) return;
- const { reqId, isApprove } = currentModalAction;
- try {
- await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({
- action: isApprove ? 'approveRequest' : 'rejectRequest',
- requestId: reqId, password: CONFIG.ADMIN_PASSWORD,
- approvedBy: 'Media Team', rejectedBy: 'Media Team',
- })});
- } catch(e) { console.warn('Error:', e); }
- closeModal();
- await loadAdminData();
- renderAdminDashboard();
-}
-
-async function markReturned(chkId) {
- try {
- await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({
- action: 'markReturned', checkoutId: chkId, password: CONFIG.ADMIN_PASSWORD,
- })});
- } catch(e) { console.warn('Error:', e); }
- await loadAdminData();
- renderAdminDashboard();
-}
 </script>
 </body>
 </html>

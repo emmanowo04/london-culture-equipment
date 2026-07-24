@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>London Culture — Equipment &amp; Assistance</title>
+<title>Mun-Hwa Bu — Cooperation &amp; Requests</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <style>
 :root {
@@ -613,13 +613,13 @@ textarea { resize: vertical; min-height: 90px; }
  -->
 <div class="landing" id="landing">
  <div class="landing-inner">
- <div class="landing-logo">London Culture</div>
- <h1>Culture Department<br><em>Request</em></h1>
- <p>Request equipment or culture team support</p>
+ <div class="landing-logo">Mun-Hwa Bu</div>
+ <h1>Mun-Hwa Bu<br><em>Request</em></h1>
+ <p>Submit a request</p>
  <div class="role-cards" style="grid-template-columns:1fr;">
  <div class="role-card external" onclick="enterExternal()">
  <span class="role-icon"></span>
- <h3 style="color:#0f0f0f;">Culture Department Request Form</h3>
+ <h3 style="color:#0f0f0f;">Mun-Hwa Bu Request Form</h3>
  <p style="color:#3a3530;">Request culture team support or borrow equipment — work cooperation, materials, equipment rental, video production and design work.</p>
  <div class="role-arrow">Enter →</div>
  </div>
@@ -634,7 +634,7 @@ textarea { resize: vertical; min-height: 90px; }
  <header>
  <div style="display:flex;align-items:center;gap:1.25rem;">
  <button class="back-btn" onclick="goHome()">← Home</button>
- <div class="header-logo" style="color:var(--black);">London <em style="color:var(--blue);">Culture</em></div>
+ <div class="header-logo" style="color:var(--black);">Mun-Hwa Bu</div>
  </div>
  <div class="header-nav">
  <button class="nav-btn active" onclick="showCulturePage('hub', this)">Hub</button>
@@ -933,7 +933,7 @@ textarea { resize: vertical; min-height: 90px; }
  <header>
  <div style="display:flex;align-items:center;gap:1.25rem;">
  <button class="back-btn" onclick="goHome()">← Home</button>
- <div class="header-logo" style="color:var(--black);">London <em style="color:var(--blue);">Culture</em></div>
+ <div class="header-logo" style="color:var(--black);">Mun-Hwa Bu</div>
  </div>
  <div class="header-nav">
  <button class="nav-btn active" onclick="showExternalPage('ext-hub', this)">Home</button>
@@ -944,29 +944,29 @@ textarea { resize: vertical; min-height: 90px; }
  <!-- HUB -->
  <div id="ext-hub" class="page active">
  <div class="page-header">
- <h1>Culture Department <em style="font-family:'Playfair Display',serif;font-style:italic;">Request</em></h1>
- <p>Submit a request to the London Culture team. You can request more than one thing at a time.</p>
+ <h1>Mun-Hwa Bu <em style="font-family:'Playfair Display',serif;font-style:italic;">Request</em></h1>
+ <p>Submit a request to the Mun-Hwa Bu team. You can request more than one thing at a time.</p>
  </div>
  <div class="hub-grid">
  <div class="hub-card" style="border-top:3px solid var(--blue);" onclick="startRequest()">
  <span class="hub-icon"></span>
  <h3>Work Cooperation</h3>
- <p>Require the assistance of culture department workers in any capacity for your event.</p>
+ <p>Require the assistance of Mun-Hwa Bu workers in any capacity for your event.</p>
  </div>
  <div class="hub-card" style="border-top:3px solid var(--green);" onclick="startRequest()">
  <span class="hub-icon"></span>
  <h3>Equipment Rental</h3>
- <p>Require the use of culture department equipment for internal or external use.</p>
+ <p>Require the use of Mun-Hwa Bu equipment for internal or external use.</p>
  </div>
  <div class="hub-card" style="border-top:3px solid var(--blue);" onclick="startRequest()">
  <span class="hub-icon"></span>
  <h3>Material Request</h3>
- <p>Require existing culture department materials — photos, videos, audio or documents.</p>
+ <p>Require existing Mun-Hwa Bu materials — photos, videos, audio or documents.</p>
  </div>
  <div class="hub-card" style="border-top:3px solid var(--red);" onclick="startRequest()">
  <span class="hub-icon"></span>
  <h3>Video Production</h3>
- <p>Require the creation of a new video by the culture department.</p>
+ <p>Require the creation of a new video by the Mun-Hwa Bu.</p>
  </div>
  <div class="hub-card" style="border-top:3px solid var(--muted); grid-column: span 2;" onclick="startRequest()">
  <span class="hub-icon"></span>
@@ -1034,21 +1034,21 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="req-type-check"></div>
  <div>
  <div class="req-type-label"> Work Cooperation</div>
- <div class="req-type-desc">Require the assistance of culture department workers — media, sound or filming & photography</div>
+ <div class="req-type-desc">Require the assistance of Mun-Hwa Bu workers — media, sound or filming & photography</div>
  </div>
  </div>
  <div class="req-type-card" id="rtype-equipment" onclick="toggleReqType('equipment', this)">
  <div class="req-type-check"></div>
  <div>
  <div class="req-type-label"> Equipment Rental</div>
- <div class="req-type-desc">Require culture department equipment — photo, video or props — for internal or external use</div>
+ <div class="req-type-desc">Require Mun-Hwa Bu equipment — photo, video or props — for internal or external use</div>
  </div>
  </div>
  <div class="req-type-card" id="rtype-props" onclick="toggleReqType('props', this)">
  <div class="req-type-check"></div>
  <div>
  <div class="req-type-label"> Props Request</div>
- <div class="req-type-desc">Require culture department props for the purpose of a scene creation</div>
+ <div class="req-type-desc">Require Mun-Hwa Bu props for the purpose of a scene creation</div>
  </div>
  </div>
  <div class="req-type-card" id="rtype-video" onclick="toggleReqType('video', this)">
@@ -1069,7 +1069,7 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="req-type-check"></div>
  <div>
  <div class="req-type-label"> Material Request</div>
- <div class="req-type-desc">Require existing culture department content — photos, videos, audio recordings or documents</div>
+ <div class="req-type-desc">Require existing Mun-Hwa Bu content — photos, videos, audio recordings or documents</div>
  </div>
  </div>
  </div>

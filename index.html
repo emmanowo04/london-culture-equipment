@@ -1640,7 +1640,7 @@ textarea { resize: vertical; min-height: 90px; }
         <div class="stat-card warn"><div class="stat-num" id="sa-stat-pending">0</div><div class="stat-lbl">Pending</div></div>
         <div class="stat-card accent"><div class="stat-num" id="sa-stat-active">0</div><div class="stat-lbl">Checked Out</div></div>
         <div class="stat-card"><div class="stat-num" id="sa-stat-overdue">0</div><div class="stat-lbl">Overdue</div></div>
-        <div class="stat-card success"><div class="stat-num" id="sa-stat-available">0</div><div class="stat-lbl">Available</div></div>
+        <div class="stat-card success"><div class="stat-num" id="sa-stat-available">0</div><div class="stat-lbl">Support Reqs</div></div>
       </div>
 
       <!-- Tabs -->
@@ -1771,15 +1771,19 @@ function showSATab(tab, btn) {
 let saPendingRequests = [];
 let saActiveCheckouts = [];
 
+let saSupportRequests = [];
+
 async function loadSAData() {
   try {
-    const [pr, ar] = await Promise.all([
+    const [pr, ar, sr] = await Promise.all([
       fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getPending', password: CONFIG.ADMIN_PASSWORD }) }),
       fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getActive', password: CONFIG.ADMIN_PASSWORD }) }),
+      fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getSupport', password: CONFIG.ADMIN_PASSWORD }) }),
     ]);
-    const pd = await pr.json(); const ad = await ar.json();
+    const pd = await pr.json(); const ad = await ar.json(); const sd = await sr.json();
     saPendingRequests = pd.success ? pd.requests : [];
     saActiveCheckouts = ad.success ? ad.checkouts : [];
+    saSupportRequests = sd.success ? sd.requests : [];
   } catch(e) { console.warn('Admin data error:', e); }
 }
 
@@ -1787,7 +1791,21 @@ function renderSADashboard() {
   document.getElementById('sa-stat-pending').textContent = saPendingRequests.length;
   document.getElementById('sa-stat-active').textContent = saActiveCheckouts.length;
   document.getElementById('sa-stat-overdue').textContent = saActiveCheckouts.filter(c => c.overdue).length;
-  document.getElementById('sa-stat-available').textContent = '—';
+  document.getElementById('sa-stat-available').textContent = saSupportRequests.length;
+
+  // Support requests tab
+  const supportTbody = document.getElementById('sa-support-tbody');
+  if (supportTbody) {
+    supportTbody.innerHTML = saSupportRequests.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No support requests yet.</td></tr>'
+      : saSupportRequests.map(req => `<tr>
+          <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
+          <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.position || ''} — ${req.department || ''}</div></td>
+          <td style="font-size:0.78rem;">${req.requestTypes || '—'}</td>
+          <td style="font-size:0.78rem;">${req.meetingDate || '—'}${req.meetingTime ? ' at ' + req.meetingTime : ''}</td>
+          <td><span class="badge badge-pending">${req.status || 'New'}</span></td>
+        </tr>`).join('');
+  }
 
   document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'

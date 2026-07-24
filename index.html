@@ -1215,6 +1215,7 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="notice notice-gold"> Your request will be sent to the culture team immediately via Telegram. They will be in touch to confirm.</div>
  <div style="display:flex;justify-content:space-between;">
  <button class="btn btn-ghost" onclick="prevReqStep(3)">← Back</button>
+ <button class="btn btn-gold" id="req-submit-btn" onclick="submitCultureRequest()">Submit Request</button>
  </div>
  </div>
 
@@ -1310,17 +1311,6 @@ textarea { resize: vertical; min-height: 90px; }
       <button class="btn btn-sm" style="background:#2563a8;color:#fff;" onclick="updateSupportStatus('Approved')">Approve</button>
     </div>
   </div>
-</div>
-
-<div class="modal-overlay" id="main-modal">
- <div class="modal">
- <h3 id="modal-title"></h3>
- <p id="modal-body"></p>
- <div class="modal-actions">
- <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
- <button class="btn btn-green" id="modal-confirm" onclick="confirmModal()">Confirm</button>
- </div>
- </div>
 </div>
 
 <script>
@@ -1695,169 +1685,32 @@ function getMoodTags() {
  .map(el => el.textContent.trim()).join(', ');
 }
 
-//
-// STEP NAVIGATION — CULTURE TEAM EVENT LIST
-//
-function nextElStep(from) {
- if (from === 1 && !get('el-name')) { alert('Please enter an event name.'); return; }
- if (from === 2 && elSelected.size === 0) { alert('Please select at least one item.'); return; }
- if (from === 2) buildElReview();
- elStep = from + 1;
- updateElStepUI(elStep);
-}
-function prevElStep(from) { elStep = from - 1; updateElStepUI(elStep); }
-function updateElStepUI(step) {
- document.querySelectorAll('#culture-event-list .form-step').forEach(s => s.classList.remove('active'));
- document.getElementById('el-form-' + (step > 3 ? 'success' : step)).classList.add('active');
- document.querySelectorAll('#culture-event-list .step').forEach((s,i) => {
- s.classList.remove('active','done');
- if(i+1===step) s.classList.add('active');
- if(i+1<step) s.classList.add('done');
- });
- if(step === 2) renderElGrouped();
- window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-//
-// STEP NAVIGATION — SUPPORT REQUEST
-//
-function nextSupStep(from) {
- if (!validateSupStep(from)) return;
- if (from === 5) buildSupReview();
- supStep = from + 1;
- updateSupStepUI(supStep);
-}
-function prevSupStep(from) { supStep = from - 1; updateSupStepUI(supStep); }
-function updateSupStepUI(step) {
- document.querySelectorAll('#ext-support .form-step').forEach(s => s.classList.remove('active'));
- document.getElementById('sup-form-' + (step > 6 ? 'success' : step)).classList.add('active');
- document.querySelectorAll('#ext-support .step').forEach((s,i) => {
- s.classList.remove('active','done');
- if(i+1===step) s.classList.add('active');
- if(i+1<step) s.classList.add('done');
- });
- window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-function validateSupStep(step) {
- if (step === 1 && (!get('sup-name') || !get('sup-telegram') || !get('sup-email'))) { alert('Please fill in all required fields.'); return false; }
- if (step === 2 && (!get('sup-event-name') || !get('sup-event-date') || !get('sup-venue') || !get('sup-internal'))) { alert('Please fill in all required fields.'); return false; }
- return true;
-}
-
-//
-// STEP NAVIGATION — BORROW EQUIPMENT
-//
-function nextEqStep(from) {
- if (from === 1 && (!get('eq-name') || !get('eq-telegram') || !get('eq-email'))) { alert('Please fill in all required fields.'); return; }
- if (from === 2 && (!get('eq-collect') || !get('eq-return'))) { alert('Please enter collection and return dates.'); return; }
- if (from === 3) buildEqReview();
- eqStep = from + 1;
- updateEqStepUI(eqStep);
-}
-function prevEqStep(from) { eqStep = from - 1; updateEqStepUI(eqStep); }
-function updateEqStepUI(step) {
- document.querySelectorAll('#ext-equipment .form-step').forEach(s => s.classList.remove('active'));
- document.getElementById('eq-form-' + (step > 4 ? 'success' : step)).classList.add('active');
- document.querySelectorAll('#ext-equipment .step').forEach((s,i) => {
- s.classList.remove('active','done');
- if(i+1===step) s.classList.add('active');
- if(i+1<step) s.classList.add('done');
- });
- window.scrollTo({ top: 0, behavior: 'smooth' });
-}
-
-//
-// SUBMIT FUNCTIONS
-//
-async 
-
-async 
-
-async 
-
-async function submitSupportRequest() {
- btn.textContent = 'Sending...'; btn.disabled = true;
- const payload = {
- action: 'newSupportRequest',
- name: get('sup-name'), telegram: get('sup-telegram'), email: get('sup-email'),
- phone: get('sup-phone'), role: get('sup-role'),
- eventName: get('sup-event-name'), eventDate: get('sup-event-date'),
- startTime: get('sup-start-time'), endTime: get('sup-end-time'),
- venue: get('sup-venue'), attendance: get('sup-attendance'),
- internal: get('sup-internal'), description: get('sup-description'),
- docLink: get('sup-doc-link'),
- photos: get('sup-photos'), recording: get('sup-recording'),
- stream: get('sup-stream'), interaction: get('sup-interaction'),
- slides: get('sup-slides'), slidesDetail: get('sup-slides-detail'),
- videos: get('sup-videos'), videosDetail: get('sup-videos-detail'),
- worship: get('sup-worship'), singers: get('sup-singers'),
- instruments: get('sup-instruments'), ownInstruments: get('sup-own-instruments'),
- songs: get('sup-songs'), lyricsPerson: get('sup-lyrics-person'),
- mood: getMoodTags(), lighting: get('sup-lighting'),
- bgMusic: get('sup-bgmusic'), atmosphereNotes: get('sup-atmosphere-notes'),
- };
- await postToScript(payload);
- supStep = 7;
- document.querySelectorAll('#ext-support .form-step').forEach(s => s.classList.remove('active'));
- btn.textContent = 'Submit Request '; btn.disabled = false;
-}
-
-async function submitEquipmentRequest() {
- btn.textContent = 'Sending...'; btn.disabled = true;
- await postToScript({
- action: 'newRequest', name: get('eq-name'), telegram: get('eq-telegram'),
- email: get('eq-email'), phone: get('eq-phone'), internal: get('eq-internal') || 'external',
- eventName: get('eq-event-name'), eventDate: get('eq-event-date'),
- venue: get('eq-venue'), collectDate: get('eq-collect'), returnDate: get('eq-return'),
- notes: get('eq-notes'), items: equipmentList,
- });
- document.querySelectorAll('#ext-equipment .form-step').forEach(s => s.classList.remove('active'));
- btn.textContent = 'Submit Request '; btn.disabled = false;
-}
-
-async function postToScript(payload) {
- try {
- await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify(payload) });
- } catch(e) { console.warn('Post error:', e); }
-}
-
-//
-// EQUIPMENT ITEM QUANTITIES
-//
-
 function changeEquipQty(item, delta) {
- equipItems[item] = Math.max(0, (equipItems[item] || 0) + delta);
- const el = document.getElementById('eqitem-' + item);
- if (el) el.textContent = equipItems[item];
- // Update hidden field
- const summary = Object.entries(equipItems)
- .filter(([k,v]) => v > 0)
- .map(([k,v]) => `${v}x ${equipItemLabels[k]}`).join(', ');
- const hidden = document.getElementById('equip-items');
- if (hidden) hidden.value = summary;
+  equipItems[item] = Math.max(0, (equipItems[item] || 0) + delta);
+  const el = document.getElementById('eqitem-' + item);
+  if (el) el.textContent = equipItems[item];
+  const summary = Object.entries(equipItems)
+    .filter(([k,v]) => v > 0)
+    .map(([k,v]) => `${v}x ${equipItemLabels[k]}`).join(', ');
+  const hidden = document.getElementById('equip-items');
+  if (hidden) hidden.value = summary;
 }
 
-//
-// PROPS TAB SWITCHING
-//
 function switchPropsTab(tab) {
- document.getElementById('props-sub-type').value = tab;
- const isRental = tab === 'rental';
-
- document.getElementById('props-rental-fields').style.display = isRental ? 'block' : 'none';
- document.getElementById('props-new-fields').style.display = isRental ? 'none' : 'block';
-
- const rentalTab = document.getElementById('props-tab-rental');
- const newTab = document.getElementById('props-tab-new');
-
- rentalTab.style.border = isRental ? '2px solid var(--blue)' : '2px solid var(--border)';
- rentalTab.style.background = isRental ? 'var(--blue-light)' : '#fff';
- rentalTab.querySelector('div').style.color = isRental ? 'var(--blue)' : 'var(--muted)';
-
- newTab.style.border = isRental ? '2px solid var(--border)' : '2px solid var(--blue)';
- newTab.style.background = isRental ? '#fff' : 'var(--blue-light)';
- newTab.querySelector('div').style.color = isRental ? 'var(--muted)' : 'var(--blue)';
+  document.getElementById('props-sub-type').value = tab;
+  const isRental = tab === 'rental';
+  document.getElementById('props-rental-fields').style.display = isRental ? 'block' : 'none';
+  document.getElementById('props-new-fields').style.display = isRental ? 'none' : 'block';
+  const rentalTab = document.getElementById('props-tab-rental');
+  const newTab = document.getElementById('props-tab-new');
+  rentalTab.style.border = isRental ? '2px solid var(--blue)' : '2px solid var(--border)';
+  rentalTab.style.background = isRental ? 'var(--blue-light)' : '#fff';
+  rentalTab.querySelector('div').style.color = isRental ? 'var(--blue)' : 'var(--muted)';
+  newTab.style.border = isRental ? '2px solid var(--border)' : '2px solid var(--blue)';
+  newTab.style.background = isRental ? '#fff' : 'var(--blue-light)';
+  newTab.querySelector('div').style.color = isRental ? 'var(--muted)' : 'var(--blue)';
 }
+
 
 function toggleEquipExternal(val) {
   const el = document.getElementById('equip-event-fields');
@@ -2117,8 +1970,22 @@ function buildReqReview() {
  document.getElementById('req-review-content').innerHTML = html;
 }
 
+async function postToScript(payload) {
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('postToScript error:', err);
+    return { error: err.toString() };
+  }
+}
+
 async function submitCultureRequest() {
- btn.textContent = 'Sending...'; btn.disabled = true;
+ const btn = document.getElementById('req-submit-btn');
+ if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
 
  const payload = {
  action: 'newSupportRequest',
@@ -2174,7 +2041,7 @@ async function submitCultureRequest() {
 
  document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
  document.getElementById('req-form-4').classList.add('active');
- btn.textContent = 'Submit Request '; btn.disabled = false;
+ if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
 }
 
 function resetCultureRequest() {

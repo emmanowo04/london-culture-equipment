@@ -2007,10 +2007,12 @@ async function submitCultureRequest() {
  propsNewItems: get('props-new-items'), propsNewEventName: get('props-new-event-name'),
  // Work Cooperation
  coopEventName: get('coop-event-name'), coopEventDate: get('coop-event-date'),
+ coopStartTime: get('coop-start-time'), coopEndTime: get('coop-end-time'),
  coopVenue: get('coop-venue'), coopScope: get('coop-scope'),
  coopPurpose: get('coop-purpose'), coopAssistance: get('coop-assistance'),
  coopDocLink: get('coop-doc-link'),
  // Equipment
+ equipPurpose: get('equip-purpose'),
  equipPickup: get('equip-pickup'), equipReturn: get('equip-return'),
  equipType: getSelectedToggleMulti('equip-type-toggle'),
  equipScope: get('equip-scope'), equipItems: get('equip-items'),
@@ -2022,7 +2024,9 @@ async function submitCultureRequest() {
  // Video
  videoTitle: get('video-title'), videoUsage: get('video-usage'),
  videoCompletionDate: get('video-completion-date'),
+ videoScreeningDate: get('video-screening-date'),
  videoAudience: get('video-audience'), videoLength: get('video-length'),
+ videoEffects: get('video-effects'),
  videoType: getSelectedToggleMulti('video-type-toggle'),
  videoPurpose: get('video-purpose'), videoContent: get('video-content'),
  videoReferences: get('video-references'),
@@ -2030,6 +2034,7 @@ async function submitCultureRequest() {
  // Design
  designPurpose: get('design-purpose'),
  designDraftDeadline: get('design-draft-deadline'),
+ designProductionDate: get('design-production-date'),
  designItemType: getSelectedToggleMulti('design-item-toggle'),
  designSize: get('design-size'), designQty: get('design-qty'),
  designFormat: getSelectedToggleMulti('design-format-toggle'),

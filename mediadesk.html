@@ -622,8 +622,19 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
 
       <div class="form-group">
-        <label>Time In <span class="req">*</span></label>
-        <input type="time" id="md-time-in">
+        <label>Purpose / Event <span class="req">*</span></label>
+        <input type="text" id="md-purpose" placeholder="e.g. Sunday Service, Youth Meeting">
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label>Date <span class="req">*</span></label>
+          <input type="date" id="md-date">
+        </div>
+        <div class="form-group">
+          <label>Time In <span class="req">*</span></label>
+          <input type="time" id="md-time-in">
+        </div>
       </div>
 
       <div class="form-group">
@@ -728,6 +739,7 @@ function mdInit() {
   const mm = String(now.getMinutes()).padStart(2, '0');
   document.getElementById('md-time-in').value = hh + ':' + mm;
   document.getElementById('md-time-out').value = hh + ':' + mm;
+  document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
   mdShowTab('in');
 }
 
@@ -777,6 +789,10 @@ async function mdSubmitSignIn() {
   });
   if (equipment.length === 0) { alert('Please select at least one piece of equipment.'); return; }
 
+  const purpose = document.getElementById('md-purpose').value.trim();
+  if (!purpose) { alert('Please enter a purpose or event name.'); return; }
+  const date = document.getElementById('md-date').value;
+  if (!date) { alert('Please select a date.'); return; }
   const timeIn = document.getElementById('md-time-in').value;
   if (!timeIn) { alert('Please enter a time in.'); return; }
 
@@ -798,9 +814,10 @@ async function mdSubmitSignIn() {
       action: 'mdSignIn',
       name: name,
       equipment: equipment,
+      purpose: purpose,
       timeIn: timeIn,
       assistants: assistants,
-      date: new Date().toISOString().split('T')[0]
+      date: date
     });
 
     document.getElementById('md-signin-panel').style.display = 'none';
@@ -878,6 +895,8 @@ function mdReset() {
   document.getElementById('md-assistants-list').innerHTML = '';
   mdAssistantCount = 0;
   document.getElementById('md-signout-name').value = '';
+  document.getElementById('md-purpose').value = '';
+  document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
   document.querySelector('input[name="md-has-issue"][value="no"]').checked = true;
   document.getElementById('md-issue-block').style.display = 'none';
   document.getElementById('md-issue-details').value = '';

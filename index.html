@@ -721,7 +721,7 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
 
  <div class="form-step" id="req-form-2">
- <div id="req-progress-indicator" style="font-family:'Syne Mono',monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;letter-spacing:0.05em;"></div>
+ <div id="req-progress-indicator" style="font-family:Syne Mono,monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;letter-spacing:0.05em;"></div>
 
  <div id="section-cooperation" class="req-section" style="display:none;">
  <div class="card">
@@ -1229,9 +1229,193 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
 </div>
 
+<!-- TEAM CHECKOUT (/#checkout) -->
+<div id="standalone-checkout" style="display:none;">
+  <header style="background:#fff;color:#0f0f0f;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;border-bottom:2px solid #d0d0d0;box-shadow:0 1px 8px rgba(37,99,168,0.07);">
+    <div class="header-logo">Mun-Hwa Bu <span style="font-size:0.65rem;color:var(--muted);font-family:Syne Mono,monospace;letter-spacing:0.1em;margin-left:0.5rem;">CHECKOUT</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="window.location.hash='';location.reload();">Exit</button>
+  </header>
+  <div style="max-width:640px;margin:0 auto;padding:2rem 1rem;">
+    <div class="page-header"><h1>Team Equipment Checkout</h1><p>Log equipment you are taking out. Your request will be sent for approval.</p></div>
+    <div class="co-steps">
+      <div class="co-step active" id="co-step-1">1. Your Details</div>
+      <div class="co-step" id="co-step-2">2. Items</div>
+      <div class="co-step" id="co-step-3">3. Usage & Review</div>
+    </div>
+    <div class="co-form-step active" id="co-form-1">
+      <div class="card">
+        <div class="card-label">Your Details</div>
+        <div class="form-group"><label>Your Name <span class="req">*</span></label><input type="text" id="co-name" placeholder="e.g. Michael JPSN"></div>
+        <div class="form-group"><label>Telegram Username <span class="opt">(optional)</span></label><input type="text" id="co-telegram" placeholder="@yourusername"><div class="hint">You will receive your approval and return link via Telegram</div></div>
+        <div class="form-row">
+          <div class="form-group"><label>Date & Time Out <span class="req">*</span></label><input type="date" id="co-date-out"><input type="time" id="co-time-out" style="margin-top:0.4rem;"></div>
+          <div class="form-group"><label>Date & Time of Return <span class="req">*</span></label><input type="date" id="co-date-return"><input type="time" id="co-time-return" style="margin-top:0.4rem;"></div>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:flex-end;"><button class="btn btn-dark" onclick="coNextStep(1)">Continue →</button></div>
+    </div>
+    <div class="co-form-step" id="co-form-2">
+      <div class="card">
+        <div class="card-label">Items being taken out</div>
+        <div id="co-items-list"></div>
+        <div class="form-group" style="margin-top:0.75rem;">
+          <select class="add-item-select" id="co-add-item-select" onchange="coAddItem(this.value);this.value=''">
+            <option value="">+ Add an item...</option>
+            <optgroup label="Photo / Video">
+              <option value="Sony A7 IV">Sony A7 IV (3 available)</option>
+              <option value="Insta360 X3">Insta360 X3</option>
+              <option value="DJI Mini 5 Pro Drone">DJI Mini 5 Pro Drone</option>
+              <option value="DJI RS3 Gimbal">DJI RS3 Gimbal</option>
+              <option value="DJI RS2 Pro Gimbal">DJI RS2 Pro Gimbal</option>
+            </optgroup>
+            <optgroup label="Audio">
+              <option value="Wired Microphone">Wired Microphone (5 available)</option>
+              <option value="XLR Cables">XLR Cables (4 available)</option>
+              <option value="Soundboks Speaker">Soundboks Speaker (4 available)</option>
+            </optgroup>
+            <optgroup label="Computing">
+              <option value="MSI Culture Laptop">MSI Culture Laptop</option>
+            </optgroup>
+          </select>
+        </div>
+      </div>
+      <div style="display:flex;justify-content:space-between;"><button class="btn btn-ghost" onclick="coGoStep(1)">← Back</button><button class="btn btn-dark" onclick="coNextStep(2)">Continue →</button></div>
+    </div>
+    <div class="co-form-step" id="co-form-3">
+      <div class="card">
+        <div class="card-label">Usage Details</div>
+        <div class="form-group"><label>Purpose of Use <span class="req">*</span></label><textarea id="co-purpose" placeholder="What will the equipment be used for?" style="min-height:70px;"></textarea></div>
+        <div class="form-group"><label>Location of Use <span class="req">*</span></label><input type="text" id="co-location" placeholder="e.g. Weavers Fields, Bethnal Green"></div>
+        <div class="form-group"><label>Storage When Not in Use <span class="req">*</span></label><input type="text" id="co-storage" placeholder="e.g. Stored at home, U15 office..."></div>
+        <div class="form-group">
+          <label>Return Location <span class="req">*</span></label>
+          <div class="loc-toggle" id="co-return-loc-toggle">
+            <div class="loc-opt sel" onclick="coSetLoc(this)">EH Culture Office</div>
+            <div class="loc-opt" onclick="coSetLoc(this)">U15 Culture Office</div>
+          </div>
+          <input type="hidden" id="co-return-loc" value="EH Culture Office">
+        </div>
+        <div class="form-group">
+          <label>Photos <span class="opt">(optional)</span></label>
+          <label class="photo-drop" id="co-photo-drop">
+            <input type="file" id="co-photos" multiple accept="image/*" onchange="coPreviewPhotos(this)">
+            <div style="font-size:1.5rem;color:var(--muted);">+</div>
+            <p>Tap to take photos of the items</p>
+          </label>
+          <div class="photo-preview" id="co-photo-preview"></div>
+        </div>
+      </div>
+      <div class="card"><div class="card-label">Review</div><div id="co-review-content"></div></div>
+      <div class="notice notice-gold" style="margin-bottom:1rem;">Your request will be sent to the Mun-Hwa Bu team for approval. Keep an eye on your Telegram!</div>
+      <div style="display:flex;justify-content:space-between;"><button class="btn btn-ghost" onclick="coGoStep(2)">← Back</button><button class="btn btn-dark" id="co-submit-btn" onclick="submitCheckout()">Submit Request</button></div>
+    </div>
+    <div class="co-form-step" id="co-form-4">
+      <div class="success-state">
+        <div class="success-icon"></div>
+        <h2>Request Submitted!</h2>
+        <p>The Mun-Hwa Bu team has been notified and will approve your request. Keep an eye on your Telegram!</p>
+        <button class="btn btn-dark" onclick="coReset()">Submit Another Request</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MEDIA DESK (/#mediadesk) -->
+<div id="standalone-mediadesk" style="display:none;min-height:100vh;background:#fff;">
+  <header style="background:#fff;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;border-bottom:1.5px solid #222;">
+    <div class="header-logo">Mun-Hwa Bu <span style="font-size:0.65rem;color:var(--muted);font-family:'Syne Mono',monospace;letter-spacing:0.1em;margin-left:0.5rem;">MEDIA DESK</span></div>
+    <button class="btn btn-ghost btn-sm" onclick="window.location.hash='';location.reload();">Exit</button>
+  </header>
+
+  <div style="max-width:560px;margin:0 auto;padding:2rem 1rem;">
+
+    <!-- TABS -->
+    <div style="display:flex;border:1.5px solid #222;border-radius:8px;overflow:hidden;margin-bottom:1.5rem;">
+      <div id="md-tab-in" onclick="mdShowTab('in')" style="flex:1;padding:0.65rem;text-align:center;font-size:0.8rem;font-weight:600;cursor:pointer;background:#222;color:#fff;border-right:1px solid #222;">Sign In</div>
+      <div id="md-tab-out" onclick="mdShowTab('out')" style="flex:1;padding:0.65rem;text-align:center;font-size:0.8rem;font-weight:600;cursor:pointer;background:#fff;color:var(--muted);">Sign Out</div>
+    </div>
+
+    <!-- SIGN IN -->
+    <div id="md-signin-panel">
+      <div class="card">
+        <div class="card-label">Sign In</div>
+
+        <div class="form-group">
+          <label>Name <span class="req">*</span></label>
+          <input type="text" id="md-name" placeholder="Your name">
+        </div>
+
+        <div class="form-group">
+          <label>What are you operating? <span class="req">*</span></label>
+          <div style="display:flex;flex-direction:column;gap:0.4rem;margin-top:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-mixer" value="Mixer" style="width:16px;height:16px;accent-color:#2563a8;"> Mixer</label>
+            <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-cam" value="Camera controller" style="width:16px;height:16px;accent-color:#2563a8;"> Camera controller</label>
+            <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-atem" value="ATEM" style="width:16px;height:16px;accent-color:#2563a8;"> ATEM</label>
+            <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-pc" value="PC" style="width:16px;height:16px;accent-color:#2563a8;"> PC</label>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label>Time In <span class="req">*</span></label>
+          <input type="time" id="md-time-in">
+        </div>
+
+        <div class="form-group">
+          <label>Is anyone assisting you?</label>
+          <div style="display:flex;gap:1rem;margin-top:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-assistant" value="yes" onchange="mdToggleAssistants(true)" style="accent-color:#2563a8;"> Yes</label>
+            <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-assistant" value="no" onchange="mdToggleAssistants(false)" checked style="accent-color:#2563a8;"> No</label>
+          </div>
+        </div>
+
+        <div id="md-assistants-block" style="display:none;">
+          <div id="md-assistants-list"></div>
+          <button type="button" class="btn btn-ghost btn-sm" onclick="mdAddAssistant()" style="margin-top:0.25rem;">+ Add another</button>
+        </div>
+      </div>
+
+      <button class="btn btn-dark btn-full" onclick="mdSubmitSignIn()">Sign In</button>
+    </div>
+
+    <!-- SIGN OUT -->
+    <div id="md-signout-panel" style="display:none;">
+      <div class="card">
+        <div class="card-label">Sign Out</div>
+        <div class="form-group">
+          <label>Select your entry <span class="req">*</span></label>
+          <select id="md-entry-select" style="width:100%;">
+            <option value="">Loading...</option>
+          </select>
+          <div class="hint">Shows today's open entries. Select the one you are signing out of.</div>
+        </div>
+        <div class="form-group">
+          <label>Your name (signing out) <span class="req">*</span></label>
+          <input type="text" id="md-signout-name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label>Time Out <span class="req">*</span></label>
+          <input type="time" id="md-time-out">
+        </div>
+      </div>
+      <button class="btn btn-dark btn-full" onclick="mdSubmitSignOut()">Sign Out</button>
+    </div>
+
+    <!-- SUCCESS -->
+    <div id="md-success" style="display:none;">
+      <div class="success-state">
+        <div class="success-icon"></div>
+        <h2 id="md-success-title">Signed In</h2>
+        <p id="md-success-msg"></p>
+        <button class="btn btn-dark" onclick="mdReset()">Done</button>
+      </div>
+    </div>
+
+  </div>
+</div>
+
 <div id="standalone-admin" style="display:none;">
   <header>
-    <div class="header-logo" style="color:var(--black);">Mun-Hwa Bu <span style="font-size:0.7rem;color:var(--muted);font-family:'Syne Mono',monospace;letter-spacing:0.1em;margin-left:0.5rem;">ADMIN</span></div>
+    <div class="header-logo" style="color:var(--black);">Mun-Hwa Bu <span style="font-size:0.7rem;color:var(--muted);font-family:Syne Mono,monospace;letter-spacing:0.1em;margin-left:0.5rem;">ADMIN</span></div>
     <button class="btn btn-ghost btn-sm" onclick="window.location.hash=''; location.reload();">Exit</button>
   </header>
 
@@ -1448,7 +1632,7 @@ function renderSADashboard() {
           const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
           const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
           return `<tr style="cursor:pointer;" onclick="viewSupportRequest('${req.requestId}')">
-            <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
+            <td style="font-family:Syne Mono,monospace;font-size:0.72rem;">${req.requestId}</td>
             <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.position || ''} — ${req.department || ''}</div></td>
             <td style="font-size:0.78rem;">${types || '—'}</td>
             <td style="font-size:0.78rem;">${meetingDisplay}</td>
@@ -1461,7 +1645,7 @@ function renderSADashboard() {
   document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
     : saPendingRequests.map(req => `<tr>
-        <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${req.requestId}</td>
+        <td style="font-family:Syne Mono,monospace;font-size:0.72rem;">${req.requestId}</td>
         <td><strong>${req.name}</strong></td>
         <td class="items-list">${(Array.isArray(req.items) ? req.items : []).map(i => `<span class="chip">${i}</span>`).join('')}</td>
         <td style="font-size:0.78rem;">${formatDate(req.collectDate)}</td>
@@ -1476,7 +1660,7 @@ function renderSADashboard() {
   document.getElementById('sa-active-tbody').innerHTML = saActiveCheckouts.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
     : saActiveCheckouts.map(chk => `<tr>
-        <td style="font-family:'Syne Mono',monospace;font-size:0.72rem;">${chk.checkoutId}</td>
+        <td style="font-family:Syne Mono,monospace;font-size:0.72rem;">${chk.checkoutId}</td>
         <td><strong>${chk.name}</strong></td>
         <td class="items-list">${(Array.isArray(chk.items) ? chk.items : []).map(i => `<span class="chip">${i}</span>`).join('')}</td>
         <td style="font-size:0.78rem;${chk.overdue ? 'color:var(--red);font-weight:600;' : ''}">${formatDate(chk.dueDate)}</td>
@@ -1529,7 +1713,25 @@ document.addEventListener('DOMContentLoaded', async () => {
     document.getElementById('landing').style.display = 'none';
     document.getElementById('app-external').style.display = 'none';
     document.getElementById('standalone-admin').style.display = 'block';
-    return; // Don't run the rest of the init
+    return;
+  }
+
+  // ── Handle #mediadesk route ──
+  if (window.location.hash === '#mediadesk') {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app-external').style.display = 'none';
+    document.getElementById('standalone-mediadesk').style.display = 'block';
+    mdInit();
+    return;
+  }
+
+  // ── Handle #checkout route ──
+  if (window.location.hash === '#checkout') {
+    document.getElementById('landing').style.display = 'none';
+    document.getElementById('app-external').style.display = 'none';
+    document.getElementById('standalone-checkout').style.display = 'block';
+    coInit();
+    return;
   }
  const today = new Date().toISOString().split('T')[0];
 
@@ -1736,7 +1938,6 @@ function switchPropsTab(tab) {
   newTab.style.background = isRental ? '#fff' : 'var(--blue-light)';
   newTab.querySelector('div').style.color = isRental ? 'var(--muted)' : 'var(--blue)';
 }
-
 
 function toggleEquipExternal(val) {
   const el = document.getElementById('equip-event-fields');
@@ -2208,21 +2409,519 @@ function resetEqForm() {
  document.querySelectorAll('#ext-equipment .toggle-opt').forEach(el => el.classList.remove('selected'));
 }
 
-//
-// ADMIN
-//
-async 
-
-function adminLogout() {
-
-}
-
 function showAdminTab(tab, btn) {
  ['requests','checkouts','support'].forEach(t => {
  document.getElementById('admin-tab-' + t).style.display = t === tab ? 'block' : 'none';
  document.getElementById('atab-' + t).className = t === tab ? 'btn btn-dark btn-sm' : 'btn btn-ghost btn-sm';
  });
 }
+
+// ══════════════════════════════════════════════════════════════════════════════
+// TEAM CHECKOUT (/#checkout)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const CO_CATALOGUE = {
+  'Sony A7 IV': { cat: 'Photo / Video', max: 3 },
+  'Insta360 X3': { cat: 'Photo / Video', max: 1 },
+  'DJI Mini 5 Pro Drone': { cat: 'Photo / Video', max: 1 },
+  'DJI RS3 Gimbal': { cat: 'Photo / Video', max: 1 },
+  'DJI RS2 Pro Gimbal': { cat: 'Photo / Video', max: 1 },
+  'Wired Microphone': { cat: 'Audio', max: 5 },
+  'XLR Cables': { cat: 'Audio', max: 4 },
+  'Soundboks Speaker': { cat: 'Audio', max: 4 },
+  'MSI Culture Laptop': { cat: 'Computing', max: 1 }
+};
+
+const CO_LENSES = [
+  'Tamron 28-75mm No.1',
+  'Tamron 28-75mm No.2',
+  'Tamron 70-180mm',
+  'Laowa Zero D 12mm',
+  'Tamron 17-28mm'
+];
+
+const CO_TRIPODS = [
+  'Neewer Video Tripod 01',
+  'Neewer Video Tripod 02',
+  'Sachtler Camera Tripod',
+  'K&F Tripod'
+];
+
+const CO_BAGS = [
+  { id: 'bag-1', label: 'Camera Bag 01' },
+  { id: 'bag-2', label: 'Camera Bag 02' },
+  { id: 'bag-3', label: 'Camera Bag 03' }
+];
+
+// item state: { name, qty, batteries, lenses:[], tripods:[], bag:'', cameraNotes:'' }
+let coStep = 1;
+let coSelectedItems = [];
+let coPhotos = [];
+
+function coInit() {
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('co-date-out').value = fmt(today);
+  const ret = new Date(today); ret.setDate(ret.getDate() + 2);
+  document.getElementById('co-date-return').value = fmt(ret);
+  document.getElementById('co-time-out').value = '09:00';
+  document.getElementById('co-time-return').value = '18:00';
+  coRenderItems();
+}
+
+function coGoStep(n) {
+  coStep = n;
+  document.querySelectorAll('.co-form-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('co-form-' + n).classList.add('active');
+  document.querySelectorAll('.co-step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < n) s.classList.add('done');
+    else if (i + 1 === n) s.classList.add('active');
+  });
+  if (n === 3) coBuildReview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function coNextStep(from) {
+  if (from === 1) {
+    if (!document.getElementById('co-name').value.trim()) { alert('Please enter your name.'); return; }
+    if (!document.getElementById('co-date-out').value) { alert('Please enter a date out.'); return; }
+    if (!document.getElementById('co-date-return').value) { alert('Please enter a return date.'); return; }
+  }
+  if (from === 2) {
+    if (coSelectedItems.length === 0) { alert('Please add at least one item.'); return; }
+  }
+  coGoStep(from + 1);
+}
+
+function coAddItem(val) {
+  if (!val) return;
+  if (coSelectedItems.find(i => i.name === val)) { alert(val + ' is already added.'); return; }
+  const def = CO_CATALOGUE[val] || {};
+  coSelectedItems.push({
+    name: val, qty: 1, max: def.max || 99,
+    batteries: val === 'Sony A7 IV' ? 2 : 0,
+    lenses: [], tripods: [], bag: '', cameraNotes: ''
+  });
+  coRenderItems();
+}
+
+function availBadge(used, max) {
+  const rem = max - used;
+  const col = rem <= 0 ? '#c0392b' : '#1a6b4a';
+  return '<span style="font-size:0.75rem;font-weight:600;color:' + col + ';">' + rem + '/' + max + ' Available</span>';
+}
+
+function coRenderItems() {
+  const list = document.getElementById('co-items-list');
+  if (!list) return;
+  if (coSelectedItems.length === 0) {
+    list.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:1.5rem 0;">No items added yet. Use the list below to add items.</p>';
+    return;
+  }
+
+  list.innerHTML = coSelectedItems.map((item, idx) => {
+    const def = CO_CATALOGUE[item.name] || {};
+    const isCamera = item.name === 'Sony A7 IV';
+    const isDrone = item.name === 'DJI Mini 5 Pro Drone';
+
+    // ── Header ──
+    let html = '<div style="background:#fff;border:1.5px solid #222;border-radius:8px;margin-bottom:1rem;overflow:hidden;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1rem;border-bottom:1px solid #eee;">';
+    html += '<div><div style="font-size:0.9rem;font-weight:600;">' + item.name + '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--muted);margin-top:1px;">' + (def.cat || '') + '</div></div>';
+    html += '<button onclick="coRemoveItem(' + idx + ')" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);padding:4px 8px;">×</button>';
+    html += '</div>';
+
+    // ── Quantity row ──
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+    html += '<span style="font-size:0.85rem;font-weight:500;">How many do you need?</span>';
+    html += '<div style="display:flex;align-items:center;gap:1rem;">';
+    html += availBadge(item.qty, def.max || 1);
+    html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
+    html += '<button onclick="coChangeQty(' + idx + ',-1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
+    html += '<span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;font-family:Syne Mono,monospace;" id="coqty-' + idx + '">' + item.qty + '</span>';
+    html += '<button onclick="coChangeQty(' + idx + ',1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+    html += '</div></div></div>';
+
+    if (isCamera) {
+      // ── Batteries ──
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+      html += '<span style="font-size:0.85rem;font-weight:500;">Do you require batteries?</span>';
+      html += '<div style="display:flex;align-items:center;gap:1rem;">';
+      html += availBadge(item.batteries, 5);
+      html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
+      html += '<button onclick="coBattery(' + idx + ',-1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
+      html += '<span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;font-family:Syne Mono,monospace;" id="cobat-' + idx + '">' + item.batteries + '</span>';
+      html += '<button onclick="coBattery(' + idx + ',1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+      html += '</div></div></div>';
+
+      // ── Lenses ──
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+      html += '<div style="font-size:0.85rem;font-weight:500;margin-bottom:0.6rem;">Which lens(es) will you use?</div>';
+      CO_LENSES.forEach(lens => {
+        const checked = item.lenses.includes(lens);
+        html += '<label style="display:flex;align-items:center;gap:0.6rem;padding:0.35rem 0;cursor:pointer;font-size:0.84rem;">';
+        html += '<input type="checkbox" ' + (checked ? 'checked' : '') + ' data-idx="' + idx + '" data-li="' + li + '" onchange="coToggleLensIdx(this)" style="width:16px;height:16px;accent-color:#2563a8;">';
+        html += lens + '</label>';
+      });
+      html += '</div>';
+
+      // ── Tripods ──
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+      html += '<div style="font-size:0.85rem;font-weight:500;margin-bottom:0.6rem;">Which tripod(s) will you use?</div>';
+      CO_TRIPODS.forEach(tripod => {
+        const checked = item.tripods.includes(tripod);
+        html += '<label style="display:flex;align-items:center;gap:0.6rem;padding:0.35rem 0;cursor:pointer;font-size:0.84rem;">';
+        html += '<input type="checkbox" ' + (checked ? 'checked' : '') + ' data-idx="' + idx + '" data-ti="' + ti + '" onchange="coToggleTripodIdx(this)" style="width:16px;height:16px;accent-color:#2563a8;">';
+        html += tripod + '</label>';
+      });
+      html += '</div>';
+
+      // ── Camera Bag ──
+      html += '<div style="padding:0.75rem 1rem;">';
+      html += '<div style="font-size:0.85rem;font-weight:500;margin-bottom:0.6rem;">Select a camera bag</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">';
+      CO_BAGS.forEach((bag, bi) => {
+        const sel = item.bag === bag.id;
+        html += '<div data-bidx="' + idx + '" data-bi="' + bi + '" onclick="coSelectBagIdx(this)" style="border:2px solid ' + (sel ? '#2563a8' : '#bbb') + ';border-radius:8px;cursor:pointer;overflow:hidden;background:' + (sel ? '#e8f0fb' : '#fff') + ';">';
+        html += '<div style="background:#e0e0e0;height:80px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#888;">See Image Here</div>';
+        html += '<div style="padding:0.4rem 0.5rem;font-size:0.75rem;font-weight:' + (sel ? '600' : '400') + ';color:' + (sel ? '#2563a8' : '#333') + ';">' + bag.label + '</div>';
+        html += '</div>';
+      });
+      html += '<div data-bidx="' + idx + '" data-bi="-1" onclick="coSelectBagIdx(this)" style="border:2px solid ' + (!item.bag ? '#2563a8' : '#bbb') + ';border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:80px;background:' + (!item.bag ? '#e8f0fb' : '#fff') + ';font-size:0.78rem;color:' + (!item.bag ? '#2563a8' : '#888') + ';font-weight:' + (!item.bag ? '600' : '400') + ';">No bag needed</div>';
+      html += '</div></div>';
+    }
+
+    if (isDrone) {
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;background:#f8f9fa;">';
+      html += '<div style="font-size:0.78rem;color:#2563a8;font-weight:500;">Included in drone bag:</div>';
+      html += '<div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">• DJI Drone Controller &nbsp;•&nbsp; 3x DJI Drone Batteries</div>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+function coChangeQty(idx, delta) {
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  item.qty = Math.max(1, Math.min(item.max || 99, item.qty + delta));
+  const el = document.getElementById('coqty-' + idx);
+  if (el) el.textContent = item.qty;
+}
+
+function coBattery(idx, delta) {
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  item.batteries = Math.max(0, Math.min(5, item.batteries + delta));
+  const el = document.getElementById('cobat-' + idx);
+  if (el) el.textContent = item.batteries;
+}
+
+function coToggleLensIdx(el) {
+  const idx = parseInt(el.dataset.idx);
+  const li = parseInt(el.dataset.li);
+  const lens = CO_LENSES[li];
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  if (el.checked && !item.lenses.includes(lens)) item.lenses.push(lens);
+  else item.lenses = item.lenses.filter(l => l !== lens);
+}
+
+function coToggleTripodIdx(el) {
+  const idx = parseInt(el.dataset.idx);
+  const ti = parseInt(el.dataset.ti);
+  const tripod = CO_TRIPODS[ti];
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  if (el.checked && !item.tripods.includes(tripod)) item.tripods.push(tripod);
+  else item.tripods = item.tripods.filter(t => t !== tripod);
+}
+
+function coSelectBagIdx(el) {
+  const idx = parseInt(el.dataset.bidx);
+  const bi = parseInt(el.dataset.bi);
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  item.bag = bi >= 0 ? CO_BAGS[bi].id : '';
+  coRenderItems();
+}
+
+function coRemoveItem(idx) {
+  coSelectedItems.splice(idx, 1);
+  coRenderItems();
+}
+
+function coSetLoc(el) {
+  document.querySelectorAll('#co-return-loc-toggle .loc-opt').forEach(o => o.classList.remove('sel'));
+  el.classList.add('sel');
+  document.getElementById('co-return-loc').value = el.textContent;
+}
+
+function coPreviewPhotos(input) {
+  const preview = document.getElementById('co-photo-preview');
+  preview.innerHTML = '';
+  coPhotos = Array.from(input.files);
+  coPhotos.forEach(f => {
+    const img = document.createElement('img');
+    img.className = 'photo-thumb';
+    img.src = URL.createObjectURL(f);
+    preview.appendChild(img);
+  });
+}
+
+function coBuildReview() {
+  const name = document.getElementById('co-name').value;
+  const dateOut = document.getElementById('co-date-out').value;
+  const timeOut = document.getElementById('co-time-out').value;
+  const dateRet = document.getElementById('co-date-return').value;
+  const timeRet = document.getElementById('co-time-return').value;
+  const purpose = document.getElementById('co-purpose').value;
+  const location = document.getElementById('co-location').value;
+  const storage = document.getElementById('co-storage').value;
+  const returnLoc = document.getElementById('co-return-loc').value;
+
+  let html = '<div class="review-row"><span class="review-key">Member</span><span class="review-val">' + name + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Date Out</span><span class="review-val">' + formatDate(dateOut) + ' at ' + timeOut + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Return</span><span class="review-val">' + formatDate(dateRet) + ' at ' + timeRet + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Return to</span><span class="review-val">' + returnLoc + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + purpose + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Location</span><span class="review-val">' + location + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Storage</span><span class="review-val">' + storage + '</span></div>';
+  html += '<div class="section-label" style="margin-top:0.75rem;">Items</div>';
+
+  coSelectedItems.forEach(item => {
+    const bagLabel = item.bag ? (CO_BAGS.find(b => b.id === item.bag) || {}).label : 'None';
+    html += '<div class="review-row"><span class="review-key">' + item.name + '</span><span class="review-val">x' + item.qty + '</span></div>';
+    if (item.batteries) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Batteries</span><span class="review-val">x' + item.batteries + '</span></div>';
+    if (item.lenses && item.lenses.length) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Lenses</span><span class="review-val">' + item.lenses.join(', ') + '</span></div>';
+    if (item.tripods && item.tripods.length) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Tripods</span><span class="review-val">' + item.tripods.join(', ') + '</span></div>';
+    if (item.bag) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Bag</span><span class="review-val">' + bagLabel + '</span></div>';
+  });
+
+  document.getElementById('co-review-content').innerHTML = html;
+}
+
+async function submitCheckout() {
+  const btn = document.getElementById('co-submit-btn');
+  if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+
+  const payload = {
+    action: 'logTeamCheckout',
+    memberName: document.getElementById('co-name').value,
+    telegram: document.getElementById('co-telegram').value,
+    dateOut: document.getElementById('co-date-out').value,
+    timeOut: document.getElementById('co-time-out').value,
+    dateReturn: document.getElementById('co-date-return').value,
+    timeReturn: document.getElementById('co-time-return').value,
+    purpose: document.getElementById('co-purpose').value,
+    location: document.getElementById('co-location').value,
+    storage: document.getElementById('co-storage').value,
+    returnLocation: document.getElementById('co-return-loc').value,
+    items: coSelectedItems.map(item => ({
+      name: item.name,
+      qty: item.qty,
+      batteries: item.batteries || 0,
+      lenses: item.lenses || [],
+      tripods: item.tripods || [],
+      bag: item.bag ? (CO_BAGS.find(b => b.id === item.bag) || {}).label || '' : ''
+    }))
+  };
+
+  try {
+    await postToScript(payload);
+    coGoStep(4);
+  } catch(e) {
+    alert('Something went wrong. Please try again.');
+    if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
+  }
+}
+
+function coReset() {
+  coStep = 1;
+  coSelectedItems = [];
+  coPhotos = [];
+  document.querySelectorAll('#standalone-checkout input[type="text"], #standalone-checkout textarea').forEach(el => el.value = '');
+  document.getElementById('co-photo-preview').innerHTML = '';
+  coInit();
+  coGoStep(1);
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// MEDIA DESK (/#mediadesk)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const MD_EQUIPMENT = ['Mixer', 'Camera controller', 'ATEM', 'PC'];
+let mdAssistantCount = 0;
+
+function mdInit() {
+  // Default time in to now
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('md-time-in').value = hh + ':' + mm;
+  document.getElementById('md-time-out').value = hh + ':' + mm;
+  mdShowTab('in');
+}
+
+function mdShowTab(tab) {
+  const isIn = tab === 'in';
+  document.getElementById('md-signin-panel').style.display = isIn ? 'block' : 'none';
+  document.getElementById('md-signout-panel').style.display = isIn ? 'none' : 'block';
+  document.getElementById('md-success').style.display = 'none';
+  document.getElementById('md-tab-in').style.background = isIn ? '#222' : '#fff';
+  document.getElementById('md-tab-in').style.color = isIn ? '#fff' : 'var(--muted)';
+  document.getElementById('md-tab-out').style.background = isIn ? '#fff' : '#222';
+  document.getElementById('md-tab-out').style.color = isIn ? 'var(--muted)' : '#fff';
+  if (!isIn) mdLoadOpenEntries();
+}
+
+function mdToggleAssistants(show) {
+  const block = document.getElementById('md-assistants-block');
+  block.style.display = show ? 'block' : 'none';
+  if (show && mdAssistantCount === 0) mdAddAssistant();
+}
+
+function mdAddAssistant() {
+  mdAssistantCount++;
+  const id = 'md-asst-' + mdAssistantCount;
+  const list = document.getElementById('md-assistants-list');
+  const row = document.createElement('div');
+  row.id = id;
+  row.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;';
+  row.innerHTML = '<input type="text" placeholder="Assistant name" style="flex:1;padding:0.55rem 0.75rem;font-size:0.85rem;border:1.5px solid #bbb;border-radius:7px;">' +
+    '<select style="flex:1;padding:0.55rem 0.75rem;font-size:0.85rem;border:1.5px solid #bbb;border-radius:7px;">' +
+    MD_EQUIPMENT.map(function(e) { return '<option>' + e + '</option>'; }).join('') +
+    '</select>' +
+    '<button onclick="this.parentElement.remove()" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);padding:0 4px;">×</button>';
+  list.appendChild(row);
+}
+
+async function mdSubmitSignIn() {
+  const name = document.getElementById('md-name').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+
+  const equipment = MD_EQUIPMENT.filter(function(e) {
+    return document.querySelector('input[value="' + e + '"]').checked;
+  });
+  if (equipment.length === 0) { alert('Please select at least one piece of equipment.'); return; }
+
+  const timeIn = document.getElementById('md-time-in').value;
+  if (!timeIn) { alert('Please enter a time in.'); return; }
+
+  const hasAssistant = document.querySelector('input[name="md-has-assistant"]:checked').value === 'yes';
+  const assistants = [];
+  if (hasAssistant) {
+    document.querySelectorAll('#md-assistants-list > div').forEach(function(row) {
+      const aName = row.querySelector('input[type="text"]').value.trim();
+      const aEquip = row.querySelector('select').value;
+      if (aName) assistants.push({ name: aName, equipment: aEquip });
+    });
+  }
+
+  const btn = document.querySelector('#md-signin-panel .btn-dark');
+  if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
+
+  try {
+    const res = await postToScript({
+      action: 'mdSignIn',
+      name: name,
+      equipment: equipment,
+      timeIn: timeIn,
+      assistants: assistants,
+      date: new Date().toISOString().split('T')[0]
+    });
+
+    document.getElementById('md-signin-panel').style.display = 'none';
+    document.getElementById('md-success').style.display = 'block';
+    document.getElementById('md-success-title').textContent = 'Signed In';
+    document.getElementById('md-success-msg').textContent = name + ' signed in at ' + timeIn + ' on ' + equipment.join(', ') + '.';
+  } catch(e) {
+    alert('Something went wrong. Please try again.');
+  } finally {
+    if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+  }
+}
+
+async function mdLoadOpenEntries() {
+  const sel = document.getElementById('md-entry-select');
+  sel.innerHTML = '<option value="">Loading...</option>';
+  try {
+    const res = await postToScript({ action: 'mdGetOpenEntries', date: new Date().toISOString().split('T')[0] });
+    if (res.entries && res.entries.length > 0) {
+      sel.innerHTML = '<option value="">— Select your entry —</option>' +
+        res.entries.map(function(e) {
+          const assistantStr = e.assistants && e.assistants.length ? ' (+ ' + e.assistants.map(function(a){ return a.name; }).join(', ') + ')' : '';
+          return '<option value="' + e.id + '">' + e.name + ' — ' + e.equipment.join(', ') + assistantStr + '</option>';
+        }).join('');
+    } else {
+      sel.innerHTML = '<option value="">No open entries for today</option>';
+    }
+  } catch(e) {
+    sel.innerHTML = '<option value="">Error loading entries</option>';
+  }
+}
+
+async function mdSubmitSignOut() {
+  const entryId = document.getElementById('md-entry-select').value;
+  if (!entryId) { alert('Please select an entry.'); return; }
+
+  const signOutName = document.getElementById('md-signout-name').value.trim();
+  if (!signOutName) { alert('Please enter your name.'); return; }
+
+  const timeOut = document.getElementById('md-time-out').value;
+  if (!timeOut) { alert('Please enter a time out.'); return; }
+
+  const btn = document.querySelector('#md-signout-panel .btn-dark');
+  if (btn) { btn.textContent = 'Signing out...'; btn.disabled = true; }
+
+  try {
+    await postToScript({
+      action: 'mdSignOut',
+      entryId: entryId,
+      signOutName: signOutName,
+      timeOut: timeOut
+    });
+
+    document.getElementById('md-signout-panel').style.display = 'none';
+    document.getElementById('md-success').style.display = 'block';
+    document.getElementById('md-success-title').textContent = 'Signed Out';
+    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + '.';
+  } catch(e) {
+    alert('Something went wrong. Please try again.');
+  } finally {
+    if (btn) { btn.textContent = 'Sign Out'; btn.disabled = false; }
+  }
+}
+
+function mdReset() {
+  // Reset sign in form
+  document.getElementById('md-name').value = '';
+  MD_EQUIPMENT.forEach(function(e) {
+    const el = document.querySelector('input[value="' + e + '"]');
+    if (el) el.checked = false;
+  });
+  document.querySelector('input[name="md-has-assistant"][value="no"]').checked = true;
+  document.getElementById('md-assistants-block').style.display = 'none';
+  document.getElementById('md-assistants-list').innerHTML = '';
+  mdAssistantCount = 0;
+  document.getElementById('md-signout-name').value = '';
+  document.getElementById('md-success').style.display = 'none';
+
+  // Re-init time
+  const now = new Date();
+  const hh = String(now.getHours()).padStart(2, '0');
+  const mm = String(now.getMinutes()).padStart(2, '0');
+  document.getElementById('md-time-in').value = hh + ':' + mm;
+  document.getElementById('md-time-out').value = hh + ':' + mm;
+
+  mdShowTab('in');
+}
+
 
 </script>
 </body>

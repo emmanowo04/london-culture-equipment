@@ -1564,14 +1564,12 @@ function viewSupportRequest(requestId) {
     design: 'Design Work', material: 'Material Request'
   };
   const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
-  const details = `
-    <div style="margin-bottom:0.5rem;"><strong>ID:</strong> ${req.requestId}</div>
-    <div style="margin-bottom:0.5rem;"><strong>From:</strong> ${req.name} ${req.position || ''} — ${req.department || ''}</div>
-    <div style="margin-bottom:0.5rem;"><strong>Request Types:</strong> ${types}</div>
-    <div style="margin-bottom:0.5rem;"><strong>Meeting:</strong> ${req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) : '—'} ${req.meetingTime || ''}</div>
-    <div style="margin-bottom:0.5rem;"><strong>Purpose:</strong> ${req.purpose || '—'}</div>
-    <div style="margin-bottom:0.5rem;"><strong>Status:</strong> ${req.status || 'New'}</div>
-  `;
+  var details = '<div style="margin-bottom:0.5rem;"><strong>ID:</strong> ' + req.requestId + '</div>' +
+    '<div style="margin-bottom:0.5rem;"><strong>From:</strong> ' + req.name + ' ' + (req.position || '') + ' — ' + (req.department || '') + '</div>' +
+    '<div style="margin-bottom:0.5rem;"><strong>Request Types:</strong> ' + types + '</div>' +
+    '<div style="margin-bottom:0.5rem;"><strong>Meeting:</strong> ' + (req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) : '—') + ' ' + (req.meetingTime || '') + '</div>' +
+    '<div style="margin-bottom:0.5rem;"><strong>Purpose:</strong> ' + (req.purpose || '—') + '</div>' +
+    '<div style="margin-bottom:0.5rem;"><strong>Status:</strong> ' + (req.status || 'New') + '</div>';
   document.getElementById('sa-modal-body').innerHTML = details;
   document.getElementById('sa-modal-id').value = requestId;
   document.getElementById('sa-modal').style.display = 'flex';
@@ -1631,42 +1629,46 @@ function renderSADashboard() {
           const typeLabels = { cooperation:'Work Cooperation', equipment:'Equipment Rental', props:'Props Request', video:'Video Production', design:'Design Work', material:'Material Request' };
           const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
           const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
-          return `<tr style="cursor:pointer;" onclick="viewSupportRequest('${req.requestId}')">
-            <td style="font-family:Syne Mono,monospace;font-size:0.72rem;">${req.requestId}</td>
-            <td><strong>${req.name}</strong><div style="font-size:0.73rem;color:var(--muted);">${req.position || ''} — ${req.department || ''}</div></td>
-            <td style="font-size:0.78rem;">${types || '—'}</td>
-            <td style="font-size:0.78rem;">${meetingDisplay}</td>
-            <td><span class="badge badge-pending">${req.status || 'New'}</span></td>
-          </tr>`;
+          return '<tr style="cursor:pointer;" onclick="viewSupportRequest(\'' + req.requestId + '\')">' +
+            '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
+            '<td><strong>' + req.name + '</strong><div style="font-size:0.73rem;color:var(--muted);">' + (req.position || '') + ' — ' + (req.department || '') + '</div></td>' +
+            '<td style="font-size:0.78rem;">' + (types || '—') + '</td>' +
+            '<td style="font-size:0.78rem;">' + meetingDisplay + '</td>' +
+            '<td><span class="badge badge-pending">' + (req.status || 'New') + '</span></td>' +
+          '</tr>';
         }).join('');
   }
 
   // Pending equipment requests
   document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
-    : saPendingRequests.map(req => `<tr>
-        <td style="font-family:Syne Mono,monospace;font-size:0.72rem;">${req.requestId}</td>
-        <td><strong>${req.name}</strong></td>
-        <td class="items-list">${(Array.isArray(req.items) ? req.items : []).map(i => `<span class="chip">${i}</span>`).join('')}</td>
-        <td style="font-size:0.78rem;">${formatDate(req.collectDate)}</td>
-        <td style="font-size:0.78rem;">${formatDate(req.returnDate)}</td>
-        <td><div style="display:flex;gap:0.4rem;">
-          <button class="btn btn-green btn-sm" onclick="saApprove('${req.requestId}')">Approve</button>
-          <button class="btn btn-red btn-sm" onclick="saReject('${req.requestId}')">Reject</button>
-        </div></td>
-      </tr>`).join('');
+    : saPendingRequests.map(function(req) {
+      return '<tr>' +
+        '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
+        '<td><strong>' + req.name + '</strong></td>' +
+        '<td class="items-list">' + (Array.isArray(req.items) ? req.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
+        '<td style="font-size:0.78rem;">' + formatDate(req.collectDate) + '</td>' +
+        '<td style="font-size:0.78rem;">' + formatDate(req.returnDate) + '</td>' +
+        '<td><div style="display:flex;gap:0.4rem;">' +
+          '<button class="btn btn-green btn-sm" onclick="saApprove(\'' + req.requestId + '\')">Approve</button>' +
+          '<button class="btn btn-red btn-sm" onclick="saReject(\'' + req.requestId + '\')">Reject</button>' +
+        '</div></td>' +
+      '</tr>';
+    }).join('');
 
   // Active checkouts
   document.getElementById('sa-active-tbody').innerHTML = saActiveCheckouts.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
-    : saActiveCheckouts.map(chk => `<tr>
-        <td style="font-family:Syne Mono,monospace;font-size:0.72rem;">${chk.checkoutId}</td>
-        <td><strong>${chk.name}</strong></td>
-        <td class="items-list">${(Array.isArray(chk.items) ? chk.items : []).map(i => `<span class="chip">${i}</span>`).join('')}</td>
-        <td style="font-size:0.78rem;${chk.overdue ? 'color:var(--red);font-weight:600;' : ''}">${formatDate(chk.dueDate)}</td>
-        <td>${chk.overdue ? '<span class="badge badge-overdue">Overdue</span>' : '<span class="badge badge-out">Out</span>'}</td>
-        <td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned('${chk.checkoutId}')">Mark Returned</button></td>
-      </tr>`).join('');
+    : saActiveCheckouts.map(function(chk) {
+      return '<tr>' +
+        '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + chk.checkoutId + '</td>' +
+        '<td><strong>' + chk.name + '</strong></td>' +
+        '<td class="items-list">' + (Array.isArray(chk.items) ? chk.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
+        '<td style="font-size:0.78rem;' + (chk.overdue ? 'color:var(--red);font-weight:600;' : '') + '">' + formatDate(chk.dueDate) + '</td>' +
+        '<td>' + (chk.overdue ? '<span class="badge badge-overdue">Overdue</span>' : '<span class="badge badge-out">Out</span>') + '</td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned(\'' + chk.checkoutId + '\')">Mark Returned</button></td>' +
+      '</tr>';
+    }).join('');
 }
 
 async function saApprove(reqId) {
@@ -1869,7 +1871,7 @@ function updateSelectedCount(prefix) {
  const el = document.getElementById(prefix + '-selected-count');
  if (!el) return;
  const count = prefix === 'co' ? coSelected.size : elSelected.size;
- el.textContent = `${count} item${count !== 1 ? 's' : ''} selected`;
+ el.textContent = count + ' item' + (count !== 1 ? 's' : '') + ' selected';
 }
 
 function toggleOpt(el, hiddenId) {
@@ -1919,7 +1921,7 @@ function changeEquipQty(item, delta) {
   if (el) el.textContent = equipItems[item];
   const summary = Object.entries(equipItems)
     .filter(([k,v]) => v > 0)
-    .map(([k,v]) => `${v}x ${equipItemLabels[k]}`).join(', ');
+    .map(function(e){ return e[1] + 'x ' + equipItemLabels[e[0]]; }).join(', ');
   const hidden = document.getElementById('equip-items');
   if (hidden) hidden.value = summary;
 }
@@ -2171,85 +2173,93 @@ function getSelectedToggleMulti(containerId) {
 }
 
 function buildReqReview() {
- let html = '';
+  var html = '';
 
- // Personal details
- html += `<div class="section-label">Your Details</div>
- <div class="review-row"><span class="review-key">Name</span><span class="review-val">${get('req-fullname')}</span></div>
- <div class="review-row"><span class="review-key">Department</span><span class="review-val">${get('req-dept')}</span></div>
- <div class="review-row"><span class="review-key">Position</span><span class="review-val">${get('req-position')}</span></div>
- ${get('req-contact-person') ? `<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">${get('req-contact-person')}</span></div>` : ''}
- ${get('req-meeting-date') ? `<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">${formatDate(get('req-meeting-date'))}${get('req-meeting-time') ? ' at ' + get('req-meeting-time') : ''}</span></div>` : ''}
-    <div class="review-row"><span class="review-key">Purpose</span><span class="review-val">${get('req-purpose')}</span></div>
-    ${get('req-telegram') ? `<div class="review-row"><span class="review-key">Telegram</span><span class="review-val">${get('req-telegram')}</span></div>` : ''}`;
+  // Personal details
+  html += '<div class="section-label">Your Details</div>';
+  html += '<div class="review-row"><span class="review-key">Name</span><span class="review-val">' + get('req-fullname') + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Department</span><span class="review-val">' + get('req-dept') + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Position</span><span class="review-val">' + get('req-position') + '</span></div>';
+  if (get('req-contact-person')) html += '<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">' + get('req-contact-person') + '</span></div>';
+  if (get('req-meeting-date')) html += '<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">' + formatDate(get('req-meeting-date')) + (get('req-meeting-time') ? ' at ' + get('req-meeting-time') : '') + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + get('req-purpose') + '</span></div>';
+  if (get('req-telegram')) html += '<div class="review-row"><span class="review-key">Telegram</span><span class="review-val">' + get('req-telegram') + '</span></div>';
 
- html += `<div class="section-label">Request Types</div>
- <div class="review-row"><span class="review-key">Requesting</span><span class="review-val">${[...selectedReqTypes].map(t => ({cooperation:'Work Cooperation',equipment:'Equipment Rental',props:'Props Request',video:'Video Production',design:'Design Work Request',material:'Material Request'}[t])).join(', ')}</span></div>`;
+  // Request types
+  var typeLabels = {cooperation:'Work Cooperation',equipment:'Equipment Rental',props:'Props Request',video:'Video Production',design:'Design Work Request',material:'Material Request'};
+  html += '<div class="section-label">Request Types</div>';
+  html += '<div class="review-row"><span class="review-key">Requesting</span><span class="review-val">' + [...selectedReqTypes].map(function(t){ return typeLabels[t] || t; }).join(', ') + '</span></div>';
 
- if (selectedReqTypes.has('props')) {
- const propsSubType = get('props-sub-type');
- if (propsSubType === 'rental') {
- html += `<div class="section-label"> Props Rental</div>
- <div class="review-row"><span class="review-key">Purpose</span><span class="review-val">${get('props-rental-purpose')}</span></div>
- <div class="review-row"><span class="review-key">Scope</span><span class="review-val">${get('props-rental-scope') || '—'}</span></div>
- ${get('props-rental-event-name') ? `<div class="review-row"><span class="review-key">Event</span><span class="review-val">${get('props-rental-event-name')}</span></div>` : ''}
- ${get('props-rental-location') ? `<div class="review-row"><span class="review-key">Location</span><span class="review-val">${get('props-rental-location')}</span></div>` : ''}
- <div class="review-row"><span class="review-key">Items</span><span class="review-val">${get('props-rental-items')}</span></div>
- <div class="review-row"><span class="review-key">Pickup</span><span class="review-val">${formatDate(get('props-rental-pickup'))}</span></div>
- <div class="review-row"><span class="review-key">Return</span><span class="review-val">${formatDate(get('props-rental-return'))}</span></div>
- <div class="review-row"><span class="review-key">Team Assistance</span><span class="review-val">${get('props-rental-assistance')}</span></div>`;
- } else {
- html += `<div class="section-label"> New Props Request</div>
- <div class="review-row"><span class="review-key">Scope</span><span class="review-val">${get('props-new-scope') || '—'}</span></div>
- ${get('props-new-event-name') ? `<div class="review-row"><span class="review-key">Event</span><span class="review-val">${get('props-new-event-name')}</span></div>` : ''}
- <div class="review-row"><span class="review-key">Scene</span><span class="review-val">${get('props-new-scene')}</span></div>
- <div class="review-row"><span class="review-key">Props Needed</span><span class="review-val">${get('props-new-items')}</span></div>`;
- }
- }
+  // Props
+  if (selectedReqTypes.has('props')) {
+    var propsSubType = get('props-sub-type');
+    if (propsSubType === 'rental') {
+      html += '<div class="section-label">Props Rental</div>';
+      html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + get('props-rental-purpose') + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('props-rental-scope') || '—') + '</span></div>';
+      if (get('props-rental-event-name')) html += '<div class="review-row"><span class="review-key">Event</span><span class="review-val">' + get('props-rental-event-name') + '</span></div>';
+      if (get('props-rental-location')) html += '<div class="review-row"><span class="review-key">Location</span><span class="review-val">' + get('props-rental-location') + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Items</span><span class="review-val">' + get('props-rental-items') + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Pickup</span><span class="review-val">' + formatDate(get('props-rental-pickup')) + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Return</span><span class="review-val">' + formatDate(get('props-rental-return')) + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Team Assistance</span><span class="review-val">' + get('props-rental-assistance') + '</span></div>';
+    } else {
+      html += '<div class="section-label">New Props Request</div>';
+      html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('props-new-scope') || '—') + '</span></div>';
+      if (get('props-new-event-name')) html += '<div class="review-row"><span class="review-key">Event</span><span class="review-val">' + get('props-new-event-name') + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Scene</span><span class="review-val">' + get('props-new-scene') + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Props Needed</span><span class="review-val">' + get('props-new-items') + '</span></div>';
+    }
+  }
 
- if (selectedReqTypes.has('cooperation')) {
- html += `<div class="section-label"> Work Cooperation</div>
- <div class="review-row"><span class="review-key">Event</span><span class="review-val">${get('coop-event-name')}</span></div>
- <div class="review-row"><span class="review-key">Date</span><span class="review-val">${formatDate(get('coop-event-date'))}${get('coop-start-time') ? ' at ' + get('coop-start-time') : ''}</span></div>
- <div class="review-row"><span class="review-key">Venue</span><span class="review-val">${get('coop-venue')}</span></div>
- <div class="review-row"><span class="review-key">Scope</span><span class="review-val">${get('coop-scope') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Assistance</span><span class="review-val">${get('coop-assistance') || '—'}</span></div>`;
- }
+  // Work Cooperation
+  if (selectedReqTypes.has('cooperation')) {
+    html += '<div class="section-label">Work Cooperation</div>';
+    html += '<div class="review-row"><span class="review-key">Event</span><span class="review-val">' + get('coop-event-name') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Date</span><span class="review-val">' + formatDate(get('coop-event-date')) + (get('coop-start-time') ? ' at ' + get('coop-start-time') : '') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Venue</span><span class="review-val">' + get('coop-venue') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('coop-scope') || '—') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Assistance</span><span class="review-val">' + (get('coop-assistance') || '—') + '</span></div>';
+  }
 
- if (selectedReqTypes.has('equipment')) {
- html += `<div class="section-label"> Equipment Rental</div>
- <div class="review-row"><span class="review-key">Pickup</span><span class="review-val">${formatDate(get('equip-pickup'))}</span></div>
- <div class="review-row"><span class="review-key">Return</span><span class="review-val">${formatDate(get('equip-return'))}</span></div>
- <div class="review-row"><span class="review-key">Scope</span><span class="review-val">${get('equip-scope') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Items</span><span class="review-val">${get('equip-items')}</span></div>`;
- }
+  // Equipment Rental
+  if (selectedReqTypes.has('equipment')) {
+    html += '<div class="section-label">Equipment Rental</div>';
+    html += '<div class="review-row"><span class="review-key">Pickup</span><span class="review-val">' + formatDate(get('equip-pickup')) + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Return</span><span class="review-val">' + formatDate(get('equip-return')) + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('equip-scope') || '—') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Items</span><span class="review-val">' + get('equip-items') + '</span></div>';
+  }
 
- if (selectedReqTypes.has('material')) {
- html += `<div class="section-label"> Material Request</div>
- <div class="review-row"><span class="review-key">Type</span><span class="review-val">${get('material-type') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Scope</span><span class="review-val">${get('material-scope') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Posted Online?</span><span class="review-val">${get('material-online')}</span></div>
- <div class="review-row"><span class="review-key">Details</span><span class="review-val">${get('material-details')}</span></div>`;
- }
+  // Material Request
+  if (selectedReqTypes.has('material')) {
+    html += '<div class="section-label">Material Request</div>';
+    html += '<div class="review-row"><span class="review-key">Type</span><span class="review-val">' + (get('material-type') || '—') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('material-scope') || '—') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Posted Online?</span><span class="review-val">' + get('material-online') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Details</span><span class="review-val">' + get('material-details') + '</span></div>';
+  }
 
- if (selectedReqTypes.has('video')) {
- html += `<div class="section-label"> Video Production</div>
- <div class="review-row"><span class="review-key">Title</span><span class="review-val">${get('video-title')}</span></div>
- <div class="review-row"><span class="review-key">Usage</span><span class="review-val">${get('video-usage')}</span></div>
- <div class="review-row"><span class="review-key">Completion</span><span class="review-val">${formatDate(get('video-completion-date'))}</span></div>
- <div class="review-row"><span class="review-key">Length</span><span class="review-val">${get('video-length')}</span></div>
- <div class="review-row"><span class="review-key">Type</span><span class="review-val">${getSelectedToggleMulti('video-type-toggle') || '—'}</span></div>`;
- }
+  // Video Production
+  if (selectedReqTypes.has('video')) {
+    html += '<div class="section-label">Video Production</div>';
+    html += '<div class="review-row"><span class="review-key">Title</span><span class="review-val">' + get('video-title') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Usage</span><span class="review-val">' + get('video-usage') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Completion</span><span class="review-val">' + formatDate(get('video-completion-date')) + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Length</span><span class="review-val">' + get('video-length') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Type</span><span class="review-val">' + (getSelectedToggleMulti('video-type-toggle') || '—') + '</span></div>';
+  }
 
- if (selectedReqTypes.has('design')) {
- html += `<div class="section-label"> Design Work</div>
- <div class="review-row"><span class="review-key">Purpose</span><span class="review-val">${get('design-purpose')}</span></div>
- <div class="review-row"><span class="review-key">Draft Deadline</span><span class="review-val">${formatDate(get('design-draft-deadline'))}</span></div>
- <div class="review-row"><span class="review-key">Item Type</span><span class="review-val">${getSelectedToggleMulti('design-item-toggle') || '—'}</span></div>
- <div class="review-row"><span class="review-key">Format</span><span class="review-val">${getSelectedToggleMulti('design-format-toggle') || '—'}</span></div>`;
- }
+  // Design Work
+  if (selectedReqTypes.has('design')) {
+    html += '<div class="section-label">Design Work</div>';
+    html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + get('design-purpose') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Draft Deadline</span><span class="review-val">' + formatDate(get('design-draft-deadline')) + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Item Type</span><span class="review-val">' + (getSelectedToggleMulti('design-item-toggle') || '—') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Format</span><span class="review-val">' + (getSelectedToggleMulti('design-format-toggle') || '—') + '</span></div>';
+  }
 
- document.getElementById('req-review-content').innerHTML = html;
+  document.getElementById('req-review-content').innerHTML = html;
 }
 
 async function postToScript(payload) {

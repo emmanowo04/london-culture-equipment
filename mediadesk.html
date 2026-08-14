@@ -622,8 +622,25 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
 
       <div class="form-group">
+        <label>Telegram Username <span class="opt">(optional)</span></label>
+        <input type="text" id="md-telegram" placeholder="@yourusername">
+        <div class="hint">If provided, a sign out reminder will be sent to you</div>
+      </div>
+
+      <div class="form-group">
         <label>Purpose / Event <span class="req">*</span></label>
         <input type="text" id="md-purpose" placeholder="e.g. Sunday Service, Youth Meeting">
+      </div>
+
+      <div class="form-group">
+        <label>Location <span class="req">*</span></label>
+        <select id="md-location">
+          <option value="">— Select a location —</option>
+          <option value="U15 1st Floor">U15 1st Floor</option>
+          <option value="U15 2nd Floor">U15 2nd Floor</option>
+          <option value="EH Ground Floor">EH Ground Floor</option>
+          <option value="EH Basement">EH Basement</option>
+        </select>
       </div>
 
       <div class="form-row">
@@ -791,6 +808,8 @@ async function mdSubmitSignIn() {
 
   const purpose = document.getElementById('md-purpose').value.trim();
   if (!purpose) { alert('Please enter a purpose or event name.'); return; }
+  const location = document.getElementById('md-location').value;
+  if (!location) { alert('Please select a location.'); return; }
   const date = document.getElementById('md-date').value;
   if (!date) { alert('Please select a date.'); return; }
   const timeIn = document.getElementById('md-time-in').value;
@@ -813,8 +832,10 @@ async function mdSubmitSignIn() {
     const res = await postToScript({
       action: 'mdSignIn',
       name: name,
+      telegram: document.getElementById('md-telegram').value.trim(),
       equipment: equipment,
       purpose: purpose,
+      location: location,
       timeIn: timeIn,
       assistants: assistants,
       date: date
@@ -896,6 +917,8 @@ function mdReset() {
   mdAssistantCount = 0;
   document.getElementById('md-signout-name').value = '';
   document.getElementById('md-purpose').value = '';
+  document.getElementById('md-telegram').value = '';
+  document.getElementById('md-location').value = '';
   document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
   document.querySelector('input[name="md-has-issue"][value="no"]').checked = true;
   document.getElementById('md-issue-block').style.display = 'none';

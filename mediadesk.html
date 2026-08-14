@@ -685,8 +685,27 @@ textarea { resize: vertical; min-height: 90px; }
         <input type="text" id="md-signout-name" placeholder="Your name">
       </div>
       <div class="form-group">
+        <label>Location <span class="req">*</span></label>
+        <select id="md-signout-location">
+          <option value="">— Select your location —</option>
+          <option value="U15 1st Floor">U15 1st Floor</option>
+          <option value="U15 2nd Floor">U15 2nd Floor</option>
+          <option value="EH Ground Floor">EH Ground Floor</option>
+          <option value="EH Basement">EH Basement</option>
+        </select>
+      </div>
+      <div class="form-group">
         <label>Time Out <span class="req">*</span></label>
         <input type="time" id="md-time-out">
+      </div>
+      <div class="form-group">
+        <label>Photo of media desk <span class="req">*</span></label>
+        <label class="photo-drop">
+          <input type="file" id="md-signout-photo" accept="image/*" capture="environment" onchange="mdPreviewSignoutPhoto(this)">
+          <div style="font-size:1.5rem;color:var(--muted);">📷</div>
+          <p>Take a photo of the media desk before leaving</p>
+        </label>
+        <div id="md-signout-photo-preview" style="margin-top:0.75rem;"></div>
       </div>
       <div class="form-group">
         <label>Any issues or damaged items to report? <span class="opt">(optional)</span></label>
@@ -770,6 +789,17 @@ function mdShowTab(tab) {
   document.getElementById('md-tab-out').style.background = isIn ? '#fff' : '#222';
   document.getElementById('md-tab-out').style.color = isIn ? 'var(--muted)' : '#fff';
   if (!isIn) mdLoadOpenEntries();
+}
+
+function mdPreviewSignoutPhoto(input) {
+  const preview = document.getElementById('md-signout-photo-preview');
+  preview.innerHTML = '';
+  if (input.files && input.files[0]) {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(input.files[0]);
+    img.style.cssText = 'width:100%;border-radius:8px;border:1.5px solid #ddd;margin-top:0.5rem;';
+    preview.appendChild(img);
+  }
 }
 
 function mdToggleIssue(show) {
@@ -897,7 +927,7 @@ async function mdSubmitSignOut() {
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed Out';
     const issueNote = issueDetails ? ' Issue reported.' : '';
-    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + '.' + issueNote;
+    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
   } catch(e) {
     alert('Something went wrong. Please try again.');
   } finally {
@@ -922,6 +952,9 @@ function mdReset() {
   document.getElementById('md-location').value = '';
   document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
   document.querySelector('input[name="md-has-issue"][value="no"]').checked = true;
+  document.getElementById('md-signout-location').value = '';
+  document.getElementById('md-signout-photo').value = '';
+  document.getElementById('md-signout-photo-preview').innerHTML = '';
   document.getElementById('md-issue-block').style.display = 'none';
   document.getElementById('md-issue-details').value = '';
   document.getElementById('md-success').style.display = 'none';

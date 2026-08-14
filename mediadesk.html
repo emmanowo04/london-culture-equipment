@@ -860,8 +860,9 @@ async function mdLoadOpenEntries() {
     if (res.entries && res.entries.length > 0) {
       sel.innerHTML = '<option value="">— Select your entry —</option>' +
         res.entries.map(function(e) {
+          const locationStr = e.location ? ' @ ' + e.location : '';
           const assistantStr = e.assistants && e.assistants.length ? ' (+ ' + e.assistants.map(function(a){ return a.name; }).join(', ') + ')' : '';
-          return '<option value="' + e.id + '">' + e.name + ' — ' + e.equipment.join(', ') + assistantStr + '</option>';
+          return '<option value="' + e.id + '">' + e.name + ' — ' + e.equipment.join(', ') + locationStr + assistantStr + '</option>';
         }).join('');
     } else {
       sel.innerHTML = '<option value="">No open entries for today</option>';
@@ -940,6 +941,9 @@ function mdReset() {
 
 document.addEventListener('DOMContentLoaded', function() {
   mdInit();
+  if (window.location.search.includes('signout') || window.location.hash.includes('signout')) {
+    mdShowTab('out');
+  }
 });
 </script>
 </body>

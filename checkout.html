@@ -668,15 +668,6 @@ textarea { resize: vertical; min-height: 90px; }
           <option value="U15 Culture Office">U15 Culture Office</option>
         </select>
       </div>
-      <div class="form-group">
-        <label>Photos <span class="opt">(optional)</span></label>
-        <label class="photo-drop">
-          <input type="file" id="co-photos" multiple accept="image/*" onchange="coPreviewPhotos(this)">
-          <div style="font-size:1.5rem;color:var(--muted);">+</div>
-          <p>Tap to take photos of the items</p>
-        </label>
-        <div class="photo-preview" id="co-photo-preview"></div>
-      </div>
     </div>
     <div class="card">
       <div class="card-label">Photo of items</div>
@@ -1127,11 +1118,22 @@ function coPreviewPhotos(input) {
   const preview = document.getElementById('co-photo-preview');
   preview.innerHTML = '';
   coPhotos = Array.from(input.files);
-  coPhotos.forEach(f => {
+  coPhotos.forEach(function(f, i) {
+    const wrap = document.createElement('div');
+    wrap.style.cssText = 'position:relative;display:inline-block;';
     const img = document.createElement('img');
     img.className = 'photo-thumb';
     img.src = URL.createObjectURL(f);
-    preview.appendChild(img);
+    const del = document.createElement('button');
+    del.textContent = '×';
+    del.style.cssText = 'position:absolute;top:-4px;right:-4px;width:18px;height:18px;border-radius:50%;background:#c0392b;color:#fff;border:none;cursor:pointer;font-size:0.75rem;line-height:1;display:flex;align-items:center;justify-content:center;';
+    del.onclick = function() {
+      coPhotos.splice(i, 1);
+      wrap.remove();
+    };
+    wrap.appendChild(img);
+    wrap.appendChild(del);
+    preview.appendChild(wrap);
   });
 }
 

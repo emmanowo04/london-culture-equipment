@@ -896,9 +896,14 @@ function coAddItemRow() {
   inp.focus();
 }
 
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+}
+
 function coGetItems() {
   return Array.from(document.querySelectorAll('#co-items-list .co-item-row input'))
-    .map(el => el.value.trim())
+    .map(el => toTitleCase(el.value.trim()))
     .filter(v => v.length > 0);
 }
 

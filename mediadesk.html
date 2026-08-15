@@ -867,8 +867,13 @@ async function mdSubmitSignIn() {
   const btn = document.querySelector('#md-signin-panel .btn-dark');
   if (btn) { btn.textContent = 'Signing in...'; btn.disabled = true; }
 
+  const signInTimeout = setTimeout(function() {
+    if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
+    alert('Request timed out. Please try again.');
+  }, 30000);
+
   try {
-    const res = await postToScript({
+    await postToScript({
       action: 'mdSignIn',
       name: name,
       telegram: document.getElementById('md-telegram').value.trim(),
@@ -879,12 +884,13 @@ async function mdSubmitSignIn() {
       assistants: assistants,
       date: date
     });
-
+    clearTimeout(signInTimeout);
     document.getElementById('md-signin-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed In';
     document.getElementById('md-success-msg').textContent = name + ' signed in at ' + timeIn + ' on ' + equipment.join(', ') + '.';
   } catch(e) {
+    clearTimeout(signInTimeout);
     alert('Something went wrong. Please try again.');
   } finally {
     if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
@@ -921,6 +927,11 @@ async function mdSubmitSignOut() {
   const btn = document.querySelector('#md-signout-panel .btn-dark');
   if (btn) { btn.textContent = 'Signing out...'; btn.disabled = true; }
 
+  const signOutTimeout = setTimeout(function() {
+    if (btn) { btn.textContent = 'Sign Out'; btn.disabled = false; }
+    alert('Request timed out. Please try again.');
+  }, 30000);
+
   try {
     await postToScript({
       action: 'mdSignOut',
@@ -929,12 +940,14 @@ async function mdSubmitSignOut() {
       timeOut: timeOut
     });
 
+    clearTimeout(signOutTimeout);
     document.getElementById('md-signout-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed Out';
     const issueNote = issueDetails ? ' Issue reported.' : '';
     document.getElementById('md-success-msg').textContent = signInName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
   } catch(e) {
+    clearTimeout(signOutTimeout);
     alert('Something went wrong. Please try again.');
   } finally {
     if (btn) { btn.textContent = 'Sign Out'; btn.disabled = false; }

@@ -690,10 +690,60 @@ textarea { resize: vertical; min-height: 90px; }
     <div class="success-state">
       <div class="success-icon"></div>
       <h2>Request Submitted!</h2>
-      <p>The Mun-Hwa Bu team has been notified and will approve your request. Keep an eye on your Telegram!</p>
+      <p>The Mun-Hwa Bu team has been notified. Keep an eye on your Telegram for your return link!</p>
       <button class="btn btn-dark" onclick="coReset()">Submit Another Request</button>
     </div>
   </div>
+
+  <!-- RETURN FORM -->
+  <div id="co-return-panel" style="display:none;">
+    <div class="page-header">
+      <h1>Return Items</h1>
+      <p>Confirm you are returning the items from your checkout.</p>
+    </div>
+    <div class="card">
+      <div class="card-label">Return Details</div>
+      <div class="form-group">
+        <label>Checkout ID</label>
+        <input type="text" id="co-return-id" readonly style="background:#f0f0f0;color:var(--muted);">
+      </div>
+      <div class="form-group">
+        <label>Your Name <span class="req">*</span></label>
+        <input type="text" id="co-return-name" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label>Photo of items being returned <span class="req">*</span></label>
+        <label class="photo-drop">
+          <input type="file" id="co-return-photos" multiple accept="image/*" onchange="coReturnPreviewPhotos(this)">
+          <div style="font-size:1.5rem;color:var(--muted);">&#128247;</div>
+          <p>Take a clear photo of all items you are returning</p>
+        </label>
+        <div class="photo-preview" id="co-return-photo-preview"></div>
+      </div>
+      <div class="form-group">
+        <label>Any damage or issues to report?</label>
+        <div style="display:flex;gap:1.5rem;margin-top:0.25rem;margin-bottom:0.5rem;">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="co-has-damage" value="yes" onchange="coToggleDamage(true)" style="accent-color:#2563a8;"> Yes</label>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="co-has-damage" value="no" onchange="coToggleDamage(false)" checked style="accent-color:#2563a8;"> No</label>
+        </div>
+        <div id="co-damage-block" style="display:none;">
+          <textarea id="co-damage-details" placeholder="Describe the damage or issue..." style="min-height:80px;"></textarea>
+        </div>
+      </div>
+    </div>
+    <div class="notice notice-gold" style="margin-bottom:1rem;">Once submitted, the Mun-Hwa Bu team will be notified that the items have been returned.</div>
+    <button class="btn btn-dark btn-full" id="co-return-btn" onclick="submitReturn()">Confirm Return</button>
+  </div>
+
+  <!-- RETURN SUCCESS -->
+  <div id="co-return-success" style="display:none;">
+    <div class="success-state">
+      <div class="success-icon"></div>
+      <h2>Items Returned!</h2>
+      <p>Thank you for confirming the return. The Mun-Hwa Bu team has been notified.</p>
+    </div>
+  </div>
+
 </div>
 
 <script>

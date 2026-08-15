@@ -1264,7 +1264,16 @@ function coReset() {
 
 
 document.addEventListener('DOMContentLoaded', () => {
-  coInit();
+  const urlParams = new URLSearchParams(window.location.search);
+  const returnId = urlParams.get('return');
+  if (returnId) {
+    // Hide checkout form, show return form
+    document.querySelectorAll('.co-steps, .co-form-step').forEach(el => el.style.display = 'none');
+    document.getElementById('co-return-panel').style.display = 'block';
+    document.getElementById('co-return-id').value = returnId;
+  } else {
+    coInit();
+  }
 });
 </script>
 </body>

@@ -713,15 +713,20 @@ function formatDate(dateStr) {
 }
 
 async function postToScript(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 25000);
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    clearTimeout(timer);
     return await res.json();
   } catch (err) {
+    clearTimeout(timer);
     console.error('postToScript error:', err);
-    return { error: err.toString() };
+    throw err;
   }
 }
 
@@ -1180,36 +1185,67 @@ async function submitCheckout() {
   }
 
   const btn = document.getElementById('co-submit-btn');
+  const resetBtn = function() { if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; } };
+
   if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
 
-  const payload = {
-    action: 'logTeamCheckout',
-    memberName: document.getElementById('co-name').value,
-    telegram: document.getElementById('co-telegram').value,
-    dateOut: document.getElementById('co-date-out').value,
-    timeOut: document.getElementById('co-time-out').value,
-    dateReturn: document.getElementById('co-date-return').value,
-    timeReturn: document.getElementById('co-time-return').value,
-    purpose: document.getElementById('co-purpose').value,
-    location: document.getElementById('co-location').value,
-    storage: document.getElementById('co-storage').value,
-    returnLocation: document.getElementById('co-return-loc').value,
-    items: coSelectedItems.map(item => ({
-      name: item.name,
-      qty: item.qty,
-      batteries: item.batteries || 0,
-      lenses: Object.entries(item.lenses || {}).map(([id, qty]) => { const l = CO_LENSES.find(x => x.id === id); return (l ? l.name : id) + (qty > 1 ? ' x' + qty : ''); }),
-      tripods: item.tripods || [],
-      bag: item.bag ? (CO_BAGS.find(b => b.id === item.bag) || {}).label || '' : ''
-    }))
-  };
+  // Set a timeout so button never stays stuck
+  const timeout = setTimeout(function() {
+    resetBtn();
+    alert('Request timed out. Please try again.');
+  }, 30000);
 
   try {
+    // Convert and compress photos
+    var photos = [];
+    try {
+      photos = await Promise.all(Array.from(photoInput.files).map(function(file) {
+        return new Promise(function(resolve, reject) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxSize = 1200;
+            let w = img.width, h = img.height;
+            if (w > maxSize || h > maxSize) {
+              if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+              else { w = Math.round(w * maxSize / h); h = maxSize; }
+            }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+            resolve({ base64, mimeType: 'image/jpeg', name: file.name.replace(/\.[^.]+$/, '.jpg') });
+          };
+          img.onerror = reject;
+          img.src = URL.createObjectURL(file);
+        });
+      }));
+    } catch(photoErr) {
+      console.warn('Photo conversion failed, sending without photos:', photoErr);
+    }
+
+    const payload = {
+      action: 'logTeamCheckout',
+      memberName: document.getElementById('co-name').value,
+      telegram: document.getElementById('co-telegram').value,
+      dateOut: document.getElementById('co-date-out').value,
+      timeOut: document.getElementById('co-time-out').value,
+      dateReturn: document.getElementById('co-date-return').value,
+      timeReturn: document.getElementById('co-time-return').value,
+      purpose: document.getElementById('co-purpose').value,
+      location: document.getElementById('co-location').value,
+      storage: document.getElementById('co-storage').value,
+      returnLocation: document.getElementById('co-return-loc').value,
+      items: coGetItems(),
+      photos: photos
+    };
+
     await postToScript(payload);
+    clearTimeout(timeout);
     coGoStep(4);
   } catch(e) {
+    clearTimeout(timeout);
+    resetBtn();
     alert('Something went wrong. Please try again.');
-    if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
   }
 }
 

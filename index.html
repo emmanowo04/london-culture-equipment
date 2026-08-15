@@ -654,7 +654,7 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="hint">You will be notified directly on Telegram when your request is actioned</div>
  </div>
  <div class="form-group">
- <label>Meeting Date & Time <span class="req">*</span></label>
+ <label>Meeting Date &amp; Time <span class="req">*</span></label>
  <div class="form-row">
  <input type="date" id="req-meeting-date">
  <input type="time" id="req-meeting-time">
@@ -746,27 +746,20 @@ textarea { resize: vertical; min-height: 90px; }
  <input type="time" id="coop-end-time">
  </div>
  </div>
- <div class="form-row">
+ <div class="form-group">
  <div class="form-group">
  <label>Venue / Location <span class="req">*</span></label>
  <input type="text" id="coop-venue" placeholder="e.g. Education Hall">
- </div>
- <div class="form-group">
- <label>Internal or External? <span class="req">*</span></label>
- <div class="toggle-group">
- <div class="toggle-opt" onclick="toggleOpt(this,'coop-scope')">Internal</div>
- <div class="toggle-opt" onclick="toggleOpt(this,'coop-scope')">External</div>
  </div>
  <input type="hidden" id="coop-scope">
  </div>
  </div>
  <div class="form-group">
- <label>Purpose of Event <span class="req">*</span></label>
- <textarea id="coop-purpose" placeholder="Describe the purpose and format of your event..."></textarea>
  </div>
  <div class="form-group">
  <label>Meeting plan / agenda document <span class="req">*</span></label>
  <input type="text" id="coop-doc-link" placeholder="Paste a Google Doc or Drive link here">
+          <div style="margin-top:0.5rem;"><label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.84rem;cursor:pointer;"><input type="checkbox" id="coop-no-doc" onchange="var d=document.getElementById('coop-doc-link');d.disabled=this.checked;if(this.checked)d.value='';" style="width:16px;height:16px;accent-color:#2563a8;"> No document available</label></div>
  </div>
  <div class="form-group">
  <label>Assistance needed <span class="req">*</span></label>
@@ -902,8 +895,6 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
  <div class="form-group">
- <label>How will the equipment be used?</label>
- <textarea id="equip-usage" placeholder="Describe how the equipment will be used during the event..."></textarea>
  </div>
  </div>
  </div>
@@ -2040,7 +2031,8 @@ function validateReqStep(step) {
       if (!get('coop-event-date')) { alert('Work Cooperation: please enter an event date.'); return false; }
       if (!get('coop-venue')) { alert('Work Cooperation: please enter a venue.'); return false; }
       if (selectedAssistance.size === 0) { alert('Work Cooperation: please select at least one type of assistance needed.'); return false; }
-      if (!get('coop-doc-link')) { alert('Work Cooperation: please attach a meeting plan / agenda document link.'); return false; }
+      var noDoc = document.getElementById('coop-no-doc') && document.getElementById('coop-no-doc').checked;
+      if (!noDoc && !get('coop-doc-link')) { alert('Work Cooperation: please attach a meeting plan / agenda document, or tick "No document available".'); return false; }
     }
 
     // Validate Equipment Rental required fields
@@ -2306,14 +2298,13 @@ async function submitCultureRequest() {
  // Work Cooperation
  coopEventName: get('coop-event-name'), coopEventDate: get('coop-event-date'),
  coopStartTime: get('coop-start-time'), coopEndTime: get('coop-end-time'),
- coopVenue: get('coop-venue'), coopScope: get('coop-scope'),
- coopPurpose: get('coop-purpose'), coopAssistance: get('coop-assistance'),
- coopDocLink: get('coop-doc-link'),
+ coopVenue: get('coop-venue'),
+ coopAssistance: get('coop-assistance'),
+ coopDocLink: document.getElementById('coop-no-doc') && document.getElementById('coop-no-doc').checked ? 'No document available' : get('coop-doc-link'),
  // Equipment
  equipPurpose: get('equip-purpose'),
  equipPickup: get('equip-pickup'), equipReturn: get('equip-return'),
  equipScope: get('equip-scope'), equipItems: get('equip-items'),
- equipUsage: get('equip-usage'),
  // Material
  materialType: get('material-type'), materialPurpose: get('material-purpose'),
  materialScope: get('material-scope'), materialOnline: get('material-online'),

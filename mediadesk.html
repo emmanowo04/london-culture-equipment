@@ -676,14 +676,11 @@ textarea { resize: vertical; min-height: 90px; }
     <div class="card">
       <div class="card-label">Sign Out</div>
       <div class="form-group">
-        <label>Select your entry <span class="req">*</span></label>
-        <select id="md-entry-select" style="width:100%;"></select>
-        <div class="hint">Today's open entries. Select the one you are signing out of.</div>
-      </div>
-      <div class="form-group">
         <label>Your name <span class="req">*</span></label>
-        <input type="text" id="md-signout-name" placeholder="Your name">
+        <input type="text" id="md-entry-select" placeholder="Enter the name you signed in with">
+        <div class="hint">Enter the exact name you used when signing in today.</div>
       </div>
+
       <div class="form-group">
         <label>Location <span class="req">*</span></label>
         <select id="md-signout-location">
@@ -699,11 +696,11 @@ textarea { resize: vertical; min-height: 90px; }
         <input type="time" id="md-time-out">
       </div>
       <div class="form-group">
-        <label>Photo of media desk <span class="req">*</span></label>
+        <label>Photos of media desk <span class="req">*</span> <span id="md-photo-issue-note" style="font-size:0.75rem;color:#c0392b;display:none;">— Required when reporting an issue</span></label>
         <label class="photo-drop">
-          <input type="file" id="md-signout-photo" accept="image/*" capture="environment" onchange="mdPreviewSignoutPhoto(this)">
+          <input type="file" id="md-signout-photo" accept="image/*" multiple onchange="mdPreviewSignoutPhoto(this)">
           <div style="font-size:1.5rem;color:var(--muted);">📷</div>
-          <p>Take a photo of the media desk before leaving</p>
+          <p>Take photos of the media desk before leaving</p>
         </label>
         <div id="md-signout-photo-preview" style="margin-top:0.75rem;"></div>
       </div>
@@ -714,7 +711,8 @@ textarea { resize: vertical; min-height: 90px; }
           <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-issue" value="no" onchange="mdToggleIssue(false)" checked style="accent-color:#2563a8;"> No</label>
         </div>
         <div id="md-issue-block" style="display:none;">
-          <textarea id="md-issue-details" placeholder="Describe the issue or damaged item in detail..." style="min-height:80px;width:100%;padding:0.6rem 0.75rem;font-size:0.85rem;border:1.5px solid #bbb;border-radius:7px;font-family:'Syne',sans-serif;resize:vertical;"></textarea>
+          <textarea id="md-issue-details" placeholder="Describe the issue or damaged item in detail..." style="min-height:80px;width:100%;padding:0.6rem 0.75rem;font-size:0.85rem;border:1.5px solid #bbb;border-radius:7px;font-family:'Syne',sans-serif;resize:vertical;margin-bottom:0.75rem;"></textarea>
+          <div class="hint" style="color:#c0392b;font-weight:500;">Photos below are mandatory when reporting an issue.</div>
         </div>
       </div>
     </div>
@@ -750,15 +748,20 @@ function formatDate(dateStr) {
 }
 
 async function postToScript(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(function() { controller.abort(); }, 25000);
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    clearTimeout(timer);
     return await res.json();
   } catch (err) {
+    clearTimeout(timer);
     console.error('postToScript error:', err);
-    return { error: err.toString() };
+    throw err;
   }
 }
 
@@ -788,22 +791,28 @@ function mdShowTab(tab) {
   document.getElementById('md-tab-in').style.color = isIn ? '#fff' : 'var(--muted)';
   document.getElementById('md-tab-out').style.background = isIn ? '#fff' : '#222';
   document.getElementById('md-tab-out').style.color = isIn ? 'var(--muted)' : '#fff';
-  if (!isIn) mdLoadOpenEntries();
+
 }
 
 function mdPreviewSignoutPhoto(input) {
   const preview = document.getElementById('md-signout-photo-preview');
   preview.innerHTML = '';
-  if (input.files && input.files[0]) {
-    const img = document.createElement('img');
-    img.src = URL.createObjectURL(input.files[0]);
-    img.style.cssText = 'width:100%;border-radius:8px;border:1.5px solid #ddd;margin-top:0.5rem;';
-    preview.appendChild(img);
+  if (input.files) {
+    Array.from(input.files).forEach(function(file) {
+      const img = document.createElement('img');
+      img.src = URL.createObjectURL(file);
+      img.style.cssText = 'width:calc(50% - 4px);border-radius:8px;border:1.5px solid #ddd;margin-top:0.5rem;';
+      preview.appendChild(img);
+    });
+    preview.style.display = 'flex';
+    preview.style.flexWrap = 'wrap';
+    preview.style.gap = '8px';
   }
 }
 
 function mdToggleIssue(show) {
   document.getElementById('md-issue-block').style.display = show ? 'block' : 'none';
+  document.getElementById('md-photo-issue-note').style.display = show ? 'inline' : 'none';
 }
 
 function mdToggleAssistants(show) {
@@ -903,11 +912,8 @@ async function mdLoadOpenEntries() {
 }
 
 async function mdSubmitSignOut() {
-  const entryId = document.getElementById('md-entry-select').value;
-  if (!entryId) { alert('Please select an entry.'); return; }
-
-  const signOutName = document.getElementById('md-signout-name').value.trim();
-  if (!signOutName) { alert('Please enter your name.'); return; }
+  const signInName = document.getElementById('md-entry-select').value.trim();
+  if (!signInName) { alert('Please enter your name.'); return; }
 
   const timeOut = document.getElementById('md-time-out').value;
   if (!timeOut) { alert('Please enter a time out.'); return; }
@@ -927,7 +933,7 @@ async function mdSubmitSignOut() {
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed Out';
     const issueNote = issueDetails ? ' Issue reported.' : '';
-    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
+    document.getElementById('md-success-msg').textContent = signInName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
   } catch(e) {
     alert('Something went wrong. Please try again.');
   } finally {
@@ -946,7 +952,7 @@ function mdReset() {
   document.getElementById('md-assistants-block').style.display = 'none';
   document.getElementById('md-assistants-list').innerHTML = '';
   mdAssistantCount = 0;
-  document.getElementById('md-signout-name').value = '';
+
   document.getElementById('md-purpose').value = '';
   document.getElementById('md-telegram').value = '';
   document.getElementById('md-location').value = '';

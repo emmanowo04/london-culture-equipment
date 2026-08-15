@@ -2263,15 +2263,20 @@ function buildReqReview() {
 }
 
 async function postToScript(payload) {
+  const controller = new AbortController();
+  const timer = setTimeout(function() { controller.abort(); }, 25000);
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
       body: JSON.stringify(payload),
+      signal: controller.signal
     });
+    clearTimeout(timer);
     return await res.json();
   } catch (err) {
+    clearTimeout(timer);
     console.error('postToScript error:', err);
-    return { error: err.toString() };
+    throw err;
   }
 }
 
@@ -2333,11 +2338,22 @@ async function submitCultureRequest() {
  designExampleLink: get('design-example-link'),
  };
 
- await postToScript(payload);
+ const timeout = setTimeout(function() {
+    if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
+    alert('Request timed out. Please try again.');
+  }, 30000);
 
- document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
- document.getElementById('req-form-4').classList.add('active');
- if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
+  try {
+    await postToScript(payload);
+    clearTimeout(timeout);
+    document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
+    document.getElementById('req-form-4').classList.add('active');
+  } catch(e) {
+    clearTimeout(timeout);
+    alert('Something went wrong. Please try again.');
+  } finally {
+    if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
+  }
 }
 
 function resetCultureRequest() {

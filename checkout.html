@@ -1,0 +1,1233 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Mun-Hwa Bu — Team Checkout</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
+<style>
+
+:root {
+ --black: #0f0f0f;
+ --white: #ffffff;
+ --cream: #f8f9fa;
+ --gold: #2563a8;
+ --gold-light: #e8f0fb;
+ --red: #c0392b;
+ --red-light: #fdecea;
+ --green: #1a6b4a;
+ --green-light: #e6f2ec;
+ --blue: #2563a8;
+ --blue-light: #e8f0fb;
+ --muted: #6b7280;
+ --border: #d0d0d0;
+ --shadow: 0 2px 16px rgba(15,15,15,0.06);
+ --shadow-lg: 0 8px 40px rgba(15,15,15,0.12);
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+ font-family: 'Syne', sans-serif;
+ background: var(--white);
+ color: var(--black);
+ min-height: 100vh;
+ font-size: 15px;
+ line-height: 1.6;
+}
+
+/* LANDING */
+.landing {
+ min-height: 100vh;
+ display: flex;
+ flex-direction: column;
+ align-items: center;
+ justify-content: center;
+ padding: 2rem;
+ background: var(--white);
+ position: relative;
+ overflow: hidden;
+}
+
+.landing::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ background: radial-gradient(ellipse at 30% 50%, rgba(200,65,10,0.06) 0%, transparent 60%),
+ radial-gradient(ellipse at 70% 30%, rgba(26,107,74,0.04) 0%, transparent 50%);
+ pointer-events: none;
+}
+
+.landing-inner {
+ max-width: 640px;
+ width: 100%;
+ text-align: center;
+ position: relative;
+ z-index: 1;
+ animation: fadeUp 0.6s ease;
+}
+
+.landing-logo {
+ font-family: 'Playfair Display', serif;
+ font-size: 0.75rem;
+ letter-spacing: 0.25em;
+ text-transform: uppercase;
+ color: var(--blue);
+ margin-bottom: 2.5rem;
+ display: flex;
+ align-items: center;
+ justify-content: center;
+ gap: 1rem;
+}
+
+.landing-logo::before, .landing-logo::after {
+ content: '';
+ width: 40px;
+ height: 1px;
+ background: var(--blue);
+ opacity: 0.4;
+}
+
+.landing h1 {
+ font-family: 'Playfair Display', serif;
+ font-size: clamp(2.5rem, 6vw, 4rem);
+ font-weight: 400;
+ color: var(--black);
+ line-height: 1.1;
+ margin-bottom: 0.75rem;
+ letter-spacing: -0.02em;
+}
+
+.landing h1 em {
+ font-style: italic;
+ color: var(--blue);
+}
+
+.landing p {
+ color: var(--muted);
+ font-size: 0.9rem;
+ margin-bottom: 3rem;
+ letter-spacing: 0.02em;
+}
+
+.role-cards {
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 1rem;
+}
+
+.role-card {
+ background: #ffffff;
+ border: 1.5px solid var(--border);
+ border-radius: 12px;
+ padding: 2rem 1.5rem;
+ cursor: pointer;
+ transition: all 0.3s;
+ text-align: left;
+ position: relative;
+ overflow: hidden;
+}
+
+.role-card::before {
+ content: '';
+ position: absolute;
+ inset: 0;
+ opacity: 0;
+ transition: opacity 0.3s;
+}
+
+.role-card:hover { transform: translateY(-3px); box-shadow: var(--shadow-lg); }
+.role-card:hover::before { opacity: 1; }
+
+.role-icon {
+ font-size: 2rem;
+ margin-bottom: 1rem;
+ display: block;
+}
+
+.role-card h3 {
+ font-size: 1rem;
+ font-weight: 600;
+ color: var(--black);
+ margin-bottom: 0.4rem;
+}
+
+.role-card p {
+ font-size: 0.78rem;
+ color: #3a3530;
+ margin-bottom: 1.25rem;
+ line-height: 1.5;
+}
+
+.role-arrow {
+ font-size: 0.75rem;
+ color: var(--blue);
+ font-family: 'Syne Mono', monospace;
+ letter-spacing: 0.1em;
+ text-transform: uppercase;
+ font-weight: 600;
+}
+
+/* APP SHELL */
+.app { display: none; min-height: 100vh; }
+.app.active { display: block; }
+
+header {
+ background: var(--white);
+ color: var(--black);
+ padding: 0 2rem;
+ display: flex;
+ align-items: center;
+ justify-content: space-between;
+ height: 60px;
+ position: sticky;
+ top: 0;
+ z-index: 100;
+ border-bottom: 2px solid var(--border);
+ box-shadow: 0 1px 8px rgba(37,99,168,0.07);
+}
+
+.header-logo {
+ font-family: 'Playfair Display', serif;
+ font-size: 1rem;
+ letter-spacing: 0.02em;
+}
+
+.header-logo em { font-style: italic; color: var(--gold); }
+
+.header-nav { display: flex; gap: 0.25rem; align-items: center; }
+
+.nav-btn {
+ background: none; border: 1px solid transparent; color: var(--muted);
+ padding: 0.35rem 0.85rem; border-radius: 4px; cursor: pointer;
+ font-family: 'Syne Mono', monospace; font-size: 0.65rem;
+ letter-spacing: 0.1em; text-transform: uppercase; transition: all 0.2s;
+}
+.nav-btn:hover { color: var(--blue); border-color: var(--border); }
+.nav-btn.active { color: var(--white); background: var(--blue); border-color: var(--blue); }
+
+.back-btn {
+ display: flex; align-items: center; gap: 0.5rem;
+ background: none; border: none; color: var(--muted);
+ cursor: pointer; font-family: 'Syne', sans-serif;
+ font-size: 0.8rem; transition: color 0.2s; padding: 0;
+}
+.back-btn:hover { color: var(--blue); }
+
+/* PAGES */
+.page { display: none; padding: 2.5rem 2rem; max-width: 720px; margin: 0 auto; }
+.page.active { display: block; animation: fadeUp 0.3s ease; }
+.page-wide { max-width: 1000px; }
+
+@keyframes fadeUp {
+ from { opacity: 0; transform: translateY(12px); }
+ to { opacity: 1; transform: translateY(0); }
+}
+
+/* CULTURE TEAM HUB */
+.hub-grid {
+ display: grid;
+ grid-template-columns: 1fr 1fr;
+ gap: 1rem;
+ margin-top: 0.5rem;
+}
+
+.hub-card {
+ background: #fff;
+ border: 1px solid var(--border);
+ border-radius: 12px;
+ padding: 1.75rem;
+ cursor: pointer;
+ transition: all 0.25s;
+ position: relative;
+ overflow: hidden;
+}
+
+.hub-card::after {
+ content: '→';
+ position: absolute;
+ bottom: 1.5rem;
+ right: 1.5rem;
+ font-size: 1.1rem;
+ color: var(--border);
+ transition: all 0.2s;
+}
+
+.hub-card:hover { transform: translateY(-2px); box-shadow: var(--shadow); }
+.hub-card:hover::after { color: var(--gold); transform: translateX(3px); }
+
+.hub-card h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.35rem; }
+.hub-card p { font-size: 0.78rem; color: var(--muted); line-height: 1.5; }
+
+/* PAGE HEADERS */
+.page-header { margin-bottom: 2rem; padding-bottom: 1.5rem; border-bottom: 1px solid var(--border); }
+.page-header h1 { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 400; letter-spacing: -0.02em; }
+.page-header p { color: var(--muted); margin-top: 0.35rem; font-size: 0.88rem; }
+
+/* CARDS & FORM */
+.card { background: #fff; border: 1.5px solid #222; border-radius: 10px; padding: 1.5rem; box-shadow: var(--shadow); margin-bottom: 1.25rem; }
+
+.card-label {
+ font-family: 'Syne Mono', monospace; font-size: 0.62rem;
+ letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted);
+ margin-bottom: 1rem; display: flex; align-items: center; gap: 0.5rem;
+}
+.card-label::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+
+.form-group { margin-bottom: 1.15rem; }
+label { display: block; font-size: 0.8rem; font-weight: 600; margin-bottom: 0.4rem; color: var(--black); }
+label .req { color: var(--red); margin-left: 2px; }
+label .opt { color: var(--muted); font-weight: 400; font-size: 0.72rem; margin-left: 4px; }
+
+input, select, textarea {
+ width: 100%; padding: 0.65rem 0.9rem; border: 1px solid var(--border);
+ border-radius: 7px; font-family: 'Syne', sans-serif; font-size: 0.88rem;
+ background: #faf9f7; color: var(--black);
+ transition: border-color 0.2s, box-shadow 0.2s; outline: none;
+}
+input:focus, select:focus, textarea:focus {
+ border-color: var(--blue); box-shadow: 0 0 0 3px rgba(37,99,168,0.1); background: #fff;
+}
+textarea { resize: vertical; min-height: 90px; }
+.form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.form-row-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; }
+.hint { font-size: 0.75rem; color: var(--muted); margin-top: 0.3rem; }
+
+/* TOGGLE OPTIONS */
+.toggle-group { display: flex; gap: 0.5rem; flex-wrap: wrap; }
+.toggle-opt {
+ padding: 0.45rem 1rem; border-radius: 20px; border: 1.5px solid #bbb;
+ background: #faf9f7; cursor: pointer; font-size: 0.82rem; font-family: 'Syne', sans-serif;
+ transition: all 0.2s; color: var(--muted);
+}
+.toggle-opt:hover { border-color: var(--gold); color: var(--black); }
+.toggle-opt.selected { background: var(--blue-light); border-color: var(--blue); color: var(--blue); font-weight: 600; }
+.toggle-opt.selected-red { background: var(--red-light); border-color: var(--red); color: var(--red); font-weight: 600; }
+
+/* YES/NO TOGGLES */
+.yn-group { display: flex; gap: 0.5rem; }
+.yn-btn {
+ flex: 1; padding: 0.6rem; border-radius: 7px; border: 1.5px solid #bbb;
+ background: #faf9f7; cursor: pointer; font-size: 0.85rem; font-family: 'Syne', sans-serif;
+ transition: all 0.2s; text-align: center; color: var(--muted);
+}
+.yn-btn.yes.active { background: var(--green-light); border-color: var(--green); color: var(--green); font-weight: 600; }
+.yn-btn.no.active { background: var(--red-light); border-color: var(--red); color: var(--red); font-weight: 600; }
+
+/* STEPS */
+.steps {
+ display: flex; margin-bottom: 2rem; border: 1.5px solid #222;
+ border-radius: 8px; overflow: hidden; background: #fff;
+}
+.step {
+ flex: 1; padding: 0.7rem 0.5rem; text-align: center; font-size: 0.72rem;
+ color: var(--muted); border-right: 1px solid #d0d0d0; transition: all 0.2s;
+}
+.step:last-child { border-right: none; }
+.step.active { background: var(--blue); color: #fff; font-weight: 600; }
+.step.done { background: var(--blue-light); color: var(--blue); }
+.step-num { font-family: 'Syne Mono', monospace; font-size: 0.58rem; display: block; opacity: 0.6; margin-bottom: 0.1rem; }
+
+.form-step { display: none; }
+.form-step.active { display: block; animation: fadeUp 0.25s ease; }
+
+/* BUTTONS */
+.btn {
+ display: inline-flex; align-items: center; gap: 0.5rem;
+ padding: 0.7rem 1.5rem; border-radius: 7px; border: none; cursor: pointer;
+ font-family: 'Syne', sans-serif; font-size: 0.85rem; font-weight: 600;
+ transition: all 0.2s; letter-spacing: 0.01em;
+}
+.btn-gold { background: var(--blue); color: #fff; }
+.btn-gold:hover { background: #1a4f8a; transform: translateY(-1px); box-shadow: 0 4px 16px rgba(37,99,168,0.3); }
+.btn-dark { background: var(--black); color: var(--white); }
+.btn-dark:hover { background: #1a1a1a; }
+.btn-ghost { background: transparent; color: var(--black); border: 1.5px solid var(--border); }
+.btn-ghost:hover { background: var(--cream); border-color: #bbb; }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:hover { background: #9a2020; }
+.btn-green { background: var(--green); color: #fff; }
+.btn-green:hover { background: #154d2e; }
+.btn-sm { padding: 0.4rem 0.9rem; font-size: 0.78rem; }
+.btn-full { width: 100%; justify-content: center; }
+
+/* BADGES */
+.badge {
+ display: inline-flex; align-items: center; padding: 0.2rem 0.65rem;
+ border-radius: 20px; font-size: 0.68rem; font-weight: 600;
+ font-family: 'Syne Mono', monospace; letter-spacing: 0.04em;
+}
+.badge-available { background: var(--green-light); color: var(--green); }
+.badge-out { background: var(--red-light); color: var(--red); }
+.badge-pending { background: #fef5e0; color: #9a6f00; }
+.badge-overdue { background: var(--red-light); color: var(--red); border: 1px solid var(--red); }
+.badge-internal { background: var(--blue-light); color: var(--blue); }
+.badge-external { background: var(--gold-light); color: #7a5a00; }
+
+/* NOTICE */
+.notice {
+ border-radius: 8px; padding: 0.85rem 1rem; font-size: 0.82rem;
+ margin-bottom: 1rem; display: flex; align-items: flex-start; gap: 0.6rem; line-height: 1.5;
+}
+.notice-gold { background: var(--blue-light); border: 1px solid rgba(37,99,168,0.3); color: var(--blue); }
+.notice-blue { background: var(--blue-light); border: 1px solid rgba(26,58,92,0.2); color: var(--blue); }
+.notice-red { background: var(--red-light); border: 1px solid rgba(184,50,50,0.2); color: var(--red); }
+
+/* REVIEW */
+.review-row {
+ display: flex; justify-content: space-between; align-items: baseline;
+ padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.88rem;
+}
+.review-row:last-child { border-bottom: none; }
+.review-key { color: var(--muted); font-size: 0.75rem; min-width: 140px; }
+.review-val { font-weight: 500; text-align: right; }
+
+.section-label {
+ font-family: 'Syne Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em;
+ text-transform: uppercase; color: var(--muted); margin: 1.5rem 0 0.75rem;
+}
+
+/* SUCCESS */
+.success-state { text-align: center; padding: 3rem 2rem; }
+.success-icon {
+ width: 72px; height: 72px; border-radius: 50%;
+ background: var(--green-light); color: var(--green);
+ display: flex; align-items: center; justify-content: center;
+ font-size: 2rem; margin: 0 auto 1.5rem;
+}
+.success-state h2 { font-family: 'Playfair Display', serif; font-size: 1.9rem; font-weight: 400; margin-bottom: 0.5rem; }
+.success-state p { color: var(--muted); max-width: 380px; margin: 0 auto 2rem; font-size: 0.88rem; }
+
+/* ITEM PICKER (for checkout & damage) */
+.item-search { margin-bottom: 1rem; }
+.item-list { max-height: 320px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; background: #fff; }
+.item-row {
+ display: flex; align-items: center; gap: 0.75rem; padding: 0.7rem 1rem;
+ border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.15s;
+}
+.item-row:last-child { border-bottom: none; }
+.item-row:hover { background: var(--cream); }
+.item-row.selected { background: var(--gold-light); }
+.item-row.unavailable { opacity: 0.4; cursor: not-allowed; }
+.item-check {
+ width: 18px; height: 18px; border-radius: 4px; border: 1.5px solid var(--border);
+ flex-shrink: 0; display: flex; align-items: center; justify-content: center;
+ font-size: 0.65rem; color: transparent; transition: all 0.15s;
+}
+.item-row.selected .item-check { background: var(--gold); border-color: var(--gold); color: var(--black); }
+.item-name { font-size: 0.85rem; font-weight: 500; flex: 1; }
+.item-sub { font-size: 0.72rem; color: var(--muted); font-family: 'Syne Mono', monospace; }
+.item-status { flex-shrink: 0; }
+
+/* ADMIN TABLE */
+.data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+.data-table th {
+ text-align: left; padding: 0.65rem 1rem;
+ font-family: 'Syne Mono', monospace; font-size: 0.62rem;
+ letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted);
+ border-bottom: 2px solid var(--border); background: #faf9f7;
+}
+.data-table td { padding: 0.85rem 1rem; border-bottom: 1px solid var(--border); vertical-align: middle; }
+.data-table tr:hover td { background: #fafaf7; }
+.data-table tr:last-child td { border-bottom: none; }
+.chip { display: inline-block; background: var(--cream); border-radius: 3px; padding: 0.1rem 0.4rem; margin: 0.1rem; font-family: 'Syne Mono', monospace; font-size: 0.68rem; color: var(--muted); }
+
+/* STATS */
+.stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; margin-bottom: 1.5rem; }
+.stat-card { background: #fff; border: 1px solid var(--border); border-radius: 10px; padding: 1.25rem; text-align: center; }
+.stat-num { font-family: 'Playfair Display', serif; font-size: 2.4rem; line-height: 1; }
+.stat-lbl { font-family: 'Syne Mono', monospace; font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-top: 0.3rem; }
+.stat-card.s-gold .stat-num { color: var(--gold); }
+.stat-card.s-red .stat-num { color: var(--red); }
+.stat-card.s-green .stat-num { color: var(--green); }
+
+/* GROUPED EVENT LIST */
+
+.location-header h4 { font-size: 0.88rem; font-weight: 600; letter-spacing: 0.02em; }
+.location-header .loc-count { font-family: 'Syne Mono', monospace; font-size: 0.7rem; color: #a09a93; }
+.location-header .loc-chevron { font-size: 0.75rem; transition: transform 0.2s; color: var(--gold); }
+.location-header.open .loc-chevron { transform: rotate(180deg); }
+
+.location-body.open { display: block; }
+
+.cat-group-header span { font-family: 'Syne Mono', monospace; font-size: 0.68rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+.cat-group-header .cat-count { font-size: 0.68rem; color: var(--muted); }
+
+.cat-group-items.open { display: block; }
+.el-toolbar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 1rem; gap: 0.75rem; }
+.el-toolbar input { flex: 1; }
+
+/* KEYWORD BADGE */
+.keyword-hint { font-size: 0.7rem; color: var(--gold); font-family: 'Syne Mono', monospace; margin-top: 0.15rem; }
+
+/* REQUEST TYPE CARDS */
+.req-type-card, .assist-card {
+ display: flex; align-items: flex-start; gap: 0.85rem;
+ border: 1.5px solid #222; border-radius: 8px; padding: 1rem 1.1rem;
+ cursor: pointer; transition: all 0.2s; background: #fff;
+}
+.req-type-card:hover, .assist-card:hover { border-color: var(--blue); }
+.req-type-card.selected, .assist-card.selected { border-color: var(--blue); background: var(--blue-light); }
+.req-type-check {
+ width: 22px; height: 22px; border-radius: 5px; border: 2px solid #bbb;
+ background: #fff; display: flex; align-items: center; justify-content: center;
+ font-size: 0.7rem; color: transparent; transition: all 0.2s; flex-shrink: 0; margin-top: 2px;
+}
+.req-type-card.selected .req-type-check, .assist-card.selected .req-type-check {
+ background: var(--blue); border-color: var(--blue); color: #fff;
+}
+.req-type-label { font-weight: 600; font-size: 0.9rem; margin-bottom: 0.2rem; }
+.req-type-desc { font-size: 0.78rem; color: var(--muted); line-height: 1.4; }
+
+/* MODAL */
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(10,10,10,0.7); z-index: 200; align-items: center; justify-content: center; padding: 1rem; }
+.modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 2rem; max-width: 480px; width: 100%; box-shadow: var(--shadow-lg); animation: fadeUp 0.2s ease; }
+.modal h3 { font-family: 'Playfair Display', serif; font-size: 1.4rem; margin-bottom: 0.5rem; }
+.modal p { color: var(--muted); font-size: 0.85rem; margin-bottom: 1.5rem; }
+.modal-actions { display: flex; gap: 0.75rem; justify-content: flex-end; }
+
+/* ADMIN LOGIN */
+
+@media (max-width: 768px) {
+  /* ── Layout ── */
+  header { padding: 0 1rem; height: auto; min-height: 56px; flex-wrap: wrap; gap: 0.5rem; padding-top: 0.5rem; padding-bottom: 0.5rem; }
+  .header-logo { font-size: 0.95rem; }
+  .header-nav { gap: 0.15rem; flex-wrap: wrap; }
+  .nav-btn { padding: 0.3rem 0.6rem; font-size: 0.6rem; }
+  .back-btn { font-size: 0.75rem; }
+
+  /* ── Pages ── */
+  .page { padding: 1.25rem 1rem; }
+  .page-wide { max-width: 100%; }
+
+  /* ── Grids → single column ── */
+  .form-row, .form-row-3, .hub-grid, .role-cards, .stats-row { grid-template-columns: 1fr; }
+
+  /* ── Landing ── */
+  .landing { padding: 2rem 1.25rem; }
+  .landing h1 { font-size: 2.2rem; }
+  .landing-inner { max-width: 100%; }
+  .role-card { padding: 1.25rem; }
+  .role-card p { font-size: 0.82rem; }
+
+  /* ── Steps bar ── */
+  .steps { overflow-x: auto; }
+  .step { min-width: 60px; font-size: 0.65rem; padding: 0.6rem 0.25rem; }
+  .step-num { font-size: 0.55rem; }
+
+  /* ── Cards ── */
+  .card { padding: 1.1rem; }
+  .card-label { font-size: 0.6rem; }
+
+  /* ── Forms ── */
+  input, select, textarea { font-size: 0.88rem; padding: 0.6rem 0.75rem; }
+  label { font-size: 0.8rem; }
+  textarea { min-height: 75px; }
+
+  /* ── Buttons ── */
+  .btn { padding: 0.75rem 1.1rem; font-size: 0.85rem; }
+  .btn-sm { padding: 0.55rem 0.85rem; font-size: 0.78rem; }
+  .btn-full { width: 100%; }
+
+  /* ── Toggle options ── */
+  .toggle-group { gap: 0.4rem; }
+  .toggle-opt { padding: 0.45rem 0.75rem; font-size: 0.78rem; }
+
+  /* ── Request type cards ── */
+  .req-type-card, .assist-card { padding: 0.85rem; gap: 0.65rem; }
+  .req-type-label { font-size: 0.85rem; }
+  .req-type-desc { font-size: 0.73rem; }
+  .req-type-check { width: 20px; height: 20px; flex-shrink: 0; }
+
+  /* ── Hub cards ── */
+  .hub-card { padding: 1.1rem; }
+  .hub-card h3 { font-size: 0.88rem; }
+  .hub-card p { font-size: 0.76rem; }
+
+  /* ── Page headers ── */
+  .page-header h1 { font-size: 1.5rem; }
+  .page-header p { font-size: 0.82rem; }
+
+  /* ── Admin ── */
+  .stats-row { grid-template-columns: 1fr 1fr; gap: 0.6rem; }
+  .stat-num { font-size: 1.75rem; }
+  .data-table { font-size: 0.75rem; }
+  .data-table th, .data-table td { padding: 0.6rem 0.65rem; }
+
+  /* ── YN buttons ── */
+  .yn-btn { font-size: 0.82rem; padding: 0.65rem; }
+
+  /* ── Modal ── */
+  .modal { padding: 1.5rem; }
+  .modal h3 { font-size: 1.2rem; }
+
+  /* ── Props tabs ── */
+  #props-tab-rental, #props-tab-new { padding: 0.75rem; }
+
+  /* ── Success state ── */
+  .success-state { padding: 2rem 1rem; }
+  .success-state h2 { font-size: 1.4rem; }
+  .success-icon { width: 56px; height: 56px; font-size: 1.5rem; }
+
+  /* ── Notice ── */
+  .notice { font-size: 0.78rem; padding: 0.65rem 0.85rem; }
+
+  /* ── Qty items ── */
+  #equip-qty-list div { padding: 0.55rem 0.85rem !important; }
+}
+
+@media (max-width: 400px) {
+  .landing h1 { font-size: 1.85rem; }
+  .step { min-width: 50px; font-size: 0.58rem; }
+  .nav-btn { padding: 0.25rem 0.45rem; font-size: 0.55rem; }
+  header { padding: 0.4rem 0.75rem; }
+}
+
+
+/* ── TEAM CHECKOUT ── */
+.co-steps { display:flex; border:1.5px solid #222; border-radius:8px; overflow:hidden; margin-bottom:1.5rem; }
+.co-step { flex:1; padding:0.65rem; text-align:center; font-size:0.72rem; font-family:'Syne Mono',monospace; letter-spacing:0.05em; text-transform:uppercase; color:var(--muted); border-right:1px solid #d0d0d0; background:var(--cream); transition:all 0.2s; }
+.co-step:last-child { border-right:none; }
+.co-step.active { background:var(--blue); color:#fff; font-weight:600; }
+.co-step.done { background:var(--blue-light); color:var(--blue); }
+.co-form-step { display:none; }
+.co-form-step.active { display:block; }
+.add-item-select { width:100%; padding:0.65rem 0.85rem; border:1.5px dashed #bbb; border-radius:8px; font-size:0.85rem; color:var(--muted); background:#fff; cursor:pointer; font-family:'Syne',sans-serif; }
+.add-item-select:focus { border-color:var(--blue); outline:none; color:var(--black); }
+.photo-drop { display:block; border:1.5px dashed #bbb; border-radius:8px; padding:1.25rem; text-align:center; cursor:pointer; background:#fafafa; transition:all 0.15s; }
+.photo-drop:hover { border-color:var(--blue); background:var(--blue-light); }
+.photo-drop input { display:none; }
+.photo-drop p { font-size:0.82rem; color:var(--muted); margin-top:0.4rem; }
+.photo-preview { display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.75rem; }
+.photo-thumb { width:70px; height:70px; object-fit:cover; border-radius:6px; border:1px solid #ddd; }
+.loc-toggle { display:flex; border:1.5px solid #bbb; border-radius:8px; overflow:hidden; }
+.loc-opt { flex:1; padding:0.55rem; text-align:center; font-size:0.82rem; cursor:pointer; background:#fff; color:var(--muted); border-right:1px solid #d0d0d0; transition:all 0.15s; }
+.loc-opt:last-child { border-right:none; }
+.loc-opt.sel { background:var(--blue); color:#fff; font-weight:600; }
+</style>
+</head>
+<body>
+
+<header style="background:#fff;color:#0f0f0f;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;border-bottom:2px solid #d0d0d0;box-shadow:0 1px 8px rgba(37,99,168,0.07);">
+  <div class="header-logo">Mun-Hwa Bu <span style="font-size:0.65rem;color:var(--muted);font-family:'Syne Mono',monospace;letter-spacing:0.1em;margin-left:0.5rem;">CHECKOUT</span></div>
+  <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">Back</a>
+</header>
+
+<div style="max-width:640px;margin:0 auto;padding:2rem 1rem;">
+  <div class="page-header">
+    <h1>Team Equipment Checkout</h1>
+    <p>Log equipment you are taking out. Your request will be sent for approval.</p>
+  </div>
+
+  <div class="co-steps">
+    <div class="co-step active" id="co-step-1">1. Your Details</div>
+    <div class="co-step" id="co-step-2">2. Items</div>
+    <div class="co-step" id="co-step-3">3. Usage & Review</div>
+  </div>
+
+  <div class="co-form-step active" id="co-form-1">
+    <div class="card">
+      <div class="card-label">Your Details</div>
+      <div class="form-group"><label>Your Name <span class="req">*</span></label><input type="text" id="co-name" placeholder="e.g. Michael JPSN"></div>
+      <div class="form-group"><label>Telegram Username <span class="opt">(optional)</span></label><input type="text" id="co-telegram" placeholder="@yourusername"><div class="hint">You will receive your approval and return link via Telegram</div></div>
+      <div class="form-row">
+        <div class="form-group"><label>Date &amp; Time Out <span class="req">*</span></label><input type="date" id="co-date-out"><input type="time" id="co-time-out" style="margin-top:0.4rem;"></div>
+        <div class="form-group"><label>Date &amp; Time of Return <span class="req">*</span></label><input type="date" id="co-date-return"><input type="time" id="co-time-return" style="margin-top:0.4rem;"></div>
+      </div>
+    </div>
+    <div style="display:flex;justify-content:flex-end;"><button class="btn btn-dark" onclick="coNextStep(1)">Continue</button></div>
+  </div>
+
+  <div class="co-form-step" id="co-form-2">
+    <div class="card">
+      <div class="card-label">Items being taken out</div>
+      <div class="hint" style="margin-bottom:0.75rem;">Add each item separately. Be as specific as possible — this helps us understand how equipment is referred to.</div>
+      <div id="co-items-list">
+        <div class="co-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+          <input type="text" placeholder="e.g. Sony A7 IV camera" style="flex:1;">
+          <button onclick="this.closest('.co-item-row').remove()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;">×</button>
+        </div>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="coAddItemRow()" style="margin-top:0.5rem;width:100%;">+ Add another item</button>
+    </div>
+    <div style="display:flex;justify-content:space-between;"><button class="btn btn-ghost" onclick="coGoStep(1)">Back</button><button class="btn btn-dark" onclick="coNextStep(2)">Continue</button></div>
+  </div>
+
+  <div class="co-form-step" id="co-form-3">
+    <div class="card">
+      <div class="card-label">Usage Details</div>
+      <div class="form-group"><label>Purpose of Use <span class="req">*</span></label><textarea id="co-purpose" placeholder="What will the equipment be used for?" style="min-height:70px;"></textarea></div>
+      <div class="form-group"><label>Location of Use <span class="req">*</span></label><input type="text" id="co-location" placeholder="e.g. Weavers Fields, Bethnal Green"></div>
+      <div class="form-group"><label>Storage When Not in Use <span class="req">*</span></label><input type="text" id="co-storage" placeholder="e.g. Stored at home, U15 office..."></div>
+      <div class="form-group">
+        <label>Return Location <span class="req">*</span></label>
+        <select id="co-return-loc">
+          <option value="">— Select a return location —</option>
+          <option value="EH Culture Office">EH Culture Office</option>
+          <option value="U15 Culture Office">U15 Culture Office</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Photos <span class="opt">(optional)</span></label>
+        <label class="photo-drop">
+          <input type="file" id="co-photos" multiple accept="image/*" onchange="coPreviewPhotos(this)">
+          <div style="font-size:1.5rem;color:var(--muted);">+</div>
+          <p>Tap to take photos of the items</p>
+        </label>
+        <div class="photo-preview" id="co-photo-preview"></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-label">Photo of items</div>
+      <div class="form-group">
+        <label>Photo of all items being taken <span class="req">*</span></label>
+        <label class="photo-drop" id="co-photo-drop">
+          <input type="file" id="co-photos" multiple accept="image/*" onchange="coPreviewPhotos(this)">
+          <div style="font-size:1.5rem;color:var(--muted);">📷</div>
+          <p>Take a clear photo showing all items before leaving</p>
+        </label>
+        <div class="photo-preview" id="co-photo-preview"></div>
+      </div>
+    </div>
+    <div class="card"><div class="card-label">Review</div><div id="co-review-content"></div></div>
+    <div class="notice notice-gold" style="margin-bottom:1rem;">Your request will be sent to the Mun-Hwa Bu team for approval. Keep an eye on your Telegram!</div>
+    <div style="display:flex;justify-content:space-between;"><button class="btn btn-ghost" onclick="coGoStep(2)">Back</button><button class="btn btn-dark" id="co-submit-btn" onclick="submitCheckout()">Submit Request</button></div>
+  </div>
+
+  <div class="co-form-step" id="co-form-4">
+    <div class="success-state">
+      <div class="success-icon"></div>
+      <h2>Request Submitted!</h2>
+      <p>The Mun-Hwa Bu team has been notified and will approve your request. Keep an eye on your Telegram!</p>
+      <button class="btn btn-dark" onclick="coReset()">Submit Another Request</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const CONFIG = {
+ APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwA86mqargcUKG4wtxPFtFRH8th8aDalxHAnzyo5gVryxK5umZvnGzJviLhtMJZ6D_p0g/exec',
+ SHEET_ID: '1FWY-jAJVXtl13SwZ590VwyKq5cV6jnv6fTSoRfVZW-w',
+ ADMIN_PASSWORD: 'mediaadmin2024',
+};
+
+function formatDate(dateStr) {
+ if (!dateStr) return '—';
+ try {
+ const parts = String(dateStr).split('T')[0].split('-');
+ const d = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+ return d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+ } catch(e) { return dateStr; }
+}
+
+async function postToScript(payload) {
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload),
+    });
+    return await res.json();
+  } catch (err) {
+    console.error('postToScript error:', err);
+    return { error: err.toString() };
+  }
+}
+
+// TEAM CHECKOUT (/#checkout)
+// ══════════════════════════════════════════════════════════════════════════════
+
+const CO_CATALOGUE = {
+  'Sony A7 IV': { cat: 'Photo / Video', max: 3 },
+  'Insta360 X3': { cat: 'Photo / Video', max: 1 },
+  'DJI Mini 5 Pro Drone': { cat: 'Photo / Video', max: 1 },
+  'DJI RS3 Gimbal': { cat: 'Photo / Video', max: 1 },
+  'DJI RS2 Pro Gimbal': { cat: 'Photo / Video', max: 1 },
+  'Wired Microphone': { cat: 'Audio', max: 5 },
+  'XLR Cables': { cat: 'Audio', max: 4 },
+  'Soundboks Speaker': { cat: 'Audio', max: 4 },
+  'MSI Culture Laptop': { cat: 'Computing', max: 1 }
+};
+
+const CO_LENSES = [
+  { id: 'tamron-28-75', brand: 'Tamron', name: '28-75mm f/2.8', max: 2, desc: 'Versatile everyday zoom — great for events, portraits and general use' },
+  { id: 'tamron-70-180', brand: 'Tamron', name: '70-180mm f/2.8', max: 1, desc: 'Telephoto zoom — ideal for distant subjects, compression and stage shots' },
+  { id: 'tamron-17-28', brand: 'Tamron', name: '17-28mm f/2.8', max: 1, desc: 'Wide angle zoom — perfect for environments, group shots and tight spaces' },
+  { id: 'laowa-12', brand: 'Laowa', name: '12mm Zero-D f/2.8', max: 1, desc: 'Ultra wide angle, near-zero distortion — architecture, landscapes and creative shots' },
+];
+
+const CO_TRIPODS = [
+  'Neewer Video Tripod 01',
+  'Neewer Video Tripod 02',
+  'Sachtler Camera Tripod',
+  'K&F Tripod'
+];
+
+const CO_BAGS = [
+  { id: 'bag-1', label: 'Camera Bag 01' },
+  { id: 'bag-2', label: 'Camera Bag 02' },
+  { id: 'bag-3', label: 'Camera Bag 03' }
+];
+
+// item state: { name, qty, batteries, lenses:[], tripods:[], bag:'', cameraNotes:'' }
+let coStep = 1;
+let coSelectedItems = [];
+let coPhotos = [];
+
+function coToggleDamage(show) {
+  document.getElementById('co-damage-block').style.display = show ? 'block' : 'none';
+}
+
+function coReturnPreviewPhotos(input) {
+  const preview = document.getElementById('co-return-photo-preview');
+  preview.innerHTML = '';
+  Array.from(input.files).forEach(function(file) {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    img.className = 'photo-thumb';
+    preview.appendChild(img);
+  });
+}
+
+async function submitReturn() {
+  const returnId = document.getElementById('co-return-id').value;
+  const returnName = document.getElementById('co-return-name').value.trim();
+  if (!returnName) { alert('Please enter your name.'); return; }
+
+  const photoInput = document.getElementById('co-return-photos');
+  if (!photoInput.files || photoInput.files.length === 0) {
+    alert('Please take a photo of the items you are returning.'); return;
+  }
+
+  const hasDamage = document.querySelector('input[name="co-has-damage"]:checked').value === 'yes';
+  const damageDetails = hasDamage ? document.getElementById('co-damage-details').value.trim() : '';
+
+  const btn = document.getElementById('co-return-btn');
+  if (btn) { btn.textContent = 'Submitting...'; btn.disabled = true; }
+
+  try {
+    // Convert photos to base64
+    const photos = await Promise.all(Array.from(photoInput.files).map(function(file) {
+      return new Promise(function(resolve) {
+        const reader = new FileReader();
+        reader.onload = function(e) { resolve({ base64: e.target.result.split(',')[1], mimeType: file.type, name: file.name }); };
+        reader.readAsDataURL(file);
+      });
+    }));
+
+    await postToScript({
+      action: 'confirmTeamReturn',
+      checkoutId: returnId,
+      returnedBy: returnName,
+      damageDetails: damageDetails,
+      photos: photos
+    });
+
+    document.getElementById('co-return-panel').style.display = 'none';
+    document.getElementById('co-return-success').style.display = 'block';
+  } catch(e) {
+    alert('Something went wrong. Please try again.');
+    if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
+  }
+}
+
+function coAddItemRow() {
+  const list = document.getElementById('co-items-list');
+  const row = document.createElement('div');
+  row.className = 'co-item-row';
+  row.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;';
+  const inp = document.createElement('input');
+  inp.type = 'text';
+  inp.placeholder = 'e.g. Tamron 28-75mm lens';
+  inp.style.flex = '1';
+  const btn = document.createElement('button');
+  btn.textContent = '×';
+  btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;';
+  btn.onclick = function() { row.remove(); };
+  row.appendChild(inp);
+  row.appendChild(btn);
+  list.appendChild(row);
+  inp.focus();
+}
+
+function coGetItems() {
+  return Array.from(document.querySelectorAll('#co-items-list .co-item-row input'))
+    .map(el => el.value.trim())
+    .filter(v => v.length > 0);
+}
+
+function coInit() {
+  const today = new Date();
+  const fmt = d => d.toISOString().split('T')[0];
+  document.getElementById('co-date-out').value = fmt(today);
+  const ret = new Date(today); ret.setDate(ret.getDate() + 2);
+  document.getElementById('co-date-return').value = fmt(ret);
+  document.getElementById('co-time-out').value = '09:00';
+  document.getElementById('co-time-return').value = '18:00';
+  coRenderItems();
+}
+
+function coGoStep(n) {
+  coStep = n;
+  document.querySelectorAll('.co-form-step').forEach(s => s.classList.remove('active'));
+  document.getElementById('co-form-' + n).classList.add('active');
+  document.querySelectorAll('.co-step').forEach((s, i) => {
+    s.classList.remove('active', 'done');
+    if (i + 1 < n) s.classList.add('done');
+    else if (i + 1 === n) s.classList.add('active');
+  });
+  if (n === 3) coBuildReview();
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function coNextStep(from) {
+  if (from === 1) {
+    if (!document.getElementById('co-name').value.trim()) { alert('Please enter your name.'); return; }
+    if (!document.getElementById('co-date-out').value) { alert('Please enter a date out.'); return; }
+    if (!document.getElementById('co-date-return').value) { alert('Please enter a return date.'); return; }
+  }
+  if (from === 2) {
+    if (coGetItems().length === 0) { alert('Please add at least one item.'); return; }
+  }
+  coGoStep(from + 1);
+}
+
+function coAddItem(val) {
+  if (!val) return;
+  if (coSelectedItems.find(i => i.name === val)) { alert(val + ' is already added.'); return; }
+  const def = CO_CATALOGUE[val] || {};
+  coSelectedItems.push({
+    name: val, qty: 0, max: def.max || 99,
+    batteries: 0,
+    wantLens: null, lenses: {},
+    wantTripod: null, tripods: [],
+    bag: '', cameraNotes: ''
+  });
+  coRenderItems();
+}
+
+function availBadge(max) {
+  return '<span style="font-size:0.75rem;font-weight:600;color:#1a6b4a;">' + max + ' Available</span>';
+}
+
+function coRenderItems() {
+  const list = document.getElementById('co-items-list');
+  if (!list) return;
+  if (coSelectedItems.length === 0) {
+    list.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:1.5rem 0;">No items added yet. Use the list below to add items.</p>';
+    return;
+  }
+
+  list.innerHTML = coSelectedItems.map((item, idx) => {
+    const def = CO_CATALOGUE[item.name] || {};
+    const isCamera = item.name === 'Sony A7 IV';
+    const isDrone = item.name === 'DJI Mini 5 Pro Drone';
+
+    // ── Header ──
+    let html = '<div style="background:#fff;border:1.5px solid #222;border-radius:8px;margin-bottom:1rem;overflow:hidden;">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1rem;border-bottom:1px solid #eee;">';
+    html += '<div><div style="font-size:0.9rem;font-weight:600;">' + item.name + '</div>';
+    html += '<div style="font-size:0.72rem;color:var(--muted);margin-top:1px;">' + (def.cat || '') + '</div></div>';
+    html += '<button onclick="coRemoveItem(' + idx + ')" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);padding:4px 8px;">×</button>';
+    html += '</div>';
+
+    // ── Quantity row ──
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+    html += '<span style="font-size:0.85rem;font-weight:500;">How many do you need?</span>';
+    html += '<div style="display:flex;align-items:center;gap:1rem;">';
+    html += availBadge(def.max || 1);
+    html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
+    html += '<button onclick="coChangeQty(' + idx + ',-1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
+    html += '<span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;font-family:Syne Mono,monospace;" id="coqty-' + idx + '">' + item.qty + '</span>';
+    html += '<button onclick="coChangeQty(' + idx + ',1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+    html += '</div></div></div>';
+
+    if (isCamera) {
+      // ── Batteries ──
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+      html += '<div><div style="font-size:0.85rem;font-weight:500;">How many batteries do you need?</div>';
+      html += '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">5 Available</div></div>';
+      html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
+      html += '<button onclick="coBattery(' + idx + ',-1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
+      html += '<span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;font-family:Syne Mono,monospace;" id="cobat-' + idx + '">' + item.batteries + '</span>';
+      html += '<button onclick="coBattery(' + idx + ',1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+      html += '</div></div>';
+      html += '</div>';
+
+      // ── Lenses — gated behind Yes/No ──
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;margin-top:0;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+      html += '<span style="font-size:0.85rem;font-weight:500;">Do you need a lens?</span>';
+      html += '<div style="display:flex;border:1.5px solid #bbb;border-radius:8px;overflow:hidden;">';
+      html += '<div onclick="coSetWant(' + idx + ',\'lens\',true)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantLens === true ? '#2563a8' : '#fff') + ';color:' + (item.wantLens === true ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantLens === true ? '600' : '400') + ';border-right:1px solid #d0d0d0;">Yes</div>';
+      html += '<div onclick="coSetWant(' + idx + ',\'lens\',false)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantLens === false ? '#2563a8' : '#fff') + ';color:' + (item.wantLens === false ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantLens === false ? '600' : '400') + ';">No</div>';
+      html += '</div></div>';
+
+      if (item.wantLens === true) {
+        html += '<div style="margin-top:0.75rem;">';
+        const brands = [...new Set(CO_LENSES.map(l => l.brand))];
+        brands.forEach(brand => {
+          html += '<div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0.6rem 0 0.4rem;">' + brand + '</div>';
+          CO_LENSES.filter(l => l.brand === brand).forEach(lens => {
+            const globalLi = CO_LENSES.indexOf(lens);
+            const lensQty = item.lenses[lens.id] || 0;
+            const ticked = lensQty > 0;
+            html += '<div style="border:1.5px solid ' + (ticked ? '#2563a8' : '#ddd') + ';border-radius:8px;padding:0.65rem 0.75rem;margin-bottom:0.5rem;background:' + (ticked ? '#e8f0fb' : '#fff') + ';">';
+            html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
+            html += '<input type="checkbox" ' + (ticked ? 'checked' : '') + ' data-idx="' + idx + '" data-li="' + globalLi + '" onchange="coToggleLensIdx(this)" style="width:16px;height:16px;accent-color:#2563a8;flex-shrink:0;">';
+            html += '<div style="flex:1;">';
+            html += '<div style="font-size:0.85rem;font-weight:500;">' + lens.name + '</div>';
+            html += '<div style="font-size:0.75rem;color:var(--muted);margin-top:1px;">' + lens.desc + '</div>';
+            html += '</div>';
+            if (ticked && lens.max > 1) {
+              html += '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">';
+              html += '<button onclick="coLensQty(' + idx + ',' + globalLi + ',-1)" style="width:26px;height:26px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
+              html += '<span style="font-size:0.9rem;font-weight:700;min-width:18px;text-align:center;" id="colens-' + idx + '-' + globalLi + '">' + lensQty + '</span>';
+              html += '<button onclick="coLensQty(' + idx + ',' + globalLi + ',1)" style="width:26px;height:26px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
+              html += '<span style="font-size:0.7rem;color:#1a6b4a;font-weight:600;">' + lens.max + ' avail</span>';
+              html += '</div>';
+            }
+            html += '</div></div>';
+          });
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+
+      // ── Tripods — gated behind Yes/No ──
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
+      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
+      html += '<span style="font-size:0.85rem;font-weight:500;">Do you need a tripod?</span>';
+      html += '<div style="display:flex;border:1.5px solid #bbb;border-radius:8px;overflow:hidden;">';
+      html += '<div onclick="coSetWant(' + idx + ',\'tripod\',true)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantTripod === true ? '#2563a8' : '#fff') + ';color:' + (item.wantTripod === true ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantTripod === true ? '600' : '400') + ';border-right:1px solid #d0d0d0;">Yes</div>';
+      html += '<div onclick="coSetWant(' + idx + ',\'tripod\',false)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantTripod === false ? '#2563a8' : '#fff') + ';color:' + (item.wantTripod === false ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantTripod === false ? '600' : '400') + ';">No</div>';
+      html += '</div></div>';
+
+      if (item.wantTripod === true) {
+        html += '<div style="margin-top:0.75rem;">';
+        CO_TRIPODS.forEach((tripod, ti) => {
+          const checked = item.tripods.includes(tripod);
+          html += '<label style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;cursor:pointer;font-size:0.85rem;border-bottom:1px solid #f0f0f0;">';
+          html += '<input type="checkbox" ' + (checked ? 'checked' : '') + ' data-idx="' + idx + '" data-ti="' + ti + '" onchange="coToggleTripodIdx(this)" style="width:16px;height:16px;accent-color:#2563a8;">';
+          html += tripod;
+          html += '</label>';
+        });
+        html += '</div>';
+      }
+      html += '</div>';
+
+      // ── Camera Bag ──
+      html += '<div style="padding:0.75rem 1rem;">';
+      html += '<div style="font-size:0.85rem;font-weight:500;margin-bottom:0.6rem;">Select a camera bag</div>';
+      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">';
+      CO_BAGS.forEach((bag, bi) => {
+        const sel = item.bag === bag.id;
+        html += '<div data-bidx="' + idx + '" data-bi="' + bi + '" onclick="coSelectBagIdx(this)" style="border:2px solid ' + (sel ? '#2563a8' : '#bbb') + ';border-radius:8px;cursor:pointer;overflow:hidden;background:' + (sel ? '#e8f0fb' : '#fff') + ';">';
+        html += '<div style="background:#e0e0e0;height:80px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#888;">See Image Here</div>';
+        html += '<div style="padding:0.4rem 0.5rem;font-size:0.75rem;font-weight:' + (sel ? '600' : '400') + ';color:' + (sel ? '#2563a8' : '#333') + ';">' + bag.label + '</div>';
+        html += '</div>';
+      });
+      html += '<div data-bidx="' + idx + '" data-bi="-1" onclick="coSelectBagIdx(this)" style="border:2px solid ' + (!item.bag ? '#2563a8' : '#bbb') + ';border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:80px;background:' + (!item.bag ? '#e8f0fb' : '#fff') + ';font-size:0.78rem;color:' + (!item.bag ? '#2563a8' : '#888') + ';font-weight:' + (!item.bag ? '600' : '400') + ';">No bag needed</div>';
+      html += '</div></div>';
+    }
+
+    if (isDrone) {
+      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;background:#f8f9fa;">';
+      html += '<div style="font-size:0.78rem;color:#2563a8;font-weight:500;">Included in drone bag:</div>';
+      html += '<div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">• DJI Drone Controller &nbsp;•&nbsp; 3x DJI Drone Batteries</div>';
+      html += '</div>';
+    }
+
+    html += '</div>';
+    return html;
+  }).join('');
+}
+
+function coChangeQty(idx, delta) {
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  item.qty = Math.max(0, Math.min(item.max || 99, item.qty + delta));
+  const el = document.getElementById('coqty-' + idx);
+  if (el) el.textContent = item.qty;
+}
+
+function coBattery(idx, delta) {
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  item.batteries = Math.max(0, Math.min(5, item.batteries + delta));
+  const el = document.getElementById('cobat-' + idx);
+  if (el) el.textContent = item.batteries;
+}
+
+function coSetWant(idx, type, val) {
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  if (type === 'lens') {
+    item.wantLens = val;
+    if (!val) item.lenses = {};
+  } else if (type === 'tripod') {
+    item.wantTripod = val;
+    if (!val) item.tripods = [];
+  }
+  coRenderItems();
+}
+
+function coToggleLensIdx(el) {
+  const idx = parseInt(el.dataset.idx);
+  const li = parseInt(el.dataset.li);
+  const lens = CO_LENSES[li];
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  if (el.checked) {
+    item.lenses[lens.id] = 1;
+  } else {
+    delete item.lenses[lens.id];
+  }
+  coRenderItems();
+}
+
+function coLensQty(idx, li, delta) {
+  const lens = CO_LENSES[li];
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  const cur = item.lenses[lens.id] || 0;
+  const next = Math.max(1, Math.min(lens.max, cur + delta));
+  item.lenses[lens.id] = next;
+  coRenderItems();
+}
+
+function coToggleTripodIdx(el) {
+  const idx = parseInt(el.dataset.idx);
+  const ti = parseInt(el.dataset.ti);
+  const tripod = CO_TRIPODS[ti];
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  if (el.checked && !item.tripods.includes(tripod)) item.tripods.push(tripod);
+  else item.tripods = item.tripods.filter(t => t !== tripod);
+}
+
+function coSelectBagIdx(el) {
+  const idx = parseInt(el.dataset.bidx);
+  const bi = parseInt(el.dataset.bi);
+  const item = coSelectedItems[idx];
+  if (!item) return;
+  item.bag = bi >= 0 ? CO_BAGS[bi].id : '';
+  coRenderItems();
+}
+
+function coRemoveItem(idx) {
+  coSelectedItems.splice(idx, 1);
+  coRenderItems();
+}
+
+
+
+function coPreviewPhotos(input) {
+  const preview = document.getElementById('co-photo-preview');
+  preview.innerHTML = '';
+  coPhotos = Array.from(input.files);
+  coPhotos.forEach(f => {
+    const img = document.createElement('img');
+    img.className = 'photo-thumb';
+    img.src = URL.createObjectURL(f);
+    preview.appendChild(img);
+  });
+}
+
+function coBuildReview() {
+  const name = document.getElementById('co-name').value;
+  const dateOut = document.getElementById('co-date-out').value;
+  const timeOut = document.getElementById('co-time-out').value;
+  const dateRet = document.getElementById('co-date-return').value;
+  const timeRet = document.getElementById('co-time-return').value;
+  const purpose = document.getElementById('co-purpose').value;
+  const location = document.getElementById('co-location').value;
+  const storage = document.getElementById('co-storage').value;
+  const returnLoc = document.getElementById('co-return-loc').value;
+
+  let html = '<div class="review-row"><span class="review-key">Member</span><span class="review-val">' + name + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Date Out</span><span class="review-val">' + formatDate(dateOut) + ' at ' + timeOut + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Return</span><span class="review-val">' + formatDate(dateRet) + ' at ' + timeRet + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Return to</span><span class="review-val">' + returnLoc + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + purpose + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Location</span><span class="review-val">' + location + '</span></div>';
+  html += '<div class="review-row"><span class="review-key">Storage</span><span class="review-val">' + storage + '</span></div>';
+  html += '<div class="section-label" style="margin-top:0.75rem;">Items</div>';
+
+  coSelectedItems.forEach(item => {
+    const bagLabel = item.bag ? (CO_BAGS.find(b => b.id === item.bag) || {}).label : 'None';
+    html += '<div class="review-row"><span class="review-key">' + item.name + '</span><span class="review-val">x' + item.qty + '</span></div>';
+    if (item.batteries) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Batteries</span><span class="review-val">x' + item.batteries + '</span></div>';
+    const lensEntries = Object.entries(item.lenses || {});
+    if (lensEntries.length) {
+      const lensStr = lensEntries.map(([id, qty]) => { const l = CO_LENSES.find(x => x.id === id); return (l ? l.name : id) + (qty > 1 ? ' x' + qty : ''); }).join(', ');
+      html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Lenses</span><span class="review-val">' + lensStr + '</span></div>';
+    }
+    if (item.tripods && item.tripods.length) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Tripods</span><span class="review-val">' + item.tripods.join(', ') + '</span></div>';
+    if (item.bag) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Bag</span><span class="review-val">' + bagLabel + '</span></div>';
+  });
+
+  document.getElementById('co-review-content').innerHTML = html;
+}
+
+async function submitCheckout() {
+  const photoInput = document.getElementById('co-photos');
+  if (!photoInput || !photoInput.files || photoInput.files.length === 0) {
+    alert('Please take a photo of the items before submitting.'); return;
+  }
+
+  const btn = document.getElementById('co-submit-btn');
+  if (btn) { btn.textContent = 'Sending...'; btn.disabled = true; }
+
+  const payload = {
+    action: 'logTeamCheckout',
+    memberName: document.getElementById('co-name').value,
+    telegram: document.getElementById('co-telegram').value,
+    dateOut: document.getElementById('co-date-out').value,
+    timeOut: document.getElementById('co-time-out').value,
+    dateReturn: document.getElementById('co-date-return').value,
+    timeReturn: document.getElementById('co-time-return').value,
+    purpose: document.getElementById('co-purpose').value,
+    location: document.getElementById('co-location').value,
+    storage: document.getElementById('co-storage').value,
+    returnLocation: document.getElementById('co-return-loc').value,
+    items: coSelectedItems.map(item => ({
+      name: item.name,
+      qty: item.qty,
+      batteries: item.batteries || 0,
+      lenses: Object.entries(item.lenses || {}).map(([id, qty]) => { const l = CO_LENSES.find(x => x.id === id); return (l ? l.name : id) + (qty > 1 ? ' x' + qty : ''); }),
+      tripods: item.tripods || [],
+      bag: item.bag ? (CO_BAGS.find(b => b.id === item.bag) || {}).label || '' : ''
+    }))
+  };
+
+  try {
+    await postToScript(payload);
+    coGoStep(4);
+  } catch(e) {
+    alert('Something went wrong. Please try again.');
+    if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
+  }
+}
+
+function coReset() {
+  coStep = 1;
+  coSelectedItems = [];
+  coPhotos = [];
+  document.querySelectorAll('#standalone-checkout input[type="text"], #standalone-checkout textarea').forEach(el => el.value = '');
+  document.getElementById('co-photo-preview').innerHTML = '';
+  const list = document.getElementById('co-items-list');
+  if (list) { list.innerHTML = '<div class="co-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;"><input type="text" placeholder="e.g. Sony A7 IV camera" style="flex:1;"><button onclick="this.closest(\'.co-item-row\').remove()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;">×</button></div>'; }
+  coInit();
+  coGoStep(1);
+}
+
+
+
+document.addEventListener('DOMContentLoaded', () => {
+  coInit();
+});
+</script>
+</body>
+</html>

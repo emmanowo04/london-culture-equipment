@@ -636,6 +636,7 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="form-group">
  <label>Contact Person <span class="opt">(optional)</span></label>
  <input type="text" id="req-contact-person" placeholder="Name of contact person">
+ <div style="margin-top:0.5rem;"><label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.84rem;cursor:pointer;"><input type="checkbox" id="req-i-am-contact" onchange="var d=document.getElementById('req-contact-person');d.disabled=this.checked;if(this.checked)d.value='';" style="width:16px;height:16px;accent-color:#2563a8;"> I am the main contact</label></div>
  </div>
  </div>
  <div class="form-row">
@@ -654,16 +655,13 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="hint">You will be notified directly on Telegram when your request is actioned</div>
  </div>
  <div class="form-group">
- <label>Meeting Date &amp; Time <span class="req">*</span></label>
+ <label>Meeting Date &amp; Time to discuss the Request <span class="req">*</span></label>
  <div class="form-row">
  <input type="date" id="req-meeting-date">
  <input type="time" id="req-meeting-time">
  </div>
  <div class="hint">We will contact you at this time to discuss your request</div>
- </div>
- <div class="form-group">
- <label>Purpose of Request <span class="req">*</span></label>
- <textarea id="req-purpose" placeholder="Briefly summarise the purpose of your request..."></textarea>
+ <div style="margin-top:0.5rem;"><label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.84rem;cursor:pointer;"><input type="checkbox" id="req-no-meeting" onchange="toggleNoMeeting(this)" style="width:16px;height:16px;accent-color:#2563a8;"> No Discussion Meeting</label></div>
  </div>
  </div>
 
@@ -755,6 +753,8 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
  <div class="form-group">
+ <label>Purpose / Additional Details <span class="req">*</span></label>
+ <textarea id="coop-purpose" placeholder="Briefly describe the purpose of this cooperation request and any additional details..."></textarea>
  </div>
  <div class="form-group">
  <label>Meeting plan / agenda document <span class="req">*</span></label>
@@ -810,6 +810,8 @@ textarea { resize: vertical; min-height: 90px; }
  <div style="display:flex;flex-direction:column;gap:0.4rem;">
  <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;cursor:pointer;"><input type="checkbox" id="sub-filming-photos" style="width:16px;height:16px;" autocomplete="off"> Photos</label>
  <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;cursor:pointer;"><input type="checkbox" id="sub-filming-video" style="width:16px;height:16px;" autocomplete="off"> Videos & Recording</label>
+ <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;cursor:pointer;"><input type="checkbox" id="sub-filming-other" onchange="document.getElementById('sub-filming-other-text').style.display=this.checked?'block':'none'; if(!this.checked) document.getElementById('sub-filming-other-text').value='';" style="width:16px;height:16px;" autocomplete="off"> Other</label>
+ <textarea id="sub-filming-other-text" placeholder="Describe the other assistance needed..." style="display:none;min-height:60px;margin-top:0.2rem;"></textarea>
  </div>
  </div>
 
@@ -826,22 +828,13 @@ textarea { resize: vertical; min-height: 90px; }
  <label>Purpose of Use <span class="req">*</span></label>
  <textarea id="equip-purpose" placeholder="What will the equipment be used for?"></textarea>
  </div>
- <div class="form-row">
- <div class="form-group">
- <label>Equipment Type <span class="req">*</span></label>
- <div class="toggle-group" id="equip-type-toggle">
- <div class="toggle-opt" onclick="toggleMulti(this)">Photo</div>
- <div class="toggle-opt" onclick="toggleMulti(this)">Video</div>
- </div>
- </div>
- <div class="form-group">
+ <div class="form-group" id="equip-scope-group">
  <label>Scope of Use <span class="req">*</span></label>
  <div class="toggle-group">
  <div class="toggle-opt" onclick="toggleOpt(this,'equip-scope');toggleEquipExternal(this.textContent)">Internal</div>
  <div class="toggle-opt" onclick="toggleOpt(this,'equip-scope');toggleEquipExternal(this.textContent)">External</div>
  </div>
  <input type="hidden" id="equip-scope">
- </div>
  </div>
  <div id="equip-event-fields" style="display:none;background:#f8f9fa;border:1.5px solid #d0d0d0;border-radius:8px;padding:1rem;margin-bottom:1rem;">
  <div class="hint" style="font-weight:600;margin-bottom:0.75rem;" id="equip-event-label">Event details:</div>
@@ -865,23 +858,18 @@ textarea { resize: vertical; min-height: 90px; }
  <input type="time" id="equip-event-time">
  </div>
  </div>
- <div class="form-group">
- <label>Contact Person</label>
- <input type="text" id="equip-contact" placeholder="Name of contact at the event">
- </div>
  </div>
  <div class="form-group">
  <label>Items needed <span class="req">*</span></label>
- <div class="hint" style="margin-bottom:0.75rem;">Set quantities for the items you need</div>
- <div id="equip-qty-list" style="border:1.5px solid #bbb;border-radius:8px;overflow:hidden;">
-<div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;border-bottom:1px solid #eee;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Camera</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('camera',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-camera">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('camera',1)">+</button></div></div>
- <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;border-bottom:1px solid #eee;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Camcorder</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('camcorder',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-camcorder">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('camcorder',1)">+</button></div></div>
- <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;border-bottom:1px solid #eee;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Cajon</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('cajon',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-cajon">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('cajon',1)">+</button></div></div>
- <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;border-bottom:1px solid #eee;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Headset Mics</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('headset',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-headset">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('headset',1)">+</button></div></div>
- <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;border-bottom:1px solid #eee;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Mics</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('mics',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-mics">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('mics',1)">+</button></div></div>
- <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;border-bottom:1px solid #eee;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Piano</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('piano',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-piano">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('piano',1)">+</button></div></div>
- <div style="display:flex;align-items:center;justify-content:space-between;padding:0.65rem 1rem;background:#fff;"><span style="font-size:0.88rem;font-weight:500;color:#0f0f0f;">Tripod</span><div style="display:flex;align-items:center;gap:0.85rem;"><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('tripod',-1)">−</button><span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;color:#0f0f0f;" id="eqitem-tripod">0</span><button style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;cursor:pointer;font-size:1.1rem;font-weight:700;color:#2563a8;display:flex;align-items:center;justify-content:center;line-height:1;" onclick="changeEquipQty('tripod',1)">+</button></div></div>
+ <div class="hint" style="margin-bottom:0.75rem;">Type each item, set a quantity, then press Enter (or "Add another item") for the next line.</div>
+ <div id="equip-items-list">
+ <div class="equip-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
+ <input type="text" class="equip-item-name" placeholder="e.g. Sony A7 IV camera" style="flex:1;" oninput="syncEquipItems()" onkeydown="equipItemKeydown(event,this)">
+ <input type="number" class="equip-item-qty" min="1" value="1" style="width:64px;text-align:center;" oninput="syncEquipItems()" onkeydown="equipItemKeydown(event,this)">
+ <button type="button" onclick="this.closest('.equip-item-row').remove();syncEquipItems();" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;">×</button>
  </div>
+ </div>
+ <button type="button" class="btn btn-ghost btn-sm" onclick="addEquipItemRow()" style="margin-top:0.5rem;width:100%;">+ Add another item</button>
  <input type="hidden" id="equip-items">
  </div>
  <div class="form-row">
@@ -923,16 +911,9 @@ textarea { resize: vertical; min-height: 90px; }
  <label>Purpose of Use <span class="req">*</span></label>
  <textarea id="props-rental-purpose" placeholder="What will the props be used for?"></textarea>
  </div>
- <div class="form-group">
- <label>Scope of Use <span class="req">*</span></label>
- <div class="toggle-group">
- <div class="toggle-opt" onclick="toggleOpt(this,'props-rental-scope');togglePropsExternal('rental',this.textContent)">Internal</div>
- <div class="toggle-opt" onclick="toggleOpt(this,'props-rental-scope');togglePropsExternal('rental',this.textContent)">External</div>
- </div>
  <input type="hidden" id="props-rental-scope">
- </div>
- <div id="props-rental-external-fields" style="display:none;background:#f8f9fa;border:1px solid #d0d0d0;border-radius:8px;padding:1rem;margin-top:0.5rem;">
- <div class="hint" style="font-weight:600;margin-bottom:0.75rem;" id="props-rental-fields-label">Event details:</div>
+ <div id="props-rental-external-fields" style="background:#f8f9fa;border:1px solid #d0d0d0;border-radius:8px;padding:1rem;margin-top:0.5rem;">
+ <div class="hint" style="font-weight:600;margin-bottom:0.75rem;" id="props-rental-fields-label">Event details <span class="opt">(optional)</span>:</div>
  <div class="form-group">
  <label>Event Name</label>
  <input type="text" id="props-rental-event-name" placeholder="e.g. Community Outreach">
@@ -950,10 +931,6 @@ textarea { resize: vertical; min-height: 90px; }
  <label>Time of Event</label>
  <input type="time" id="props-rental-event-time">
  </div>
- </div>
- <div class="form-group">
- <label>Contact Person</label>
- <input type="text" id="props-rental-contact" placeholder="Name of contact at the event">
  </div>
  </div>
  <div class="form-group" style="margin-top:1rem;">
@@ -981,16 +958,13 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
 
  <div id="props-new-fields" style="display:none;">
- <div class="form-group">
- <label>Scope of Use <span class="req">*</span></label>
- <div class="toggle-group">
- <div class="toggle-opt" onclick="toggleOpt(this,'props-new-scope');togglePropsExternal('new',this.textContent)">Internal</div>
- <div class="toggle-opt" onclick="toggleOpt(this,'props-new-scope');togglePropsExternal('new',this.textContent)">External</div>
- </div>
  <input type="hidden" id="props-new-scope">
+ <div class="form-group">
+ <label>Date Required By <span class="req">*</span></label>
+ <input type="date" id="props-new-required-by">
  </div>
- <div id="props-new-external-fields" style="display:none;background:#f8f9fa;border:1px solid #d0d0d0;border-radius:8px;padding:1rem;margin-top:0.5rem;">
- <div class="hint" style="font-weight:600;margin-bottom:0.75rem;" id="props-new-fields-label">Where will the props be used?</div>
+ <div id="props-new-external-fields" style="background:#f8f9fa;border:1px solid #d0d0d0;border-radius:8px;padding:1rem;margin-top:0.5rem;">
+ <div class="hint" style="font-weight:600;margin-bottom:0.75rem;" id="props-new-fields-label">Where will the props be used? <span class="opt">(optional)</span></div>
  <div class="form-group">
  <label>Event Name</label>
  <input type="text" id="props-new-event-name" placeholder="e.g. Sunday Service">
@@ -1008,10 +982,6 @@ textarea { resize: vertical; min-height: 90px; }
  <label>Time of Event</label>
  <input type="time" id="props-new-event-time">
  </div>
- </div>
- <div class="form-group">
- <label>Contact Person</label>
- <input type="text" id="props-new-contact" placeholder="Name of contact person">
  </div>
  </div>
  <div class="form-group" style="margin-top:1rem;">
@@ -1062,6 +1032,11 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="form-group">
  <label>Details <span class="req">*</span></label>
  <textarea id="material-details" placeholder="Photo: Include specific detail about the shot, number of shots, and where this was likely taken (specific event/day/time).&#10;Video: Include specific detail about where the video was captured — event, sermon etc." style="min-height:120px;"></textarea>
+ </div>
+ <div class="form-group">
+ <label>Deadline <span class="req">*</span></label>
+ <input type="date" id="material-deadline">
+ <div class="hint">Deadline means the day you need this material provided to you by</div>
  </div>
  </div>
  </div>
@@ -1490,8 +1465,7 @@ textarea { resize: vertical; min-height: 90px; }
 <script>
 
 // ── ALL STATE VARIABLES ───────────────────────────────────────────────────────
-const equipItems = { camera:0, camcorder:0, cajon:0, headset:0, mics:0, piano:0, tripod:0 };
-const equipItemLabels = { camera:'Camera', camcorder:'Camcorder', cajon:'Cajon', headset:'Headset Mics', mics:'Mics', piano:'Piano', tripod:'Tripod' };
+
 const REQUEST_TYPE_ORDER = ['cooperation', 'equipment', 'props', 'video', 'design', 'material'];
 let selectedReqTypes = new Set();
 let selectedAssistance = new Set();
@@ -1906,15 +1880,67 @@ function getMoodTags() {
  .map(el => el.textContent.trim()).join(', ');
 }
 
-function changeEquipQty(item, delta) {
-  equipItems[item] = Math.max(0, (equipItems[item] || 0) + delta);
-  const el = document.getElementById('eqitem-' + item);
-  if (el) el.textContent = equipItems[item];
-  const summary = Object.entries(equipItems)
-    .filter(([k,v]) => v > 0)
-    .map(function(e){ return e[1] + 'x ' + equipItemLabels[e[0]]; }).join(', ');
+function toTitleCase(str) {
+  if (!str) return str;
+  return str.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
+}
+
+function addEquipItemRow(focusNew) {
+  const list = document.getElementById('equip-items-list');
+  const row = document.createElement('div');
+  row.className = 'equip-item-row';
+  row.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;';
+  const nameInp = document.createElement('input');
+  nameInp.type = 'text';
+  nameInp.className = 'equip-item-name';
+  nameInp.placeholder = 'e.g. Tamron 28-75mm lens';
+  nameInp.style.flex = '1';
+  nameInp.oninput = syncEquipItems;
+  nameInp.addEventListener('keydown', function(e){ equipItemKeydown(e, nameInp); });
+  const qtyInp = document.createElement('input');
+  qtyInp.type = 'number';
+  qtyInp.className = 'equip-item-qty';
+  qtyInp.min = '1';
+  qtyInp.value = '1';
+  qtyInp.style.cssText = 'width:64px;text-align:center;';
+  qtyInp.oninput = syncEquipItems;
+  qtyInp.addEventListener('keydown', function(e){ equipItemKeydown(e, qtyInp); });
+  const btn = document.createElement('button');
+  btn.type = 'button';
+  btn.textContent = '×';
+  btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;';
+  btn.onclick = function() { row.remove(); syncEquipItems(); };
+  row.appendChild(nameInp);
+  row.appendChild(qtyInp);
+  row.appendChild(btn);
+  list.appendChild(row);
+  if (focusNew !== false) nameInp.focus();
+  return row;
+}
+
+function equipItemKeydown(evt, el) {
+  if (evt.key !== 'Enter') return;
+  evt.preventDefault();
+  const row = el.closest('.equip-item-row');
+  const list = document.getElementById('equip-items-list');
+  if (row === list.lastElementChild) {
+    const nameVal = row.querySelector('.equip-item-name').value.trim();
+    if (nameVal) addEquipItemRow();
+  } else if (row.nextElementSibling) {
+    row.nextElementSibling.querySelector('.equip-item-name').focus();
+  }
+}
+
+function syncEquipItems() {
+  const rows = document.querySelectorAll('#equip-items-list .equip-item-row');
+  const parts = [];
+  rows.forEach(function(row) {
+    const name = row.querySelector('.equip-item-name').value.trim();
+    const qty = parseInt(row.querySelector('.equip-item-qty').value, 10) || 1;
+    if (name) parts.push(qty + 'x ' + toTitleCase(name));
+  });
   const hidden = document.getElementById('equip-items');
-  if (hidden) hidden.value = summary;
+  if (hidden) hidden.value = parts.join(', ');
 }
 
 function switchPropsTab(tab) {
@@ -1959,6 +1985,14 @@ function startRequest() {
  showExternalPage('ext-request', null);
  document.querySelectorAll('#app-external .nav-btn').forEach(b => b.classList.remove('active'));
  document.querySelector('#app-external .nav-btn:last-child').classList.add('active');
+}
+
+function toggleNoMeeting(el) {
+ const dateEl = document.getElementById('req-meeting-date');
+ const timeEl = document.getElementById('req-meeting-time');
+ dateEl.disabled = el.checked;
+ timeEl.disabled = el.checked;
+ if (el.checked) { dateEl.value = ''; timeEl.value = ''; }
 }
 
 function toggleReqType(type, el) {
@@ -2013,11 +2047,18 @@ function updateReqStepUI(step) {
 
 function validateReqStep(step) {
   if (step === 1) {
-    if (!get('req-fullname') || !get('req-dept') || !get('req-position') || !get('req-meeting-date')) {
-      alert('Please fill in all required fields including a meeting date.'); return false;
+    if (!get('req-fullname') || !get('req-dept') || !get('req-position')) {
+      alert('Please fill in all required fields.'); return false;
     }
-    if (!get('req-purpose')) {
-      alert('Please enter a purpose for your request.'); return false;
+    const noMeeting = document.getElementById('req-no-meeting') && document.getElementById('req-no-meeting').checked;
+    if (!noMeeting) {
+      if (!get('req-meeting-date') || !get('req-meeting-time')) {
+        alert('Please enter a meeting date and time, or tick "No Discussion Meeting".'); return false;
+      }
+      const meetingDT = new Date(get('req-meeting-date') + 'T' + get('req-meeting-time'));
+      if (meetingDT < new Date()) {
+        alert('The meeting date & time cannot be in the past. Please choose a future date and time.'); return false;
+      }
     }
     if (selectedReqTypes.size === 0) {
       alert('Please select at least one request type.'); return false;
@@ -2030,6 +2071,7 @@ function validateReqStep(step) {
       if (!get('coop-event-name')) { alert('Work Cooperation: please enter an event name.'); return false; }
       if (!get('coop-event-date')) { alert('Work Cooperation: please enter an event date.'); return false; }
       if (!get('coop-venue')) { alert('Work Cooperation: please enter a venue.'); return false; }
+      if (!get('coop-purpose')) { alert('Work Cooperation: please enter the purpose / additional details.'); return false; }
       if (selectedAssistance.size === 0) { alert('Work Cooperation: please select at least one type of assistance needed.'); return false; }
       var noDoc = document.getElementById('coop-no-doc') && document.getElementById('coop-no-doc').checked;
       if (!noDoc && !get('coop-doc-link')) { alert('Work Cooperation: please attach a meeting plan / agenda document, or tick "No document available".'); return false; }
@@ -2053,9 +2095,18 @@ function validateReqStep(step) {
         if (!get('props-rental-pickup')) { alert('Props Rental: please enter a pickup date.'); return false; }
         if (!get('props-rental-return')) { alert('Props Rental: please enter a return date.'); return false; }
       } else {
+        if (!get('props-new-required-by')) { alert('New Props Request: please enter the date the props are required by.'); return false; }
         if (!get('props-new-scene')) { alert('New Props Request: please enter a scene description.'); return false; }
         if (!get('props-new-items')) { alert('New Props Request: please list the props needed.'); return false; }
       }
+    }
+
+    // Validate Material Request required fields
+    if (selectedReqTypes.has('material')) {
+      if (!get('material-type')) { alert('Material Request: please select a material type.'); return false; }
+      if (!get('material-purpose')) { alert('Material Request: please enter a purpose of use.'); return false; }
+      if (!get('material-details')) { alert('Material Request: please enter the details.'); return false; }
+      if (!get('material-deadline')) { alert('Material Request: please enter a deadline.'); return false; }
     }
 
     // Validate Video Production required fields
@@ -2091,7 +2142,7 @@ function showReqSections() {
   // since they are already captured in the cooperation section
 
   // Equipment Rental
-  const equipScopeGroup = document.querySelector('#section-equipment .form-row:nth-child(3)');
+  const equipScopeGroup = document.getElementById('equip-scope-group');
   const equipEventFields = document.getElementById('equip-event-fields');
   if (hasCooperation && selectedReqTypes.has('equipment')) {
     if (equipScopeGroup) equipScopeGroup.style.display = 'none';
@@ -2101,23 +2152,19 @@ function showReqSections() {
     if (equipScopeGroup) equipScopeGroup.style.display = '';
   }
 
-  // Props Rental — hide scope + event fields
-  const propsRentalScopeGroup = document.querySelector('#props-rental-fields .form-group:first-child');
+  // Props Rental / New Props Request — hide optional event-detail fields when covered by Work Cooperation
   const propsRentalExternal = document.getElementById('props-rental-external-fields');
+  const propsNewExternal = document.getElementById('props-new-external-fields');
   if (hasCooperation && selectedReqTypes.has('props')) {
-    if (propsRentalScopeGroup) propsRentalScopeGroup.style.display = 'none';
     if (propsRentalExternal) propsRentalExternal.style.display = 'none';
+    if (propsNewExternal) propsNewExternal.style.display = 'none';
     const ps = document.getElementById('props-rental-scope');
     if (ps) ps.value = 'Via Work Cooperation';
-    // Also hide new props scope/event
-    const propsNewScopeGroup = document.querySelector('#props-new-fields .form-group:first-child');
-    const propsNewExternal = document.getElementById('props-new-external-fields');
-    if (propsNewScopeGroup) propsNewScopeGroup.style.display = 'none';
-    if (propsNewExternal) propsNewExternal.style.display = 'none';
     const pns = document.getElementById('props-new-scope');
     if (pns) pns.value = 'Via Work Cooperation';
   } else {
-    if (propsRentalScopeGroup) propsRentalScopeGroup.style.display = '';
+    if (propsRentalExternal) propsRentalExternal.style.display = '';
+    if (propsNewExternal) propsNewExternal.style.display = '';
   }
 
   // Material Request — hide scope
@@ -2173,9 +2220,12 @@ function buildReqReview() {
   html += '<div class="review-row"><span class="review-key">Name</span><span class="review-val">' + get('req-fullname') + '</span></div>';
   html += '<div class="review-row"><span class="review-key">Department</span><span class="review-val">' + get('req-dept') + '</span></div>';
   html += '<div class="review-row"><span class="review-key">Position</span><span class="review-val">' + get('req-position') + '</span></div>';
-  if (get('req-contact-person')) html += '<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">' + get('req-contact-person') + '</span></div>';
-  if (get('req-meeting-date')) html += '<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">' + formatDate(get('req-meeting-date')) + (get('req-meeting-time') ? ' at ' + get('req-meeting-time') : '') + '</span></div>';
-  html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + get('req-purpose') + '</span></div>';
+  var isMainContact = document.getElementById('req-i-am-contact') && document.getElementById('req-i-am-contact').checked;
+  if (isMainContact) { html += '<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">' + get('req-fullname') + ' (main contact)</span></div>'; }
+  else if (get('req-contact-person')) { html += '<div class="review-row"><span class="review-key">Contact Person</span><span class="review-val">' + get('req-contact-person') + '</span></div>'; }
+  var noMeetingReview = document.getElementById('req-no-meeting') && document.getElementById('req-no-meeting').checked;
+  if (noMeetingReview) { html += '<div class="review-row"><span class="review-key">Meeting</span><span class="review-val">No discussion meeting</span></div>'; }
+  else if (get('req-meeting-date')) { html += '<div class="review-row"><span class="review-key">Meeting Date</span><span class="review-val">' + formatDate(get('req-meeting-date')) + (get('req-meeting-time') ? ' at ' + get('req-meeting-time') : '') + '</span></div>'; }
   if (get('req-telegram')) html += '<div class="review-row"><span class="review-key">Telegram</span><span class="review-val">' + get('req-telegram') + '</span></div>';
 
   // Request types
@@ -2189,7 +2239,6 @@ function buildReqReview() {
     if (propsSubType === 'rental') {
       html += '<div class="section-label">Props Rental</div>';
       html += '<div class="review-row"><span class="review-key">Purpose</span><span class="review-val">' + get('props-rental-purpose') + '</span></div>';
-      html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('props-rental-scope') || '—') + '</span></div>';
       if (get('props-rental-event-name')) html += '<div class="review-row"><span class="review-key">Event</span><span class="review-val">' + get('props-rental-event-name') + '</span></div>';
       if (get('props-rental-location')) html += '<div class="review-row"><span class="review-key">Location</span><span class="review-val">' + get('props-rental-location') + '</span></div>';
       html += '<div class="review-row"><span class="review-key">Items</span><span class="review-val">' + get('props-rental-items') + '</span></div>';
@@ -2198,7 +2247,7 @@ function buildReqReview() {
       html += '<div class="review-row"><span class="review-key">Team Assistance</span><span class="review-val">' + get('props-rental-assistance') + '</span></div>';
     } else {
       html += '<div class="section-label">New Props Request</div>';
-      html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('props-new-scope') || '—') + '</span></div>';
+      html += '<div class="review-row"><span class="review-key">Required By</span><span class="review-val">' + formatDate(get('props-new-required-by')) + '</span></div>';
       if (get('props-new-event-name')) html += '<div class="review-row"><span class="review-key">Event</span><span class="review-val">' + get('props-new-event-name') + '</span></div>';
       html += '<div class="review-row"><span class="review-key">Scene</span><span class="review-val">' + get('props-new-scene') + '</span></div>';
       html += '<div class="review-row"><span class="review-key">Props Needed</span><span class="review-val">' + get('props-new-items') + '</span></div>';
@@ -2212,7 +2261,11 @@ function buildReqReview() {
     html += '<div class="review-row"><span class="review-key">Date</span><span class="review-val">' + formatDate(get('coop-event-date')) + (get('coop-start-time') ? ' at ' + get('coop-start-time') : '') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Venue</span><span class="review-val">' + get('coop-venue') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('coop-scope') || '—') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Purpose / Details</span><span class="review-val">' + get('coop-purpose') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Assistance</span><span class="review-val">' + (get('coop-assistance') || '—') + '</span></div>';
+    if (document.getElementById('sub-filming-other') && document.getElementById('sub-filming-other').checked && get('sub-filming-other-text')) {
+      html += '<div class="review-row"><span class="review-key">Other Assistance</span><span class="review-val">' + get('sub-filming-other-text') + '</span></div>';
+    }
   }
 
   // Equipment Rental
@@ -2231,6 +2284,7 @@ function buildReqReview() {
     html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('material-scope') || '—') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Posted Online?</span><span class="review-val">' + get('material-online') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Details</span><span class="review-val">' + get('material-details') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">Deadline</span><span class="review-val">' + formatDate(get('material-deadline')) + '</span></div>';
   }
 
   // Video Production
@@ -2281,9 +2335,9 @@ async function submitCultureRequest() {
  action: 'newSupportRequest',
  name: get('req-fullname'),
  department: get('req-dept'), position: get('req-position'),
- contactPerson: get('req-contact-person'),
+ contactPerson: document.getElementById('req-i-am-contact') && document.getElementById('req-i-am-contact').checked ? get('req-fullname') : get('req-contact-person'),
  telegram: get('req-telegram'),
- purpose: get('req-purpose'),
+ noDiscussionMeeting: !!(document.getElementById('req-no-meeting') && document.getElementById('req-no-meeting').checked),
  meetingDate: get('req-meeting-date'),
  meetingTime: get('req-meeting-time'),
  requestTypes: [...selectedReqTypes].join(', '),
@@ -2293,13 +2347,17 @@ async function submitCultureRequest() {
  propsRentalItems: get('props-rental-items'), propsRentalPickup: get('props-rental-pickup'),
  propsRentalReturn: get('props-rental-return'), propsRentalAssistance: get('props-rental-assistance'),
  propsRentalEventName: get('props-rental-event-name'), propsRentalLocation: get('props-rental-location'),
- propsNewScope: get('props-new-scope'), propsNewScene: get('props-new-scene'),
+ propsNewScope: get('props-new-scope'), propsNewRequiredBy: get('props-new-required-by'),
+ propsNewScene: get('props-new-scene'),
  propsNewItems: get('props-new-items'), propsNewEventName: get('props-new-event-name'),
+ propsNewLocation: get('props-new-location'),
  // Work Cooperation
  coopEventName: get('coop-event-name'), coopEventDate: get('coop-event-date'),
  coopStartTime: get('coop-start-time'), coopEndTime: get('coop-end-time'),
  coopVenue: get('coop-venue'),
+ coopPurpose: get('coop-purpose'),
  coopAssistance: get('coop-assistance'),
+ coopFilmingOther: document.getElementById('sub-filming-other') && document.getElementById('sub-filming-other').checked ? get('sub-filming-other-text') : '',
  coopDocLink: document.getElementById('coop-no-doc') && document.getElementById('coop-no-doc').checked ? 'No document available' : get('coop-doc-link'),
  // Equipment
  equipPurpose: get('equip-purpose'),
@@ -2309,6 +2367,7 @@ async function submitCultureRequest() {
  materialType: get('material-type'), materialPurpose: get('material-purpose'),
  materialScope: get('material-scope'), materialOnline: get('material-online'),
  materialDetails: get('material-details'),
+ materialDeadline: get('material-deadline'),
  // Video
  videoTitle: get('video-title'), videoUsage: get('video-usage'),
  videoCompletionDate: get('video-completion-date'),

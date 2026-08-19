@@ -753,6 +753,35 @@ const CONFIG = {
  ADMIN_PASSWORD: 'mediaadmin2024',
 };
 
+// ── CLIENT ERROR REPORTING ────────────────────────────────────────────────────
+(function() {
+  var reportedErrors = {};
+  function reportClientError(message, context) {
+    try {
+      var key = String(message).slice(0, 200);
+      if (reportedErrors[key]) return;
+      reportedErrors[key] = true;
+      fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'logClientError',
+          message: String(message).slice(0, 500),
+          context: context || '',
+          page: (window.location.pathname.split('/').pop() || 'checkout.html'),
+          hash: window.location.hash || '',
+        })
+      }).catch(function(){});
+    } catch(e) {}
+  }
+  window.addEventListener('error', function(e) {
+    reportClientError(e.message, (e.filename || '') + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    var reason = e.reason;
+    reportClientError((reason && reason.message) || String(reason), 'unhandledrejection');
+  });
+})();
+
 function formatDate(dateStr) {
  if (!dateStr) return '—';
  try {

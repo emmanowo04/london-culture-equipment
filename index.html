@@ -374,12 +374,17 @@ textarea { resize: vertical; min-height: 90px; }
 
 /* REVIEW */
 .review-row {
- display: flex; justify-content: space-between; align-items: baseline;
+ display: flex; align-items: baseline; gap: 1.25rem;
  padding: 0.6rem 0; border-bottom: 1px solid var(--border); font-size: 0.88rem;
 }
 .review-row:last-child { border-bottom: none; }
-.review-key { color: var(--muted); font-size: 0.75rem; min-width: 140px; }
-.review-val { font-weight: 500; text-align: right; }
+.review-key { color: var(--muted); font-size: 0.75rem; min-width: 140px; flex-shrink: 0; }
+.review-val { font-weight: 500; text-align: left; flex: 1; }
+.req-nav-bar {
+ position: sticky; bottom: 0; z-index: 20; background: #fff;
+ padding: 0.85rem 0; margin-top: 1.5rem;
+ border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+}
 
 .section-label {
  font-family: 'Syne Mono', monospace; font-size: 0.62rem; letter-spacing: 0.14em;
@@ -713,7 +718,7 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
  </div>
- <div style="display:flex;justify-content:flex-end;">
+ <div class="req-nav-bar" style="display:flex;justify-content:flex-end;">
  <button class="btn btn-gold" onclick="nextReqStep(1)">Continue →</button>
  </div>
  </div>
@@ -1166,7 +1171,7 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
 
- <div style="display:flex;justify-content:space-between;margin-top:1rem;">
+ <div class="req-nav-bar" style="display:flex;justify-content:space-between;">
  <button class="btn btn-ghost" onclick="prevReqStep(2)">← Back</button>
  <button class="btn btn-gold" onclick="nextReqStep(2)" id="req-details-next">Review Request →</button>
  </div>
@@ -1178,7 +1183,7 @@ textarea { resize: vertical; min-height: 90px; }
  <div id="req-review-content"></div>
  </div>
  <div class="notice notice-gold"> Your request will be sent to the culture team immediately via Telegram. They will be in touch to confirm.</div>
- <div style="display:flex;justify-content:space-between;">
+ <div class="req-nav-bar" style="display:flex;justify-content:space-between;">
  <button class="btn btn-ghost" onclick="prevReqStep(3)">← Back</button>
  <button class="btn btn-gold" id="req-submit-btn" onclick="submitCultureRequest()">Submit Request</button>
  </div>
@@ -1488,6 +1493,37 @@ const CONFIG = {
  SHEET_ID: '1FWY-jAJVXtl13SwZ590VwyKq5cV6jnv6fTSoRfVZW-w',
  ADMIN_PASSWORD: 'mediaadmin2024',
 };
+
+// ── CLIENT ERROR REPORTING ────────────────────────────────────────────────────
+// Catches unhandled JS errors/rejections and reports them to the bot's DM chat,
+// so problems surface immediately instead of waiting for someone to report them.
+(function() {
+  var reportedErrors = {};
+  function reportClientError(message, context) {
+    try {
+      var key = String(message).slice(0, 200);
+      if (reportedErrors[key]) return;
+      reportedErrors[key] = true;
+      fetch(CONFIG.APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({
+          action: 'logClientError',
+          message: String(message).slice(0, 500),
+          context: context || '',
+          page: (window.location.pathname.split('/').pop() || 'index.html'),
+          hash: window.location.hash || '',
+        })
+      }).catch(function(){});
+    } catch(e) {}
+  }
+  window.addEventListener('error', function(e) {
+    reportClientError(e.message, (e.filename || '') + ':' + (e.lineno || ''));
+  });
+  window.addEventListener('unhandledrejection', function(e) {
+    var reason = e.reason;
+    reportClientError((reason && reason.message) || String(reason), 'unhandledrejection');
+  });
+})();
 
 const EVENT_LABELS = {
  worship: 'Worship Night', prayer: 'Prayer Meeting',
@@ -2260,7 +2296,6 @@ function buildReqReview() {
     html += '<div class="review-row"><span class="review-key">Event</span><span class="review-val">' + get('coop-event-name') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Date</span><span class="review-val">' + formatDate(get('coop-event-date')) + (get('coop-start-time') ? ' at ' + get('coop-start-time') : '') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Venue</span><span class="review-val">' + get('coop-venue') + '</span></div>';
-    html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('coop-scope') || '—') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Purpose / Details</span><span class="review-val">' + get('coop-purpose') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Assistance</span><span class="review-val">' + (get('coop-assistance') || '—') + '</span></div>';
     if (document.getElementById('sub-filming-other') && document.getElementById('sub-filming-other').checked && get('sub-filming-other-text')) {
@@ -2399,6 +2434,7 @@ async function submitCultureRequest() {
     clearTimeout(timeout);
     document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
     document.getElementById('req-form-4').classList.add('active');
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch(e) {
     clearTimeout(timeout);
     alert('Something went wrong. Please try again.');
@@ -2416,6 +2452,7 @@ function resetCultureRequest() {
   document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
   document.getElementById('req-form-1').classList.add('active');
   document.querySelectorAll('#ext-request .step').forEach((s,i) => { s.classList.remove('active','done'); if(i===0) s.classList.add('active'); });
+  window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Reset all inputs, textareas, selects
   document.querySelectorAll('#ext-request input[type="text"], #ext-request input[type="date"], #ext-request input[type="time"], #ext-request input[type="hidden"], #ext-request input[type="email"], #ext-request input[type="password"], #ext-request textarea, #ext-request select')

@@ -1694,13 +1694,20 @@ document.addEventListener('DOMContentLoaded', async () => {
   // Uncheck all checkboxes on load (prevent browser autocomplete)
   document.querySelectorAll('input[type="checkbox"]').forEach(el => el.checked = false);
 
-  // Reset equipment quantities on load
+  // Reset equipment item rows on load
   function resetEquipQtys() {
-    Object.keys(equipItems).forEach(k => {
-      equipItems[k] = 0;
-      const el = document.getElementById('eqitem-' + k);
-      if (el) el.textContent = '0';
-    });
+    const list = document.getElementById('equip-items-list');
+    if (list) {
+      const rows = list.querySelectorAll('.equip-item-row');
+      rows.forEach((row, i) => { if (i > 0) row.remove(); });
+      const firstRow = list.querySelector('.equip-item-row');
+      if (firstRow) {
+        const nameEl = firstRow.querySelector('.equip-item-name');
+        const qtyEl = firstRow.querySelector('.equip-item-qty');
+        if (nameEl) nameEl.value = '';
+        if (qtyEl) qtyEl.value = '1';
+      }
+    }
     const equipHidden = document.getElementById('equip-items');
     if (equipHidden) equipHidden.value = '';
   }
@@ -2102,6 +2109,12 @@ function validateReqStep(step) {
   }
 
   if (step === 2) {
+    if (selectedReqTypes.size === 0) {
+      alert('No request type is selected. Please go back and select at least one.');
+      reqStep = 1;
+      updateReqStepUI(1);
+      return false;
+    }
     // Validate Work Cooperation required fields
     if (selectedReqTypes.has('cooperation')) {
       if (!get('coop-event-name')) { alert('Work Cooperation: please enter an event name.'); return false; }
@@ -2459,19 +2472,26 @@ function resetCultureRequest() {
   window.scrollTo({ top: 0, behavior: 'smooth' });
 
   // Reset all inputs, textareas, selects
-  document.querySelectorAll('#ext-request input[type="text"], #ext-request input[type="date"], #ext-request input[type="time"], #ext-request input[type="hidden"], #ext-request input[type="email"], #ext-request input[type="password"], #ext-request textarea, #ext-request select')
+  document.querySelectorAll('#ext-request input[type="text"], #ext-request input[type="date"], #ext-request input[type="time"], #ext-request input[type="hidden"], #ext-request input[type="email"], #ext-request input[type="password"], #ext-request input[type="number"], #ext-request textarea, #ext-request select')
     .forEach(el => el.value = '');
 
   // Uncheck all checkboxes
   document.querySelectorAll('#ext-request input[type="checkbox"]')
     .forEach(el => el.checked = false);
 
-  // Reset qty counters
-  Object.keys(equipItems).forEach(k => {
-    equipItems[k] = 0;
-    const el = document.getElementById('eqitem-' + k);
-    if (el) el.textContent = '0';
-  });
+  // Reset equipment item rows
+  const equipList = document.getElementById('equip-items-list');
+  if (equipList) {
+    const rows = equipList.querySelectorAll('.equip-item-row');
+    rows.forEach((row, i) => { if (i > 0) row.remove(); });
+    const firstRow = equipList.querySelector('.equip-item-row');
+    if (firstRow) {
+      const nameEl = firstRow.querySelector('.equip-item-name');
+      const qtyEl = firstRow.querySelector('.equip-item-qty');
+      if (nameEl) nameEl.value = '';
+      if (qtyEl) qtyEl.value = '1';
+    }
+  }
 
   // Hide all sub-panels
   ['sub-media','sub-sound','sub-filming'].forEach(id => {

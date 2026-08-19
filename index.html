@@ -2430,8 +2430,12 @@ async function submitCultureRequest() {
   }, 30000);
 
   try {
-    await postToScript(payload);
+    const result = await postToScript(payload);
     clearTimeout(timeout);
+    if (result && result.success === false) {
+      alert(result.error || 'Your request could not be submitted. Please check the form and try again.');
+      return;
+    }
     document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
     document.getElementById('req-form-4').classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });

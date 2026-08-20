@@ -328,7 +328,8 @@ textarea { resize: vertical; min-height: 90px; }
 .step-num { font-family: 'Syne Mono', monospace; font-size: 0.58rem; display: block; opacity: 0.6; margin-bottom: 0.1rem; }
 
 .form-step { display: none; }
-.form-step.active { display: block; animation: fadeUp 0.25s ease; }
+.form-step.active { display: block; animation: fadeIn 0.25s ease; }
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
 
 /* BUTTONS */
 .btn {
@@ -381,9 +382,14 @@ textarea { resize: vertical; min-height: 90px; }
 .review-key { color: var(--muted); font-size: 0.75rem; min-width: 140px; flex-shrink: 0; }
 .review-val { font-weight: 500; text-align: left; flex: 1; }
 .req-nav-bar {
- position: sticky; bottom: 0; z-index: 20; background: #fff;
- padding: 0.85rem 0; margin-top: 1.5rem;
- border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+ position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; background: #fff;
+ max-width: 720px; margin: 0 auto;
+ padding: 0.85rem 2rem; border-top: 1px solid var(--border); box-shadow: 0 -4px 12px rgba(0,0,0,0.06);
+}
+#ext-request .form-step { padding-bottom: 5rem; }
+
+@media (max-width: 768px) {
+  .req-nav-bar { padding: 0.85rem 1rem; }
 }
 
 .section-label {
@@ -626,8 +632,9 @@ textarea { resize: vertical; min-height: 90px; }
 
  <div class="steps">
  <div class="step active" id="req-step-ind-1"><span class="step-num">01</span>Your Details</div>
- <div class="step" id="req-step-ind-2"><span class="step-num">02</span>Request Details</div>
- <div class="step" id="req-step-ind-3"><span class="step-num">03</span>Confirm</div>
+ <div class="step" id="req-step-ind-2"><span class="step-num">02</span>Request Type</div>
+ <div class="step" id="req-step-ind-3"><span class="step-num">03</span>Request Details</div>
+ <div class="step" id="req-step-ind-4"><span class="step-num">04</span>Confirm</div>
  </div>
 
  <div class="form-step active" id="req-form-1">
@@ -670,6 +677,12 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
 
+ <div class="req-nav-bar" style="display:flex;justify-content:flex-end;">
+ <button class="btn btn-gold" onclick="nextReqStep(1)">Continue →</button>
+ </div>
+ </div>
+
+ <div class="form-step" id="req-form-2">
  <div class="card">
  <div class="card-label">What are you requesting?</div>
  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1.25rem;">Select all that apply. You will be asked for details on each one.</p>
@@ -718,12 +731,13 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  </div>
  </div>
- <div class="req-nav-bar" style="display:flex;justify-content:flex-end;">
- <button class="btn btn-gold" onclick="nextReqStep(1)">Continue →</button>
+ <div class="req-nav-bar" style="display:flex;justify-content:space-between;">
+ <button class="btn btn-ghost" onclick="prevReqStep(2)">← Back</button>
+ <button class="btn btn-gold" onclick="nextReqStep(2)">Continue →</button>
  </div>
  </div>
 
- <div class="form-step" id="req-form-2">
+ <div class="form-step" id="req-form-3">
  <div id="req-progress-indicator" style="font-family:Syne Mono,monospace;font-size:0.72rem;color:var(--muted);margin-bottom:1.25rem;letter-spacing:0.05em;"></div>
 
  <div id="section-cooperation" class="req-section" style="display:none;">
@@ -1172,24 +1186,24 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
 
  <div class="req-nav-bar" style="display:flex;justify-content:space-between;">
- <button class="btn btn-ghost" onclick="prevReqStep(2)">← Back</button>
- <button class="btn btn-gold" onclick="nextReqStep(2)" id="req-details-next">Review Request →</button>
+ <button class="btn btn-ghost" onclick="prevReqStep(3)">← Back</button>
+ <button class="btn btn-gold" onclick="nextReqStep(3)" id="req-details-next">Review Request →</button>
  </div>
  </div>
 
- <div class="form-step" id="req-form-3">
+ <div class="form-step" id="req-form-4">
  <div class="card">
  <div class="card-label">Request Summary</div>
  <div id="req-review-content"></div>
  </div>
  <div class="notice notice-gold"> Your request will be sent to the culture team immediately via Telegram. They will be in touch to confirm.</div>
  <div class="req-nav-bar" style="display:flex;justify-content:space-between;">
- <button class="btn btn-ghost" onclick="prevReqStep(3)">← Back</button>
+ <button class="btn btn-ghost" onclick="prevReqStep(4)">← Back</button>
  <button class="btn btn-gold" id="req-submit-btn" onclick="submitCultureRequest()">Submit Request</button>
  </div>
  </div>
 
- <div class="form-step" id="req-form-4">
+ <div class="form-step" id="req-form-5">
  <div class="success-state">
  <div class="success-icon"></div>
  <h2>Request Submitted!</h2>
@@ -2066,8 +2080,8 @@ function toggleAssist(type, el) {
 
 function nextReqStep(from) {
  if (!validateReqStep(from)) return;
- if (from === 1) showReqSections();
- if (from === 2) buildReqReview();
+ if (from === 2) showReqSections();
+ if (from === 3) buildReqReview();
  reqStep = from + 1;
  updateReqStepUI(reqStep);
 }
@@ -2103,16 +2117,19 @@ function validateReqStep(step) {
         alert('The meeting date & time cannot be in the past. Please choose a future date and time.'); return false;
       }
     }
+  }
+
+  if (step === 2) {
     if (selectedReqTypes.size === 0) {
       alert('Please select at least one request type.'); return false;
     }
   }
 
-  if (step === 2) {
+  if (step === 3) {
     if (selectedReqTypes.size === 0) {
       alert('No request type is selected. Please go back and select at least one.');
-      reqStep = 1;
-      updateReqStepUI(1);
+      reqStep = 2;
+      updateReqStepUI(2);
       return false;
     }
     // Validate Work Cooperation required fields
@@ -2450,7 +2467,7 @@ async function submitCultureRequest() {
       return;
     }
     document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
-    document.getElementById('req-form-4').classList.add('active');
+    document.getElementById('req-form-5').classList.add('active');
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch(e) {
     clearTimeout(timeout);

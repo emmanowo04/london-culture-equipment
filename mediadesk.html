@@ -863,6 +863,19 @@ function mdToggleAssistants(show) {
   const block = document.getElementById('md-assistants-block');
   block.style.display = show ? 'block' : 'none';
   if (show && mdAssistantCount === 0) mdAddAssistant();
+
+  // If they had "All of the above" selected but now say someone's assisting,
+  // that no longer makes sense -- clear it and force them to actively pick
+  // which equipment they're personally operating. The existing "at least one
+  // item required" check at submit time then makes this mandatory: they
+  // cannot complete sign in until they've made a real selection.
+  if (show) {
+    const allBox = document.getElementById('md-eq-all');
+    if (allBox.checked) {
+      allBox.checked = false;
+      mdToggleAllEquipment(allBox);
+    }
+  }
 }
 
 function mdAddAssistant() {

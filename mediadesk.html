@@ -698,7 +698,7 @@ textarea { resize: vertical; min-height: 90px; }
       <div class="form-group">
         <label>Photos of media desk <span class="req">*</span> <span id="md-photo-issue-note" style="font-size:0.75rem;color:#c0392b;display:none;">— Required when reporting an issue</span></label>
         <label class="photo-drop">
-          <input type="file" id="md-signout-photo" accept="image/*" multiple onchange="mdPreviewSignoutPhoto(this)">
+          <input type="file" id="md-signout-photo" accept="image/*" capture="environment" multiple onchange="mdPreviewSignoutPhoto(this)">
           <div style="font-size:1.5rem;color:var(--muted);">📷</div>
           <p>Take photos of the media desk before leaving</p>
         </label>
@@ -947,11 +947,22 @@ async function mdLoadOpenEntries() {
 }
 
 async function mdSubmitSignOut() {
-  const signInName = document.getElementById('md-entry-select').value.trim();
-  if (!signInName) { alert('Please enter your name.'); return; }
+  const signOutName = document.getElementById('md-entry-select').value.trim();
+  if (!signOutName) { alert('Please enter your name.'); return; }
+
+  const signOutLocation = document.getElementById('md-signout-location').value;
+  if (!signOutLocation) { alert('Please select a location.'); return; }
 
   const timeOut = document.getElementById('md-time-out').value;
   if (!timeOut) { alert('Please enter a time out.'); return; }
+
+  const photoInput = document.getElementById('md-signout-photo');
+  const photoFiles = photoInput.files ? Array.from(photoInput.files) : [];
+  if (photoFiles.length === 0) { alert('Please take or choose at least one photo of the media desk.'); return; }
+
+  const hasIssue = document.querySelector('input[name="md-has-issue"]:checked').value === 'yes';
+  const issueDetails = document.getElementById('md-issue-details').value.trim();
+  if (hasIssue && !issueDetails) { alert('Please describe the issue or damaged item.'); return; }
 
   const btn = document.querySelector('#md-signout-panel .btn-dark');
   if (btn) { btn.textContent = 'Signing out...'; btn.disabled = true; }
@@ -962,19 +973,34 @@ async function mdSubmitSignOut() {
   }, 30000);
 
   try {
-    await postToScript({
+    const photos = await Promise.all(photoFiles.map(function(file) {
+      return new Promise(function(resolve) {
+        const reader = new FileReader();
+        reader.onload = function(e) { resolve({ base64: e.target.result.split(',')[1], mimeType: file.type || 'image/jpeg', name: file.name }); };
+        reader.readAsDataURL(file);
+      });
+    }));
+
+    const result = await postToScript({
       action: 'mdSignOut',
-      entryId: entryId,
       signOutName: signOutName,
-      timeOut: timeOut
+      signOutLocation: signOutLocation,
+      timeOut: timeOut,
+      issueDetails: hasIssue ? issueDetails : '',
+      photos: photos
     });
 
     clearTimeout(signOutTimeout);
+    if (result && result.success === false) {
+      alert(result.error || 'Sign out could not be completed. Please check the form and try again.');
+      return;
+    }
+
     document.getElementById('md-signout-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed Out';
-    const issueNote = issueDetails ? ' Issue reported.' : '';
-    document.getElementById('md-success-msg').textContent = signInName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
+    const issueNote = hasIssue ? ' Issue reported.' : '';
+    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
   } catch(e) {
     clearTimeout(signOutTimeout);
     alert('Something went wrong. Please try again.');

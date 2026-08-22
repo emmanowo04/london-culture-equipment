@@ -812,41 +812,7 @@ async function postToScript(payload) {
 // TEAM CHECKOUT (/#checkout)
 // ══════════════════════════════════════════════════════════════════════════════
 
-const CO_CATALOGUE = {
-  'Sony A7 IV': { cat: 'Photo / Video', max: 3 },
-  'Insta360 X3': { cat: 'Photo / Video', max: 1 },
-  'DJI Mini 5 Pro Drone': { cat: 'Photo / Video', max: 1 },
-  'DJI RS3 Gimbal': { cat: 'Photo / Video', max: 1 },
-  'DJI RS2 Pro Gimbal': { cat: 'Photo / Video', max: 1 },
-  'Wired Microphone': { cat: 'Audio', max: 5 },
-  'XLR Cables': { cat: 'Audio', max: 4 },
-  'Soundboks Speaker': { cat: 'Audio', max: 4 },
-  'MSI Culture Laptop': { cat: 'Computing', max: 1 }
-};
-
-const CO_LENSES = [
-  { id: 'tamron-28-75', brand: 'Tamron', name: '28-75mm f/2.8', max: 2, desc: 'Versatile everyday zoom — great for events, portraits and general use' },
-  { id: 'tamron-70-180', brand: 'Tamron', name: '70-180mm f/2.8', max: 1, desc: 'Telephoto zoom — ideal for distant subjects, compression and stage shots' },
-  { id: 'tamron-17-28', brand: 'Tamron', name: '17-28mm f/2.8', max: 1, desc: 'Wide angle zoom — perfect for environments, group shots and tight spaces' },
-  { id: 'laowa-12', brand: 'Laowa', name: '12mm Zero-D f/2.8', max: 1, desc: 'Ultra wide angle, near-zero distortion — architecture, landscapes and creative shots' },
-];
-
-const CO_TRIPODS = [
-  'Neewer Video Tripod 01',
-  'Neewer Video Tripod 02',
-  'Sachtler Camera Tripod',
-  'K&F Tripod'
-];
-
-const CO_BAGS = [
-  { id: 'bag-1', label: 'Camera Bag 01' },
-  { id: 'bag-2', label: 'Camera Bag 02' },
-  { id: 'bag-3', label: 'Camera Bag 03' }
-];
-
-// item state: { name, qty, batteries, lenses:[], tripods:[], bag:'', cameraNotes:'' }
 let coStep = 1;
-let coSelectedItems = [];
 let coPhotos = [];
 
 function coToggleDamage(show) {
@@ -906,7 +872,7 @@ async function submitReturn() {
   }
 }
 
-function coAddItemRow() {
+function coAddItemRow(focusNew) {
   const list = document.getElementById('co-items-list');
   const row = document.createElement('div');
   row.className = 'co-item-row';
@@ -922,8 +888,28 @@ function coAddItemRow() {
   row.appendChild(inp);
   row.appendChild(btn);
   list.appendChild(row);
-  inp.focus();
+  if (focusNew !== false) inp.focus();
+  return row;
 }
+
+// Delegated listener so Enter-to-add-next-row works no matter how a row was
+// created (static HTML, coAddItemRow(), or coReset() rebuilding the list) --
+// avoids relying on each creation point remembering to wire its own handler.
+document.addEventListener('DOMContentLoaded', function() {
+  const list = document.getElementById('co-items-list');
+  if (!list) return;
+  list.addEventListener('keydown', function(evt) {
+    if (evt.key !== 'Enter') return;
+    if (!evt.target.matches('.co-item-row input')) return;
+    evt.preventDefault();
+    const row = evt.target.closest('.co-item-row');
+    if (row === list.lastElementChild) {
+      if (evt.target.value.trim()) coAddItemRow();
+    } else if (row.nextElementSibling) {
+      row.nextElementSibling.querySelector('input').focus();
+    }
+  });
+});
 
 function toTitleCase(str) {
   if (!str) return str;
@@ -944,7 +930,6 @@ function coInit() {
   document.getElementById('co-date-return').value = fmt(ret);
   document.getElementById('co-time-out').value = '09:00';
   document.getElementById('co-time-return').value = '18:00';
-  coRenderItems();
 }
 
 function coGoStep(n) {
@@ -972,234 +957,6 @@ function coNextStep(from) {
   coGoStep(from + 1);
 }
 
-function coAddItem(val) {
-  if (!val) return;
-  if (coSelectedItems.find(i => i.name === val)) { alert(val + ' is already added.'); return; }
-  const def = CO_CATALOGUE[val] || {};
-  coSelectedItems.push({
-    name: val, qty: 0, max: def.max || 99,
-    batteries: 0,
-    wantLens: null, lenses: {},
-    wantTripod: null, tripods: [],
-    bag: '', cameraNotes: ''
-  });
-  coRenderItems();
-}
-
-function availBadge(max) {
-  return '<span style="font-size:0.75rem;font-weight:600;color:#1a6b4a;">' + max + ' Available</span>';
-}
-
-function coRenderItems() {
-  const list = document.getElementById('co-items-list');
-  if (!list) return;
-  if (coSelectedItems.length === 0) {
-    list.innerHTML = '<p style="font-size:0.85rem;color:var(--muted);text-align:center;padding:1.5rem 0;">No items added yet. Use the list below to add items.</p>';
-    return;
-  }
-
-  list.innerHTML = coSelectedItems.map((item, idx) => {
-    const def = CO_CATALOGUE[item.name] || {};
-    const isCamera = item.name === 'Sony A7 IV';
-    const isDrone = item.name === 'DJI Mini 5 Pro Drone';
-
-    // ── Header ──
-    let html = '<div style="background:#fff;border:1.5px solid #222;border-radius:8px;margin-bottom:1rem;overflow:hidden;">';
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.85rem 1rem;border-bottom:1px solid #eee;">';
-    html += '<div><div style="font-size:0.9rem;font-weight:600;">' + item.name + '</div>';
-    html += '<div style="font-size:0.72rem;color:var(--muted);margin-top:1px;">' + (def.cat || '') + '</div></div>';
-    html += '<button onclick="coRemoveItem(' + idx + ')" style="background:none;border:none;cursor:pointer;font-size:1.1rem;color:var(--muted);padding:4px 8px;">×</button>';
-    html += '</div>';
-
-    // ── Quantity row ──
-    html += '<div style="display:flex;align-items:center;justify-content:space-between;padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
-    html += '<span style="font-size:0.85rem;font-weight:500;">How many do you need?</span>';
-    html += '<div style="display:flex;align-items:center;gap:1rem;">';
-    html += availBadge(def.max || 1);
-    html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
-    html += '<button onclick="coChangeQty(' + idx + ',-1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
-    html += '<span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;font-family:Syne Mono,monospace;" id="coqty-' + idx + '">' + item.qty + '</span>';
-    html += '<button onclick="coChangeQty(' + idx + ',1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
-    html += '</div></div></div>';
-
-    if (isCamera) {
-      // ── Batteries ──
-      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-      html += '<div><div style="font-size:0.85rem;font-weight:500;">How many batteries do you need?</div>';
-      html += '<div style="font-size:0.75rem;color:var(--muted);margin-top:2px;">5 Available</div></div>';
-      html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
-      html += '<button onclick="coBattery(' + idx + ',-1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
-      html += '<span style="font-size:1rem;font-weight:700;min-width:20px;text-align:center;font-family:Syne Mono,monospace;" id="cobat-' + idx + '">' + item.batteries + '</span>';
-      html += '<button onclick="coBattery(' + idx + ',1)" style="width:30px;height:30px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1.1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
-      html += '</div></div>';
-      html += '</div>';
-
-      // ── Lenses — gated behind Yes/No ──
-      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;margin-top:0;">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-      html += '<span style="font-size:0.85rem;font-weight:500;">Do you need a lens?</span>';
-      html += '<div style="display:flex;border:1.5px solid #bbb;border-radius:8px;overflow:hidden;">';
-      html += '<div onclick="coSetWant(' + idx + ',\'lens\',true)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantLens === true ? '#2563a8' : '#fff') + ';color:' + (item.wantLens === true ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantLens === true ? '600' : '400') + ';border-right:1px solid #d0d0d0;">Yes</div>';
-      html += '<div onclick="coSetWant(' + idx + ',\'lens\',false)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantLens === false ? '#2563a8' : '#fff') + ';color:' + (item.wantLens === false ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantLens === false ? '600' : '400') + ';">No</div>';
-      html += '</div></div>';
-
-      if (item.wantLens === true) {
-        html += '<div style="margin-top:0.75rem;">';
-        const brands = [...new Set(CO_LENSES.map(l => l.brand))];
-        brands.forEach(brand => {
-          html += '<div style="font-size:0.7rem;font-weight:600;text-transform:uppercase;letter-spacing:0.08em;color:var(--muted);margin:0.6rem 0 0.4rem;">' + brand + '</div>';
-          CO_LENSES.filter(l => l.brand === brand).forEach(lens => {
-            const globalLi = CO_LENSES.indexOf(lens);
-            const lensQty = item.lenses[lens.id] || 0;
-            const ticked = lensQty > 0;
-            html += '<div style="border:1.5px solid ' + (ticked ? '#2563a8' : '#ddd') + ';border-radius:8px;padding:0.65rem 0.75rem;margin-bottom:0.5rem;background:' + (ticked ? '#e8f0fb' : '#fff') + ';">';
-            html += '<div style="display:flex;align-items:center;gap:0.6rem;">';
-            html += '<input type="checkbox" ' + (ticked ? 'checked' : '') + ' data-idx="' + idx + '" data-li="' + globalLi + '" onchange="coToggleLensIdx(this)" style="width:16px;height:16px;accent-color:#2563a8;flex-shrink:0;">';
-            html += '<div style="flex:1;">';
-            html += '<div style="font-size:0.85rem;font-weight:500;">' + lens.name + '</div>';
-            html += '<div style="font-size:0.75rem;color:var(--muted);margin-top:1px;">' + lens.desc + '</div>';
-            html += '</div>';
-            if (ticked && lens.max > 1) {
-              html += '<div style="display:flex;align-items:center;gap:0.5rem;flex-shrink:0;">';
-              html += '<button onclick="coLensQty(' + idx + ',' + globalLi + ',-1)" style="width:26px;height:26px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">−</button>';
-              html += '<span style="font-size:0.9rem;font-weight:700;min-width:18px;text-align:center;" id="colens-' + idx + '-' + globalLi + '">' + lensQty + '</span>';
-              html += '<button onclick="coLensQty(' + idx + ',' + globalLi + ',1)" style="width:26px;height:26px;border-radius:50%;border:2px solid #2563a8;background:#fff;color:#2563a8;font-size:1rem;font-weight:700;cursor:pointer;display:flex;align-items:center;justify-content:center;">+</button>';
-              html += '<span style="font-size:0.7rem;color:#1a6b4a;font-weight:600;">' + lens.max + ' avail</span>';
-              html += '</div>';
-            }
-            html += '</div></div>';
-          });
-        });
-        html += '</div>';
-      }
-      html += '</div>';
-
-      // ── Tripods — gated behind Yes/No ──
-      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;">';
-      html += '<div style="display:flex;align-items:center;justify-content:space-between;">';
-      html += '<span style="font-size:0.85rem;font-weight:500;">Do you need a tripod?</span>';
-      html += '<div style="display:flex;border:1.5px solid #bbb;border-radius:8px;overflow:hidden;">';
-      html += '<div onclick="coSetWant(' + idx + ',\'tripod\',true)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantTripod === true ? '#2563a8' : '#fff') + ';color:' + (item.wantTripod === true ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantTripod === true ? '600' : '400') + ';border-right:1px solid #d0d0d0;">Yes</div>';
-      html += '<div onclick="coSetWant(' + idx + ',\'tripod\',false)" style="padding:0.4rem 1rem;font-size:0.82rem;cursor:pointer;background:' + (item.wantTripod === false ? '#2563a8' : '#fff') + ';color:' + (item.wantTripod === false ? '#fff' : 'var(--muted)') + ';font-weight:' + (item.wantTripod === false ? '600' : '400') + ';">No</div>';
-      html += '</div></div>';
-
-      if (item.wantTripod === true) {
-        html += '<div style="margin-top:0.75rem;">';
-        CO_TRIPODS.forEach((tripod, ti) => {
-          const checked = item.tripods.includes(tripod);
-          html += '<label style="display:flex;align-items:center;gap:0.6rem;padding:0.5rem 0;cursor:pointer;font-size:0.85rem;border-bottom:1px solid #f0f0f0;">';
-          html += '<input type="checkbox" ' + (checked ? 'checked' : '') + ' data-idx="' + idx + '" data-ti="' + ti + '" onchange="coToggleTripodIdx(this)" style="width:16px;height:16px;accent-color:#2563a8;">';
-          html += tripod;
-          html += '</label>';
-        });
-        html += '</div>';
-      }
-      html += '</div>';
-
-      // ── Camera Bag ──
-      html += '<div style="padding:0.75rem 1rem;">';
-      html += '<div style="font-size:0.85rem;font-weight:500;margin-bottom:0.6rem;">Select a camera bag</div>';
-      html += '<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:0.5rem;">';
-      CO_BAGS.forEach((bag, bi) => {
-        const sel = item.bag === bag.id;
-        html += '<div data-bidx="' + idx + '" data-bi="' + bi + '" onclick="coSelectBagIdx(this)" style="border:2px solid ' + (sel ? '#2563a8' : '#bbb') + ';border-radius:8px;cursor:pointer;overflow:hidden;background:' + (sel ? '#e8f0fb' : '#fff') + ';">';
-        html += '<div style="background:#e0e0e0;height:80px;display:flex;align-items:center;justify-content:center;font-size:0.7rem;color:#888;">See Image Here</div>';
-        html += '<div style="padding:0.4rem 0.5rem;font-size:0.75rem;font-weight:' + (sel ? '600' : '400') + ';color:' + (sel ? '#2563a8' : '#333') + ';">' + bag.label + '</div>';
-        html += '</div>';
-      });
-      html += '<div data-bidx="' + idx + '" data-bi="-1" onclick="coSelectBagIdx(this)" style="border:2px solid ' + (!item.bag ? '#2563a8' : '#bbb') + ';border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center;min-height:80px;background:' + (!item.bag ? '#e8f0fb' : '#fff') + ';font-size:0.78rem;color:' + (!item.bag ? '#2563a8' : '#888') + ';font-weight:' + (!item.bag ? '600' : '400') + ';">No bag needed</div>';
-      html += '</div></div>';
-    }
-
-    if (isDrone) {
-      html += '<div style="padding:0.75rem 1rem;border-bottom:1px solid #eee;background:#f8f9fa;">';
-      html += '<div style="font-size:0.78rem;color:#2563a8;font-weight:500;">Included in drone bag:</div>';
-      html += '<div style="font-size:0.82rem;color:var(--muted);margin-top:0.3rem;">• DJI Drone Controller &nbsp;•&nbsp; 3x DJI Drone Batteries</div>';
-      html += '</div>';
-    }
-
-    html += '</div>';
-    return html;
-  }).join('');
-}
-
-function coChangeQty(idx, delta) {
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  item.qty = Math.max(0, Math.min(item.max || 99, item.qty + delta));
-  const el = document.getElementById('coqty-' + idx);
-  if (el) el.textContent = item.qty;
-}
-
-function coBattery(idx, delta) {
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  item.batteries = Math.max(0, Math.min(5, item.batteries + delta));
-  const el = document.getElementById('cobat-' + idx);
-  if (el) el.textContent = item.batteries;
-}
-
-function coSetWant(idx, type, val) {
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  if (type === 'lens') {
-    item.wantLens = val;
-    if (!val) item.lenses = {};
-  } else if (type === 'tripod') {
-    item.wantTripod = val;
-    if (!val) item.tripods = [];
-  }
-  coRenderItems();
-}
-
-function coToggleLensIdx(el) {
-  const idx = parseInt(el.dataset.idx);
-  const li = parseInt(el.dataset.li);
-  const lens = CO_LENSES[li];
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  if (el.checked) {
-    item.lenses[lens.id] = 1;
-  } else {
-    delete item.lenses[lens.id];
-  }
-  coRenderItems();
-}
-
-function coLensQty(idx, li, delta) {
-  const lens = CO_LENSES[li];
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  const cur = item.lenses[lens.id] || 0;
-  const next = Math.max(1, Math.min(lens.max, cur + delta));
-  item.lenses[lens.id] = next;
-  coRenderItems();
-}
-
-function coToggleTripodIdx(el) {
-  const idx = parseInt(el.dataset.idx);
-  const ti = parseInt(el.dataset.ti);
-  const tripod = CO_TRIPODS[ti];
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  if (el.checked && !item.tripods.includes(tripod)) item.tripods.push(tripod);
-  else item.tripods = item.tripods.filter(t => t !== tripod);
-}
-
-function coSelectBagIdx(el) {
-  const idx = parseInt(el.dataset.bidx);
-  const bi = parseInt(el.dataset.bi);
-  const item = coSelectedItems[idx];
-  if (!item) return;
-  item.bag = bi >= 0 ? CO_BAGS[bi].id : '';
-  coRenderItems();
-}
-
-function coRemoveItem(idx) {
-  coSelectedItems.splice(idx, 1);
-  coRenderItems();
-}
 
 
 
@@ -1246,17 +1003,8 @@ function coBuildReview() {
   html += '<div class="review-row"><span class="review-key">Storage</span><span class="review-val">' + storage + '</span></div>';
   html += '<div class="section-label" style="margin-top:0.75rem;">Items</div>';
 
-  coSelectedItems.forEach(item => {
-    const bagLabel = item.bag ? (CO_BAGS.find(b => b.id === item.bag) || {}).label : 'None';
-    html += '<div class="review-row"><span class="review-key">' + item.name + '</span><span class="review-val">x' + item.qty + '</span></div>';
-    if (item.batteries) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Batteries</span><span class="review-val">x' + item.batteries + '</span></div>';
-    const lensEntries = Object.entries(item.lenses || {});
-    if (lensEntries.length) {
-      const lensStr = lensEntries.map(([id, qty]) => { const l = CO_LENSES.find(x => x.id === id); return (l ? l.name : id) + (qty > 1 ? ' x' + qty : ''); }).join(', ');
-      html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Lenses</span><span class="review-val">' + lensStr + '</span></div>';
-    }
-    if (item.tripods && item.tripods.length) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Tripods</span><span class="review-val">' + item.tripods.join(', ') + '</span></div>';
-    if (item.bag) html += '<div class="review-row" style="padding-left:1rem;"><span class="review-key" style="color:var(--muted);">↳ Bag</span><span class="review-val">' + bagLabel + '</span></div>';
+  coGetItems().forEach(function(itemName) {
+    html += '<div class="review-row"><span class="review-key">' + itemName + '</span><span class="review-val"></span></div>';
   });
 
   document.getElementById('co-review-content').innerHTML = html;
@@ -1335,7 +1083,6 @@ async function submitCheckout() {
 
 function coReset() {
   coStep = 1;
-  coSelectedItems = [];
   coPhotos = [];
   document.querySelectorAll('#standalone-checkout input[type="text"], #standalone-checkout textarea').forEach(el => el.value = '');
   document.getElementById('co-photo-preview').innerHTML = '';

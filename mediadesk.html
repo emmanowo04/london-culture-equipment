@@ -618,7 +618,21 @@ textarea { resize: vertical; min-height: 90px; }
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-cam" value="Camera controller" style="width:16px;height:16px;accent-color:#2563a8;"> Camera controller</label>
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-atem" value="ATEM" style="width:16px;height:16px;accent-color:#2563a8;"> ATEM</label>
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-pc" value="PC" style="width:16px;height:16px;accent-color:#2563a8;"> PC</label>
+          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.15rem;"><input type="checkbox" id="md-eq-all" onchange="mdToggleAllEquipment(this)" style="width:16px;height:16px;accent-color:#2563a8;"> All of the above <span class="opt" style="margin-left:0.1rem;">(running the desk alone)</span></label>
         </div>
+      </div>
+
+      <div class="form-group">
+        <label>Is anyone assisting you?</label>
+        <div style="display:flex;gap:1.5rem;margin-top:0.25rem;">
+          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-assistant" value="yes" onchange="mdToggleAssistants(true)" style="accent-color:#2563a8;"> Yes</label>
+          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-assistant" value="no" onchange="mdToggleAssistants(false)" checked style="accent-color:#2563a8;"> No</label>
+        </div>
+      </div>
+
+      <div id="md-assistants-block" style="display:none;">
+        <div id="md-assistants-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;"></div>
+        <button type="button" class="btn btn-ghost btn-sm" onclick="mdAddAssistant()">+ Add another</button>
       </div>
 
       <div class="form-group">
@@ -652,19 +666,6 @@ textarea { resize: vertical; min-height: 90px; }
           <label>Time In <span class="req">*</span></label>
           <input type="time" id="md-time-in">
         </div>
-      </div>
-
-      <div class="form-group">
-        <label>Is anyone assisting you?</label>
-        <div style="display:flex;gap:1.5rem;margin-top:0.25rem;">
-          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-assistant" value="yes" onchange="mdToggleAssistants(true)" style="accent-color:#2563a8;"> Yes</label>
-          <label style="display:flex;align-items:center;gap:0.4rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-assistant" value="no" onchange="mdToggleAssistants(false)" checked style="accent-color:#2563a8;"> No</label>
-        </div>
-      </div>
-
-      <div id="md-assistants-block" style="display:none;">
-        <div id="md-assistants-list" style="display:flex;flex-direction:column;gap:0.5rem;margin-bottom:0.5rem;"></div>
-        <button type="button" class="btn btn-ghost btn-sm" onclick="mdAddAssistant()">+ Add another</button>
       </div>
     </div>
 
@@ -848,6 +849,16 @@ function mdToggleIssue(show) {
   document.getElementById('md-photo-issue-note').style.display = show ? 'inline' : 'none';
 }
 
+function mdToggleAllEquipment(el) {
+  const checked = el.checked;
+  MD_EQUIPMENT.forEach(function(name) {
+    const input = document.querySelector('input[value="' + name + '"]');
+    if (!input) return;
+    input.disabled = checked;
+    if (checked) input.checked = false; // "All of the above" now represents them
+  });
+}
+
 function mdToggleAssistants(show) {
   const block = document.getElementById('md-assistants-block');
   block.style.display = show ? 'block' : 'none';
@@ -873,9 +884,11 @@ async function mdSubmitSignIn() {
   const name = document.getElementById('md-name').value.trim();
   if (!name) { alert('Please enter your name.'); return; }
 
-  const equipment = MD_EQUIPMENT.filter(function(e) {
-    return document.querySelector('input[value="' + e + '"]').checked;
-  });
+  const equipment = document.getElementById('md-eq-all').checked
+    ? MD_EQUIPMENT.slice()
+    : MD_EQUIPMENT.filter(function(e) {
+        return document.querySelector('input[value="' + e + '"]').checked;
+      });
   if (equipment.length === 0) { alert('Please select at least one piece of equipment.'); return; }
 
   const purpose = document.getElementById('md-purpose').value.trim();
@@ -1026,8 +1039,9 @@ function mdReset() {
   document.getElementById('md-name').value = '';
   MD_EQUIPMENT.forEach(function(e) {
     const el = document.querySelector('input[value="' + e + '"]');
-    if (el) el.checked = false;
+    if (el) { el.checked = false; el.disabled = false; }
   });
+  document.getElementById('md-eq-all').checked = false;
   document.querySelector('input[name="md-has-assistant"][value="no"]').checked = true;
   document.getElementById('md-assistants-block').style.display = 'none';
   document.getElementById('md-assistants-list').innerHTML = '';

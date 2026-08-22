@@ -1534,6 +1534,7 @@ const CONFIG = {
     var reason = e.reason;
     reportClientError((reason && reason.message) || String(reason), 'unhandledrejection');
   });
+  window.reportClientError = reportClientError;
 })();
 
 const EVENT_LABELS = {
@@ -2459,8 +2460,10 @@ async function submitCultureRequest() {
   try {
     const result = await postToScript(payload);
     clearTimeout(timeout);
-    if (result && result.success === false) {
-      alert(result.error || 'Your request could not be submitted. Please check the form and try again.');
+    if (result && (result.success === false || result.error)) {
+      const msg = result.error || 'Your request could not be submitted. Please check the form and try again.';
+      if (window.reportClientError) window.reportClientError(msg, 'submitCultureRequest backend error');
+      alert(msg);
       return;
     }
     document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));

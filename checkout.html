@@ -780,6 +780,7 @@ const CONFIG = {
     var reason = e.reason;
     reportClientError((reason && reason.message) || String(reason), 'unhandledrejection');
   });
+  window.reportClientError = reportClientError;
 })();
 
 function formatDate(dateStr) {
@@ -1071,8 +1072,15 @@ async function submitCheckout() {
       photos: photos
     };
 
-    await postToScript(payload);
+    const result = await postToScript(payload);
     clearTimeout(timeout);
+    if (result && (result.success === false || result.error)) {
+      const msg = result.error || 'Your checkout could not be submitted. Please check the form and try again.';
+      if (window.reportClientError) window.reportClientError(msg, 'submitCheckout backend error');
+      resetBtn();
+      alert(msg);
+      return;
+    }
     coGoStep(4);
   } catch(e) {
     clearTimeout(timeout);

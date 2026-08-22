@@ -765,6 +765,10 @@ const CONFIG = {
     var reason = e.reason;
     reportClientError((reason && reason.message) || String(reason), 'unhandledrejection');
   });
+  // Exposed so application code can report backend errors that ARE caught
+  // (e.g. a { error: "..." } response from Code.gs) but still worth
+  // surfacing -- these never reach window.onerror since nothing throws.
+  window.reportClientError = reportClientError;
 })();
 
 function formatDate(dateStr) {
@@ -902,7 +906,7 @@ async function mdSubmitSignIn() {
   }, 30000);
 
   try {
-    await postToScript({
+    const result = await postToScript({
       action: 'mdSignIn',
       name: name,
       telegram: document.getElementById('md-telegram').value.trim(),
@@ -914,6 +918,12 @@ async function mdSubmitSignIn() {
       date: date
     });
     clearTimeout(signInTimeout);
+    if (result && (result.success === false || result.error)) {
+      const msg = result.error || 'Sign in could not be completed. Please check the form and try again.';
+      if (window.reportClientError) window.reportClientError(msg, 'mdSubmitSignIn backend error');
+      alert(msg);
+      return;
+    }
     document.getElementById('md-signin-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed In';
@@ -991,8 +1001,10 @@ async function mdSubmitSignOut() {
     });
 
     clearTimeout(signOutTimeout);
-    if (result && result.success === false) {
-      alert(result.error || 'Sign out could not be completed. Please check the form and try again.');
+    if (result && (result.success === false || result.error)) {
+      const msg = result.error || 'Sign out could not be completed. Please check the form and try again.';
+      if (window.reportClientError) window.reportClientError(msg, 'mdSubmitSignOut backend error');
+      alert(msg);
       return;
     }
 

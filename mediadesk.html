@@ -783,7 +783,7 @@ function formatDate(dateStr) {
 
 async function postToScript(payload) {
   const controller = new AbortController();
-  const timer = setTimeout(function() { controller.abort(); }, 25000);
+  const timer = setTimeout(function() { controller.abort(); }, 45000);
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
@@ -929,7 +929,7 @@ async function mdSubmitSignIn() {
   const signInTimeout = setTimeout(function() {
     if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
     alert('Request timed out. Please try again.');
-  }, 30000);
+  }, 50000);
 
   try {
     const result = await postToScript({
@@ -956,7 +956,11 @@ async function mdSubmitSignIn() {
     document.getElementById('md-success-msg').textContent = name + ' signed in at ' + timeIn + ' on ' + equipment.join(', ') + '.';
   } catch(e) {
     clearTimeout(signInTimeout);
-    alert('Something went wrong. Please try again.');
+    if (e && e.name === 'AbortError') {
+      alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before trying again, so we don\'t end up with a duplicate sign-in.');
+    } else {
+      alert('Could not reach the server. Please check your connection and try again.');
+    }
   } finally {
     if (btn) { btn.textContent = 'Sign In'; btn.disabled = false; }
   }
@@ -1006,7 +1010,7 @@ async function mdSubmitSignOut() {
   const signOutTimeout = setTimeout(function() {
     if (btn) { btn.textContent = 'Sign Out'; btn.disabled = false; }
     alert('Request timed out. Please try again.');
-  }, 30000);
+  }, 50000);
 
   try {
     const photos = await Promise.all(photoFiles.map(function(file) {
@@ -1041,7 +1045,11 @@ async function mdSubmitSignOut() {
     document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
   } catch(e) {
     clearTimeout(signOutTimeout);
-    alert('Something went wrong. Please try again.');
+    if (e && e.name === 'AbortError') {
+      alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before trying again, so we don\'t end up with a duplicate sign-out.');
+    } else {
+      alert('Could not reach the server. Please check your connection and try again.');
+    }
   } finally {
     if (btn) { btn.textContent = 'Sign Out'; btn.disabled = false; }
   }

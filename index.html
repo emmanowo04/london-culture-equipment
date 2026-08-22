@@ -2374,7 +2374,7 @@ function buildReqReview() {
 
 async function postToScript(payload) {
   const controller = new AbortController();
-  const timer = setTimeout(function() { controller.abort(); }, 25000);
+  const timer = setTimeout(function() { controller.abort(); }, 45000);
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
@@ -2455,7 +2455,7 @@ async function submitCultureRequest() {
  const timeout = setTimeout(function() {
     if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
     alert('Request timed out. Please try again.');
-  }, 30000);
+  }, 50000);
 
   try {
     const result = await postToScript(payload);
@@ -2471,7 +2471,11 @@ async function submitCultureRequest() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   } catch(e) {
     clearTimeout(timeout);
-    alert('Something went wrong. Please try again.');
+    if (e && e.name === 'AbortError') {
+      alert('This is taking longer than expected. Your request may have still gone through — please check with the team before submitting again, so we don\'t end up with a duplicate.');
+    } else {
+      alert('Could not reach the server. Please check your connection and try again.');
+    }
   } finally {
     if (btn) { btn.textContent = 'Submit Request'; btn.disabled = false; }
   }

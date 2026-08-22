@@ -794,7 +794,7 @@ function formatDate(dateStr) {
 
 async function postToScript(payload) {
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 25000);
+  const timer = setTimeout(() => controller.abort(), 45000);
   try {
     const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
@@ -847,6 +847,13 @@ async function submitReturn() {
   const btn = document.getElementById('co-return-btn');
   if (btn) { btn.textContent = 'Submitting...'; btn.disabled = true; }
 
+  // Backstop so the button can never stay stuck indefinitely -- this flow
+  // previously had no timeout protection at all.
+  const returnTimeout = setTimeout(function() {
+    if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
+    alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before submitting again, so we don\'t end up with a duplicate.');
+  }, 50000);
+
   try {
     // Convert photos to base64
     const photos = await Promise.all(Array.from(photoInput.files).map(function(file) {
@@ -857,7 +864,7 @@ async function submitReturn() {
       });
     }));
 
-    await postToScript({
+    const result = await postToScript({
       action: 'confirmTeamReturn',
       checkoutId: returnId,
       returnedBy: returnName,
@@ -865,11 +872,25 @@ async function submitReturn() {
       photos: photos
     });
 
+    clearTimeout(returnTimeout);
+    if (result && (result.success === false || result.error)) {
+      const msg = result.error || 'The return could not be confirmed. Please check the form and try again.';
+      if (window.reportClientError) window.reportClientError(msg, 'submitReturn backend error');
+      if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
+      alert(msg);
+      return;
+    }
+
     document.getElementById('co-return-panel').style.display = 'none';
     document.getElementById('co-return-success').style.display = 'block';
   } catch(e) {
-    alert('Something went wrong. Please try again.');
+    clearTimeout(returnTimeout);
     if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
+    if (e && e.name === 'AbortError') {
+      alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before submitting again, so we don\'t end up with a duplicate.');
+    } else {
+      alert('Could not reach the server. Please check your connection and try again.');
+    }
   }
 }
 
@@ -1026,7 +1047,7 @@ async function submitCheckout() {
   const timeout = setTimeout(function() {
     resetBtn();
     alert('Request timed out. Please try again.');
-  }, 30000);
+  }, 50000);
 
   try {
     // Convert and compress photos
@@ -1085,7 +1106,11 @@ async function submitCheckout() {
   } catch(e) {
     clearTimeout(timeout);
     resetBtn();
-    alert('Something went wrong. Please try again.');
+    if (e && e.name === 'AbortError') {
+      alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before submitting again, so we don\'t end up with a duplicate.');
+    } else {
+      alert('Could not reach the server. Please check your connection and try again.');
+    }
   }
 }
 

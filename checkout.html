@@ -620,6 +620,10 @@ textarea { resize: vertical; min-height: 90px; }
     <p>Log equipment you are taking out. Your request will be sent for approval.</p>
   </div>
 
+  <div style="text-align:center;margin-bottom:1.5rem;">
+    <button type="button" class="btn btn-ghost btn-sm" onclick="coShowFindPanel()">Already checked something out? Find &amp; return it here</button>
+  </div>
+
   <div class="co-steps">
     <div class="co-step active" id="co-step-1">1. Your Details</div>
     <div class="co-step" id="co-step-2">2. Items</div>
@@ -696,6 +700,22 @@ textarea { resize: vertical; min-height: 90px; }
   </div>
 
   <!-- RETURN FORM -->
+  <div id="co-find-panel" style="display:none;">
+    <div class="page-header">
+      <h1>Find & Return Your Checkout</h1>
+      <p>Enter the name you used when logging your checkout.</p>
+    </div>
+    <div class="card">
+      <div class="form-group">
+        <label>Your Name <span class="req">*</span></label>
+        <input type="text" id="co-find-name" placeholder="Enter your name" onkeydown="if(event.key==='Enter'){event.preventDefault();coFindMyCheckouts();}">
+      </div>
+      <button type="button" class="btn btn-dark btn-full" id="co-find-btn" onclick="coFindMyCheckouts()">Find My Checkout</button>
+    </div>
+    <div id="co-find-results" style="margin-top:1rem;"></div>
+    <button type="button" class="btn btn-ghost btn-sm" onclick="coHideFindPanel()" style="margin-top:1rem;">&larr; Back</button>
+  </div>
+
   <div id="co-return-panel" style="display:none;">
     <div class="page-header">
       <h1>Return Items</h1>
@@ -829,6 +849,61 @@ function coReturnPreviewPhotos(input) {
     img.className = 'photo-thumb';
     preview.appendChild(img);
   });
+}
+
+function coShowFindPanel() {
+  document.querySelectorAll('.co-steps, .co-form-step').forEach(el => el.style.display = 'none');
+  document.getElementById('co-return-panel').style.display = 'none';
+  document.getElementById('co-find-panel').style.display = 'block';
+  document.getElementById('co-find-results').innerHTML = '';
+  document.getElementById('co-find-name').focus();
+}
+
+function coHideFindPanel() {
+  document.getElementById('co-find-panel').style.display = 'none';
+  document.querySelectorAll('.co-steps, .co-form-step').forEach(el => el.style.display = '');
+  document.getElementById('co-form-1').classList.add('active');
+}
+
+async function coFindMyCheckouts() {
+  const name = document.getElementById('co-find-name').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+
+  const btn = document.getElementById('co-find-btn');
+  if (btn) { btn.textContent = 'Searching...'; btn.disabled = true; }
+  const resultsEl = document.getElementById('co-find-results');
+  resultsEl.innerHTML = '';
+
+  try {
+    const result = await postToScript({ action: 'findMyCheckouts', name: name });
+    if (result && (result.success === false || result.error)) {
+      resultsEl.innerHTML = '<div class="notice notice-red">' + (result.error || 'Something went wrong. Please try again.') + '</div>';
+      return;
+    }
+    const checkouts = (result && result.checkouts) || [];
+    if (checkouts.length === 0) {
+      resultsEl.innerHTML = '<div class="notice notice-gold">No open checkouts found for that name. Double-check it matches what you used when logging the checkout, or contact the team if you\'re still stuck.</div>';
+      return;
+    }
+    resultsEl.innerHTML = '<div class="card"><div class="card-label">Select your checkout</div>' +
+      checkouts.map(function(c) {
+        return '<div class="item-row" style="cursor:pointer;" onclick="coSelectCheckoutForReturn(\'' + c.checkoutId + '\',\'' + name.replace(/'/g, "\\'") + '\')">' +
+          '<div style="flex:1;"><div class="item-name">' + c.items + '</div>' +
+          '<div class="item-sub">Out ' + c.dateOut + ' &middot; Due ' + c.dateReturn + '</div></div>' +
+          '<div class="role-arrow">Return &rarr;</div></div>';
+      }).join('') + '</div>';
+  } catch(e) {
+    resultsEl.innerHTML = '<div class="notice notice-red">Could not reach the server. Please check your connection and try again.</div>';
+  } finally {
+    if (btn) { btn.textContent = 'Find My Checkout'; btn.disabled = false; }
+  }
+}
+
+function coSelectCheckoutForReturn(checkoutId, name) {
+  document.getElementById('co-find-panel').style.display = 'none';
+  document.getElementById('co-return-panel').style.display = 'block';
+  document.getElementById('co-return-id').value = checkoutId;
+  document.getElementById('co-return-name').value = name;
 }
 
 async function submitReturn() {

@@ -1466,10 +1466,28 @@ textarea { resize: vertical; min-height: 90px; }
 </div>
 
 <div id="sa-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);z-index:300;align-items:center;justify-content:center;padding:1rem;">
-  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.2);">
+  <div style="background:#fff;border-radius:12px;padding:2rem;max-width:520px;width:100%;box-shadow:0 8px 40px rgba(0,0,0,0.2);max-height:90vh;overflow-y:auto;">
     <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:1rem;">Request Details</h3>
     <div id="sa-modal-body" style="font-size:0.88rem;line-height:1.8;margin-bottom:1.5rem;color:#333;"></div>
     <input type="hidden" id="sa-modal-id">
+
+    <div id="sa-log-given-section" style="display:none;border-top:1px solid var(--border);padding-top:1.25rem;margin-bottom:1rem;">
+      <div class="card-label">Log Items Given</div>
+      <div class="form-group">
+        <label>Items Given <span class="req">*</span></label>
+        <textarea id="sa-given-items" placeholder="e.g. Sony A7 IV, Tripod, 2x Batteries" style="min-height:70px;"></textarea>
+      </div>
+      <div class="form-group">
+        <label>Your Name <span class="req">*</span></label>
+        <input type="text" id="sa-given-by" placeholder="Your name">
+      </div>
+      <div class="form-group">
+        <label>Photo of items <span class="opt">(optional)</span></label>
+        <input type="file" id="sa-given-photo" accept="image/*" capture="environment">
+      </div>
+      <button class="btn btn-dark btn-sm" id="sa-log-given-btn" onclick="saLogItemsGiven()" style="width:100%;">Log Items Given</button>
+    </div>
+
     <div style="display:flex;gap:0.75rem;justify-content:flex-end;flex-wrap:wrap;">
       <button class="btn btn-ghost btn-sm" onclick="closeSAModal()">Close</button>
       <button class="btn btn-sm" style="background:#c0392b;color:#fff;" onclick="updateSupportStatus('Rejected')">Reject</button>
@@ -1502,7 +1520,7 @@ let saSupportRequests = [];
 const CONFIG = {
  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwA86mqargcUKG4wtxPFtFRH8th8aDalxHAnzyo5gVryxK5umZvnGzJviLhtMJZ6D_p0g/exec',
  SHEET_ID: '1FWY-jAJVXtl13SwZ590VwyKq5cV6jnv6fTSoRfVZW-w',
- ADMIN_PASSWORD: 'mediaadmin2024',
+ ADMIN_PASSWORD: '144000',
 };
 
 // ── CLIENT ERROR REPORTING ────────────────────────────────────────────────────
@@ -1558,7 +1576,7 @@ async function saAdminLogin() {
   }
   document.getElementById('sa-login-gate').style.display = 'none';
   document.getElementById('sa-dashboard').style.display = 'block';
-  await loadSAData();
+  await saLoadTabData('requests');
   renderSADashboard();
 }
 
@@ -1585,7 +1603,88 @@ function viewSupportRequest(requestId) {
     '<div style="margin-bottom:0.5rem;"><strong>Status:</strong> ' + (req.status || 'New') + '</div>';
   document.getElementById('sa-modal-body').innerHTML = details;
   document.getElementById('sa-modal-id').value = requestId;
+
+  // "Log Items Given" only makes sense for an Approved Equipment Rental
+  // request that hasn't already had items logged out against it.
+  const isEquipment = (req.requestTypes || '').split(', ').map(t => t.trim()).includes('equipment');
+  const showLogGiven = isEquipment && req.status === 'Approved';
+  const logSection = document.getElementById('sa-log-given-section');
+  logSection.style.display = showLogGiven ? 'block' : 'none';
+  if (showLogGiven) {
+    document.getElementById('sa-given-items').value = '';
+    document.getElementById('sa-given-by').value = '';
+    document.getElementById('sa-given-photo').value = '';
+    logSection.dataset.requesterName = req.name || '';
+  }
+
   document.getElementById('sa-modal').style.display = 'flex';
+}
+
+async function saLogItemsGiven() {
+  const requestId = document.getElementById('sa-modal-id').value;
+  const itemsGiven = document.getElementById('sa-given-items').value.trim();
+  const givenBy = document.getElementById('sa-given-by').value.trim();
+  if (!itemsGiven) { alert('Please list the items given.'); return; }
+  if (!givenBy) { alert('Please enter your name.'); return; }
+
+  const requesterName = document.getElementById('sa-log-given-section').dataset.requesterName || '';
+  const photoInput = document.getElementById('sa-given-photo');
+  const btn = document.getElementById('sa-log-given-btn');
+  if (btn) { btn.textContent = 'Logging...'; btn.disabled = true; }
+
+  const timeout = setTimeout(function() {
+    if (btn) { btn.textContent = 'Log Items Given'; btn.disabled = false; }
+    alert('This is taking longer than expected. It may have still gone through on our end — please check before trying again.');
+  }, 50000);
+
+  try {
+    var photos = [];
+    if (photoInput.files && photoInput.files.length > 0) {
+      photos = await Promise.all(Array.from(photoInput.files).map(function(file) {
+        return new Promise(function(resolve, reject) {
+          const img = new Image();
+          img.onload = function() {
+            const canvas = document.createElement('canvas');
+            const maxSize = 1200;
+            let w = img.width, h = img.height;
+            if (w > maxSize || h > maxSize) {
+              if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+              else { w = Math.round(w * maxSize / h); h = maxSize; }
+            }
+            canvas.width = w; canvas.height = h;
+            canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+            resolve({ base64: canvas.toDataURL('image/jpeg', 0.7).split(',')[1], mimeType: 'image/jpeg', name: 'given.jpg' });
+          };
+          img.onerror = reject;
+          img.src = URL.createObjectURL(file);
+        });
+      }));
+    }
+
+    const result = await fetch(CONFIG.APPS_SCRIPT_URL, {
+      method: 'POST',
+      body: JSON.stringify({
+        action: 'logItemsGiven', password: CONFIG.ADMIN_PASSWORD,
+        requestId: requestId, requesterName: requesterName,
+        itemsGiven: itemsGiven, givenBy: givenBy, photos: photos
+      })
+    }).then(r => r.json());
+
+    clearTimeout(timeout);
+    if (result && (result.success === false || result.error)) {
+      alert(result.error || 'Could not log items given. Please try again.');
+      return;
+    }
+    closeSAModal();
+    saInvalidateCache('support');
+    await saLoadTabData('support');
+    renderSADashboard();
+  } catch(e) {
+    clearTimeout(timeout);
+    alert('Could not reach the server. Please check your connection and try again.');
+  } finally {
+    if (btn) { btn.textContent = 'Log Items Given'; btn.disabled = false; }
+  }
 }
 
 function closeSAModal() {
@@ -1601,37 +1700,48 @@ async function updateSupportStatus(status) {
     });
   } catch(e) { console.warn('Update error:', e); }
   closeSAModal();
-  await loadSAData();
+  saInvalidateCache('support');
+  await saLoadTabData('support');
   renderSADashboard();
 }
 
-function showSATab(tab, btn) {
+// Tracks which tabs have actually been fetched, so switching tabs (or the
+// stats row) doesn't blindly re-request all three sheets every time -- this
+// was the real cause of the dashboard feeling slow: every login and every
+// approve/reject previously re-fetched all three sheets in full, regardless
+// of which tab was even being looked at.
+let saTabLoaded = { requests: false, checkouts: false, support: false };
+
+function saInvalidateCache(tab) { saTabLoaded[tab] = false; }
+
+async function saLoadTabData(tab, force) {
+  if (saTabLoaded[tab] && !force) return;
+  const actionMap = { requests: 'getPending', checkouts: 'getActive', support: 'getSupport' };
+  try {
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionMap[tab], password: CONFIG.ADMIN_PASSWORD }) });
+    const data = await res.json();
+    if (tab === 'requests') saPendingRequests = data.success ? data.requests : [];
+    if (tab === 'checkouts') saActiveCheckouts = data.success ? data.checkouts : [];
+    if (tab === 'support') saSupportRequests = data.success ? data.requests : [];
+    saTabLoaded[tab] = true;
+  } catch(e) { console.warn('Tab data error:', e); }
+}
+
+async function showSATab(tab, btn) {
   ['requests','checkouts','support'].forEach(t => {
     document.getElementById('sa-tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   document.querySelectorAll('#standalone-admin .btn').forEach(b => b.className = 'btn btn-ghost btn-sm');
   if (btn) btn.className = 'btn btn-dark btn-sm';
-}
-
-async function loadSAData() {
-  try {
-    const [pr, ar, sr] = await Promise.all([
-      fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getPending', password: CONFIG.ADMIN_PASSWORD }) }),
-      fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getActive', password: CONFIG.ADMIN_PASSWORD }) }),
-      fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'getSupport', password: CONFIG.ADMIN_PASSWORD }) }),
-    ]);
-    const pd = await pr.json(); const ad = await ar.json(); const sd = await sr.json();
-    saPendingRequests = pd.success ? pd.requests : [];
-    saActiveCheckouts = ad.success ? ad.checkouts : [];
-    saSupportRequests = sd.success ? sd.requests : [];
-  } catch(e) { console.warn('Admin data error:', e); }
+  await saLoadTabData(tab);
+  renderSADashboard();
 }
 
 function renderSADashboard() {
-  document.getElementById('sa-stat-pending').textContent = saPendingRequests.length;
-  document.getElementById('sa-stat-active').textContent = saActiveCheckouts.length;
-  document.getElementById('sa-stat-overdue').textContent = saActiveCheckouts.filter(c => c.overdue).length;
-  document.getElementById('sa-stat-available').textContent = saSupportRequests.length;
+  document.getElementById('sa-stat-pending').textContent = saTabLoaded.requests ? saPendingRequests.length : '—';
+  document.getElementById('sa-stat-active').textContent = saTabLoaded.checkouts ? saActiveCheckouts.length : '—';
+  document.getElementById('sa-stat-overdue').textContent = saTabLoaded.checkouts ? saActiveCheckouts.filter(c => c.overdue).length : '—';
+  document.getElementById('sa-stat-available').textContent = saTabLoaded.support ? saSupportRequests.length : '—';
 
   // Support requests
   const supportTbody = document.getElementById('sa-support-tbody');
@@ -1687,19 +1797,19 @@ function renderSADashboard() {
 async function saApprove(reqId) {
   if (!confirm('Approve this request?')) return;
   await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'approveRequest', requestId: reqId, password: CONFIG.ADMIN_PASSWORD, approvedBy: 'Admin' }) });
-  await loadSAData(); renderSADashboard();
+  saInvalidateCache('requests'); await saLoadTabData('requests'); renderSADashboard();
 }
 
 async function saReject(reqId) {
   if (!confirm('Reject this request?')) return;
   await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'rejectRequest', requestId: reqId, password: CONFIG.ADMIN_PASSWORD, rejectedBy: 'Admin' }) });
-  await loadSAData(); renderSADashboard();
+  saInvalidateCache('requests'); await saLoadTabData('requests'); renderSADashboard();
 }
 
 async function saMarkReturned(chkId) {
   if (!confirm('Mark as returned?')) return;
   await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'markReturned', checkoutId: chkId, password: CONFIG.ADMIN_PASSWORD }) });
-  await loadSAData(); renderSADashboard();
+  saInvalidateCache('checkouts'); await saLoadTabData('checkouts'); renderSADashboard();
 }
 
 document.addEventListener('DOMContentLoaded', async () => {

@@ -607,6 +607,7 @@ textarea { resize: vertical; min-height: 90px; }
  <span class="role-icon"></span>
  <h3 style="color:#0f0f0f;">Mun-Hwa Bu Request Form</h3>
  <p style="color:#3a3530;">Request culture team support or borrow equipment — work cooperation, materials, equipment rental, video production and design work.</p>
+ <p style="font-weight:700;color:#0f0f0f;margin-top:0.5rem;">All Mun-Hwa Bu work requests should be made at least 5 days in advance of required date</p>
  <div class="role-arrow">Enter →</div>
  </div>
  </div>
@@ -1595,23 +1596,80 @@ function viewSupportRequest(requestId) {
     design: 'Design Work', material: 'Material Request'
   };
   const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
-  var details = '<div style="margin-bottom:0.5rem;"><strong>ID:</strong> ' + req.requestId + '</div>' +
-    '<div style="margin-bottom:0.5rem;"><strong>From:</strong> ' + req.name + ' ' + (req.position || '') + ' — ' + (req.department || '') + '</div>' +
-    '<div style="margin-bottom:0.5rem;"><strong>Request Types:</strong> ' + types + '</div>' +
-    '<div style="margin-bottom:0.5rem;"><strong>Meeting:</strong> ' + (req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) : '—') + ' ' + (req.meetingTime || '') + '</div>' +
-    '<div style="margin-bottom:0.5rem;"><strong>Purpose:</strong> ' + (req.purpose || '—') + '</div>' +
-    '<div style="margin-bottom:0.5rem;"><strong>Status:</strong> ' + (req.status || 'New') + '</div>';
+  const activeTypes = (req.requestTypes || '').split(', ').map(t => t.trim());
+
+  function row(label, value) {
+    if (!value) return '';
+    return '<div style="margin-bottom:0.5rem;"><strong>' + label + ':</strong> ' + value + '</div>';
+  }
+
+  var details = row('ID', req.requestId) +
+    row('From', req.name + ' ' + (req.position || '') + ' — ' + (req.department || '')) +
+    row('Request Types', types) +
+    row('Meeting', (req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) : '—') + ' ' + (req.meetingTime || '')) +
+    row('Status', req.status || 'New');
+
+  if (activeTypes.includes('cooperation')) {
+    details += '<div class="section-label" style="margin-top:1rem;">Work Cooperation</div>' +
+      row('Event', req.coopEvent) + row('Date', req.coopDate ? formatDate(String(req.coopDate).split('T')[0]) : '') +
+      row('Time', (req.coopStartTime || '') + (req.coopEndTime ? ' – ' + req.coopEndTime : '')) +
+      row('Venue', req.coopVenue) + row('Purpose', req.coopPurpose) +
+      row('Assistance', req.coopAssistance) + row('Other Assistance', req.coopFilmingOther) +
+      row('Meeting Doc', req.coopDocLink);
+  }
+  if (activeTypes.includes('equipment')) {
+    details += '<div class="section-label" style="margin-top:1rem;">Equipment Rental</div>' +
+      row('Purpose', req.equipPurpose) + row('Items', req.equipItems) +
+      row('Pickup', req.equipPickup) + row('Return', req.equipReturn) + row('Scope', req.equipScope);
+  }
+  if (activeTypes.includes('props')) {
+    const isNew = !!req.propsNewScene;
+    details += '<div class="section-label" style="margin-top:1rem;">Props (' + (isNew ? 'New Props Request' : 'Props Rental') + ')</div>';
+    if (isNew) {
+      details += row('Required By', req.propsNewRequiredBy) + row('Scene', req.propsNewScene) +
+        row('Props Needed', req.propsItems) + row('Event', req.propsNewEventName) + row('Location', req.propsNewLocation);
+    } else {
+      details += row('Purpose', req.propsRentalPurpose) + row('Items', req.propsItems) +
+        row('Pickup', req.propsPickup) + row('Return', req.propsReturn) +
+        row('Team Assistance', req.propsRentalAssistance) +
+        row('Event', req.propsRentalEventName) + row('Location', req.propsRentalLocation);
+    }
+  }
+  if (activeTypes.includes('material')) {
+    details += '<div class="section-label" style="margin-top:1rem;">Material Request</div>' +
+      row('Type', req.materialType) + row('Purpose', req.materialPurpose) +
+      row('Details', req.materialDetails) + row('Posted Online?', req.materialOnline) +
+      row('Deadline', req.materialDeadline ? formatDate(String(req.materialDeadline).split('T')[0]) : '');
+  }
+  if (activeTypes.includes('video')) {
+    details += '<div class="section-label" style="margin-top:1rem;">Video Production</div>' +
+      row('Title', req.videoTitle) + row('Purpose', req.videoPurpose) + row('Usage', req.videoUsage) +
+      row('Audience', req.videoAudience) + row('Length', req.videoLength) +
+      row('Completion Date', req.videoCompletion) + row('Screening Date', req.videoScreeningDate) +
+      row('Type', req.videoType) + row('Content & Arc', req.videoContent) +
+      row('Effects/Feeling', req.videoEffects) + row('References', req.videoReferences) +
+      row('Example Draft', req.videoExampleLink);
+  }
+  if (activeTypes.includes('design')) {
+    details += '<div class="section-label" style="margin-top:1rem;">Design Work</div>' +
+      row('Purpose', req.designPurpose) + row('Item Type', req.designItemType) +
+      row('Size', req.designSize) + row('Quantity', req.designQty) + row('Format', req.designFormat) +
+      row('Draft Deadline', req.designDeadline ? formatDate(String(req.designDeadline).split('T')[0]) : '') +
+      row('Production Date', req.designProductionDate ? formatDate(String(req.designProductionDate).split('T')[0]) : '') +
+      row('Special Requests', req.designSpecial) + row('Example Draft', req.designExampleLink);
+  }
+
   document.getElementById('sa-modal-body').innerHTML = details;
   document.getElementById('sa-modal-id').value = requestId;
 
   // "Log Items Given" only makes sense for an Approved Equipment Rental
   // request that hasn't already had items logged out against it.
-  const isEquipment = (req.requestTypes || '').split(', ').map(t => t.trim()).includes('equipment');
+  const isEquipment = activeTypes.includes('equipment');
   const showLogGiven = isEquipment && req.status === 'Approved';
   const logSection = document.getElementById('sa-log-given-section');
   logSection.style.display = showLogGiven ? 'block' : 'none';
   if (showLogGiven) {
-    document.getElementById('sa-given-items').value = '';
+    document.getElementById('sa-given-items').value = req.equipItems || '';
     document.getElementById('sa-given-by').value = '';
     document.getElementById('sa-given-photo').value = '';
     logSection.dataset.requesterName = req.name || '';

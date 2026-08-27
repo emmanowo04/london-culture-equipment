@@ -924,42 +924,8 @@ textarea { resize: vertical; min-height: 90px; }
  </div>
  <div id="equip-assist-panel" style="display:none;">
  <div class="form-group">
- <label>What kind of assistance is needed? <span class="req">*</span></label>
- <div style="display:flex;flex-direction:column;gap:0.75rem;">
- <div class="assist-card" onclick="toggleEquipAssist('media', this)" id="equip-assist-media">
- <div class="req-type-check"></div>
- <div style="flex:1;">
- <div class="req-type-label"> Media / Broadcasting</div>
- <div class="req-type-desc">Operating screens, managing lyrics, live stream and online broadcast</div>
- </div>
- </div>
- <div class="assist-card" onclick="toggleEquipAssist('sound', this)" id="equip-assist-sound">
- <div class="req-type-check"></div>
- <div style="flex:1;">
- <div class="req-type-label"> Sound Operation</div>
- <div class="req-type-desc">Setting up and operating the sound desk, microphones and speakers</div>
- </div>
- </div>
- <div class="assist-card" onclick="toggleEquipAssist('filming', this)" id="equip-assist-filming">
- <div class="req-type-check"></div>
- <div style="flex:1;">
- <div class="req-type-label"> Filming & Photography</div>
- <div class="req-type-desc">Capturing on camera, photography and video recording</div>
- </div>
- </div>
- <div class="assist-card" onclick="toggleEquipAssist('other', this)" id="equip-assist-other">
- <div class="req-type-check"></div>
- <div style="flex:1;">
- <div class="req-type-label"> Other</div>
- <div class="req-type-desc">Any other kind of assistance not covered above</div>
- </div>
- </div>
- <div id="equip-sub-other" style="display:none;padding:0.75rem 1rem;background:var(--blue-light);border-radius:8px;margin-top:-0.35rem;border:1px solid var(--border);">
- <div class="hint" style="margin-bottom:0.6rem;font-weight:600;">Describe what's needed:</div>
- <textarea id="equip-assist-other-text" placeholder="Describe the other assistance needed..." style="min-height:60px;"></textarea>
- </div>
- </div>
- <input type="hidden" id="equip-assistance-types">
+ <label>Please specify what assistance is needed <span class="req">*</span></label>
+ <textarea id="equip-assistance-details" placeholder="e.g. Need someone to set up and operate the sound desk during the event"></textarea>
  </div>
  </div>
  <div class="form-group">
@@ -1687,8 +1653,7 @@ function viewSupportRequest(requestId) {
       row('Pickup', req.equipPickup) + row('Return', req.equipReturn) + row('Scope', req.equipScope) +
       (req.equipAssistance === 'Yes'
         ? '<div style="margin-bottom:0.5rem;padding:0.5rem 0.75rem;background:var(--red-light);border-radius:6px;color:var(--red);font-weight:600;">⚠️ MHB assistance requested to set up this equipment' +
-          (req.equipAssistanceTypes ? '<br><span style="font-weight:400;">Type: ' + req.equipAssistanceTypes + '</span>' : '') +
-          (req.equipAssistanceOther ? '<br><span style="font-weight:400;">Other: ' + req.equipAssistanceOther + '</span>' : '') +
+          (req.equipAssistanceDetails ? '<br><span style="font-weight:400;">' + req.equipAssistanceDetails + '</span>' : '') +
           '</div>'
         : row('MHB Assistance to Set Up?', req.equipAssistance));
   }
@@ -2325,21 +2290,6 @@ function toggleAssist(type, el) {
  document.getElementById('coop-assistance').value = [...selectedAssistance].map(function(t) { return assistLabels[t] || t; }).join(', ');
 }
 
-let selectedEquipAssistance = new Set();
-function toggleEquipAssist(type, el) {
- const assistLabels = { media: 'Media / Broadcasting', sound: 'Sound Operation', filming: 'Filming & Photography', other: 'Other' };
- if (selectedEquipAssistance.has(type)) {
- selectedEquipAssistance.delete(type);
- el.classList.remove('selected');
- if (type === 'other') document.getElementById('equip-sub-other').style.display = 'none';
- } else {
- selectedEquipAssistance.add(type);
- el.classList.add('selected');
- if (type === 'other') document.getElementById('equip-sub-other').style.display = 'block';
- }
- document.getElementById('equip-assistance-types').value = [...selectedEquipAssistance].map(function(t) { return assistLabels[t] || t; }).join(', ');
-}
-
 function nextReqStep(from) {
  if (!validateReqStep(from)) return;
  if (from === 2) showReqSections();
@@ -2411,9 +2361,8 @@ function validateReqStep(step) {
       if (!get('equip-date-needed')) { alert('Equipment Rental: please enter the date the equipment is needed for.'); return false; }
       if (!get('equip-pickup')) { alert('Equipment Rental: please enter a pickup date.'); return false; }
       if (!get('equip-return')) { alert('Equipment Rental: please enter a return date.'); return false; }
-      if (get('equip-assistance') === 'Yes') {
-        if (selectedEquipAssistance.size === 0) { alert('Equipment Rental: please select what kind of assistance is needed.'); return false; }
-        if (selectedEquipAssistance.has('other') && !get('equip-assist-other-text')) { alert('Equipment Rental: please describe the other assistance needed.'); return false; }
+      if (get('equip-assistance') === 'Yes' && !get('equip-assistance-details')) {
+        alert('Equipment Rental: please specify what assistance is needed.'); return false;
       }
       const equipSummary = get('equip-items');
       if (!equipSummary) { alert('Equipment Rental: please select at least one item.'); return false; }
@@ -2610,10 +2559,7 @@ function buildReqReview() {
     html += '<div class="review-row"><span class="review-key">Items</span><span class="review-val">' + get('equip-items') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">MHB Assistance to Set Up?</span><span class="review-val">' + get('equip-assistance') + '</span></div>';
     if (get('equip-assistance') === 'Yes') {
-      html += '<div class="review-row"><span class="review-key">Assistance Type</span><span class="review-val">' + get('equip-assistance-types') + '</span></div>';
-      if (selectedEquipAssistance.has('other')) {
-        html += '<div class="review-row"><span class="review-key">Other Assistance</span><span class="review-val">' + get('equip-assist-other-text') + '</span></div>';
-      }
+      html += '<div class="review-row"><span class="review-key">Assistance Needed</span><span class="review-val">' + get('equip-assistance-details') + '</span></div>';
     }
   }
 
@@ -2704,8 +2650,7 @@ async function submitCultureRequest() {
  equipDateNeeded: get('equip-date-needed'),
  equipPickup: get('equip-pickup'), equipReturn: get('equip-return'),
  equipAssistance: get('equip-assistance'),
- equipAssistanceTypes: get('equip-assistance-types'),
- equipAssistanceOther: selectedEquipAssistance.has('other') ? get('equip-assist-other-text') : '',
+ equipAssistanceDetails: get('equip-assistance') === 'Yes' ? get('equip-assistance-details') : '',
  equipScope: get('equip-scope'), equipItems: get('equip-items'),
  // Material
  materialType: get('material-type'), materialPurpose: get('material-purpose'),
@@ -2766,7 +2711,6 @@ function resetCultureRequest() {
   reqStep = 1;
   selectedReqTypes.clear();
   selectedAssistance.clear();
-  selectedEquipAssistance.clear();
 
   // Reset steps UI
   document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
@@ -2797,7 +2741,7 @@ function resetCultureRequest() {
   }
 
   // Hide all sub-panels
-  ['sub-media','sub-sound','sub-filming','sub-other','equip-sub-other'].forEach(id => {
+  ['sub-media','sub-sound','sub-filming','sub-other'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });

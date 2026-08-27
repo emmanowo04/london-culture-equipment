@@ -697,9 +697,19 @@ textarea { resize: vertical; min-height: 90px; }
         <input type="time" id="md-time-out">
       </div>
       <div class="form-group">
+        <label>Before you go <span class="req">*</span></label>
+        <div class="hint" style="margin-bottom:0.5rem;">Please confirm each of the following before signing out.</div>
+        <div style="display:flex;flex-direction:column;gap:0.6rem;">
+          <label style="display:flex;align-items:flex-start;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-check-desktop" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:#2563a8;"> Deleted all downloaded files from the desktop</label>
+          <label style="display:flex;align-items:flex-start;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-check-telegram-downloads" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:#2563a8;"> Deleted any downloaded files in the Telegram downloads folder</label>
+          <label style="display:flex;align-items:flex-start;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-check-telegram-logout" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:#2563a8;"> Logged out of Telegram</label>
+          <label style="display:flex;align-items:flex-start;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-check-pc-logout" style="width:16px;height:16px;flex-shrink:0;margin-top:2px;accent-color:#2563a8;"> Logged out of the PC</label>
+        </div>
+      </div>
+      <div class="form-group">
         <label>Photos of media desk <span class="req">*</span> <span id="md-photo-issue-note" style="font-size:0.75rem;color:#c0392b;display:none;">— Required when reporting an issue</span></label>
         <label class="photo-drop">
-          <input type="file" id="md-signout-photo" accept="image/*" capture="environment" multiple onchange="mdPreviewSignoutPhoto(this)">
+          <input type="file" id="md-signout-photo" accept="image/*" multiple onchange="mdPreviewSignoutPhoto(this)">
           <div style="font-size:1.5rem;color:var(--muted);">📷</div>
           <p>Take photos of the media desk before leaving</p>
         </label>
@@ -996,6 +1006,10 @@ async function mdSubmitSignOut() {
   const timeOut = document.getElementById('md-time-out').value;
   if (!timeOut) { alert('Please enter a time out.'); return; }
 
+  const checklistIds = ['md-check-desktop', 'md-check-telegram-downloads', 'md-check-telegram-logout', 'md-check-pc-logout'];
+  const checklistDone = checklistIds.every(function(id) { return document.getElementById(id).checked; });
+  if (!checklistDone) { alert('Please confirm all items in the "Before you go" checklist before signing out.'); return; }
+
   const photoInput = document.getElementById('md-signout-photo');
   const photoFiles = photoInput.files ? Array.from(photoInput.files) : [];
   if (photoFiles.length === 0) { alert('Please take or choose at least one photo of the media desk.'); return; }
@@ -1087,6 +1101,9 @@ function mdReset() {
   document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
   document.querySelector('input[name="md-has-issue"][value="no"]').checked = true;
   document.getElementById('md-signout-location').value = '';
+  ['md-check-desktop', 'md-check-telegram-downloads', 'md-check-telegram-logout', 'md-check-pc-logout'].forEach(function(id) {
+    document.getElementById(id).checked = false;
+  });
   document.getElementById('md-signout-photo').value = '';
   document.getElementById('md-signout-photo-preview').innerHTML = '';
   document.getElementById('md-issue-block').style.display = 'none';

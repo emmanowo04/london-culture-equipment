@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Mun-Hwa Bu — Return Equipment</title>
+<title>Mun-Hwa Bu — Changelog</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <style>
 
@@ -607,275 +607,156 @@ textarea { resize: vertical; min-height: 90px; }
 .loc-opt.sel { background:var(--blue); color:#fff; font-weight:600; }
 </style>
 
+<style>
+.cl-entry { margin-bottom: 2.5rem; }
+.cl-date { font-family: 'Syne Mono', monospace; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--blue); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.75rem; }
+.cl-date::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+.cl-section-title { font-weight: 600; font-size: 0.9rem; margin: 1rem 0 0.4rem; color: var(--black); }
+.cl-list { list-style: none; padding: 0; margin: 0 0 0.5rem; }
+.cl-list li { font-size: 0.85rem; line-height: 1.55; color: #333; padding: 0.25rem 0 0.25rem 1.1rem; position: relative; }
+.cl-list li::before { content: '—'; position: absolute; left: 0; color: var(--muted); }
+.cl-fixed { color: var(--red); font-weight: 600; }
+.cl-added { color: var(--green); font-weight: 600; }
+.roadmap-item { display: flex; align-items: flex-start; gap: 0.75rem; padding: 0.75rem 0; border-bottom: 1px solid var(--border); }
+.roadmap-item:last-child { border-bottom: none; }
+.roadmap-status { font-size: 0.65rem; font-family: 'Syne Mono', monospace; text-transform: uppercase; letter-spacing: 0.05em; padding: 0.2rem 0.6rem; border-radius: 20px; flex-shrink: 0; margin-top: 0.15rem; }
+.roadmap-status.planned { background: var(--gold-light); color: #7a5a00; }
+.roadmap-status.idea { background: var(--cream); color: var(--muted); border: 1px solid var(--border); }
+</style>
 </head>
 <body>
 
 <header style="background:#fff;color:#0f0f0f;padding:0 2rem;display:flex;align-items:center;justify-content:space-between;height:60px;position:sticky;top:0;z-index:100;border-bottom:2px solid #d0d0d0;box-shadow:0 1px 8px rgba(37,99,168,0.07);">
-  <div class="header-logo">Mun-Hwa Bu <span style="font-size:0.65rem;color:var(--muted);font-family:Syne Mono,monospace;letter-spacing:0.1em;margin-left:0.5rem;">RETURN EQUIPMENT</span></div>
+  <div class="header-logo">Mun-Hwa Bu <span style="font-size:0.65rem;color:var(--muted);font-family:Syne Mono,monospace;letter-spacing:0.1em;margin-left:0.5rem;">CHANGELOG</span></div>
+  <a href="index.html" class="btn btn-ghost btn-sm" style="text-decoration:none;">Back</a>
 </header>
 
-<div style="max-width:560px;margin:0 auto;padding:2rem 1rem;">
-
-  <div id="re-find-panel">
-    <div class="page-header">
-      <h1>Return Equipment</h1>
-      <p>Enter the Request ID from your Mun-Hwa Bu equipment request to log its return.</p>
-    </div>
-    <div class="card">
-      <div class="form-group">
-        <label>Request ID <span class="req">*</span></label>
-        <input type="text" id="re-request-id" placeholder="e.g. MHB-160826-001" onkeydown="if(event.key==='Enter'){event.preventDefault();reFindRental();}">
-        <div class="hint">Found in your original request confirmation, or the message the team sent you.</div>
-      </div>
-      <button type="button" class="btn btn-dark btn-full" id="re-find-btn" onclick="reFindRental()">Find My Request</button>
-    </div>
-    <div id="re-find-results" style="margin-top:1rem;"></div>
+<div style="max-width:720px;margin:0 auto;padding:2.5rem 1.5rem;">
+  <div class="page-header">
+    <h1>What's Changed</h1>
+    <p>A running record of every update made to the Mun-Hwa Bu platform, and what's planned next.</p>
   </div>
 
-  <div id="re-return-panel" style="display:none;">
-    <div class="page-header">
-      <h1>Confirm Return</h1>
-      <p>Let us know the equipment is back, in what condition, and where you've left it.</p>
-    </div>
-    <div class="card">
-      <div class="form-group">
-        <label>Request ID</label>
-        <input type="text" id="re-return-request-id" readonly style="background:#f0f0f0;color:var(--muted);">
-      </div>
-      <div class="form-group">
-        <label>Items Given</label>
-        <input type="text" id="re-return-items" readonly style="background:#f0f0f0;color:var(--muted);">
-      </div>
-      <div class="form-group">
-        <label>Your Name <span class="req">*</span></label>
-        <input type="text" id="re-return-name" placeholder="Your name">
-      </div>
-      <div class="form-group">
-        <label>Where have you left the equipment? <span class="req">*</span></label>
-        <input type="text" id="re-return-location" placeholder="e.g. Left at reception, EH Ground Floor office">
-      </div>
-      <div class="form-group">
-        <label>Photo of returned items <span class="req">*</span></label>
-        <label class="photo-drop" id="re-photo-drop">
-          <input type="file" id="re-return-photo" accept="image/*" multiple onchange="rePreviewPhoto(this)">
-          <div style="font-size:1.5rem;color:var(--muted);">+</div>
-          <p>Take a clear photo of everything you are returning</p>
-        </label>
-        <div class="photo-preview" id="re-photo-preview"></div>
-      </div>
-      <div class="form-group">
-        <label>Any damage or issues to report?</label>
-        <div style="display:flex;gap:1.5rem;margin-top:0.25rem;">
-          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="re-has-damage" value="yes" onchange="reToggleDamage(true)" style="width:16px;height:16px;flex-shrink:0;accent-color:#2563a8;"> Yes</label>
-          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="re-has-damage" value="no" onchange="reToggleDamage(false)" checked style="width:16px;height:16px;flex-shrink:0;accent-color:#2563a8;"> No</label>
-        </div>
-      </div>
-      <div class="form-group" id="re-damage-details-group" style="display:none;">
-        <label>Details <span class="req">*</span></label>
-        <textarea id="re-damage-details" placeholder="Describe any damage or issues..."></textarea>
-      </div>
-    </div>
-    <div class="notice notice-gold">Once submitted, the Mun-Hwa Bu team will be notified that the items have been returned.</div>
-    <button type="button" class="btn btn-dark btn-full" id="re-return-btn" onclick="reSubmitReturn()">Confirm Return</button>
+  <div class="notice notice-gold">This starts from when detailed build records began being kept — it doesn't cover the platform's full history from before that point.</div>
+
+  <!-- ═══════════════════════ 27 AUGUST ═══════════════════════ -->
+  <div class="cl-entry">
+    <div class="cl-date">27 August 2026</div>
+
+    <div class="cl-section-title">Media Desk</div>
+    <ul class="cl-list">
+      <li>Added a mandatory sign-out checklist: deleted desktop downloads, deleted Telegram downloads folder, logged out of Telegram, logged out of the PC — all four must be confirmed before signing out</li>
+      <li>Removed the camera-only restriction on sign-out photos — the device's normal choice of "take a photo" or "choose existing" is now available again</li>
+    </ul>
+
+    <div class="cl-section-title">Team Checkout</div>
+    <ul class="cl-list">
+      <li>Return confirmation messages now list exactly what was returned, pulled from the original checkout record — previously only the photo showed this</li>
+    </ul>
+
+    <div class="cl-section-title">Equipment Rental (Mun-Hwa Bu Requests)</div>
+    <ul class="cl-list">
+      <li>Added a required "Date Equipment is Needed For" field, separate from pickup/return dates, and surfaced it in the review screen, admin view, and daily summary</li>
+      <li>Added a required "Do you require Mun-Hwa Bu assistance to set up?" question — shown as a prominent flagged callout in the admin dashboard when answered Yes, not just a quiet field</li>
+    </ul>
+
+    <div class="cl-section-title">Equipment Return Portal</div>
+    <ul class="cl-list">
+      <li>Now supports uploading multiple photos instead of just one, so returns to more than one location can be properly documented</li>
+      <li>Removed the camera-only restriction so an existing photo can be uploaded, not just a freshly captured one</li>
+    </ul>
+
+    <div class="cl-section-title">Admin Dashboard</div>
+    <ul class="cl-list">
+      <li>Approve/Reject buttons now disappear once a request is no longer pending, preventing the exact mix-up between "Approve" and "Log Items Given" reported after a real approval</li>
+    </ul>
+
+    <div class="cl-section-title">Daily Summary Report</div>
+    <ul class="cl-list">
+      <li>Added an "Equipment Activity Today" section — what was checked out today, and what was confirmed returned today</li>
+      <li>Added a "Requests" section — everything still awaiting approval, and everything approved that same day</li>
+      <li>Added Approval Date tracking to the Support Requests sheet to make "approved today" answerable at all</li>
+    </ul>
+
+    <div class="cl-section-title cl-fixed">Fixed</div>
+    <ul class="cl-list">
+      <li>Traced and corrected a serious, cascading column-misalignment bug: every Props, Material, Video, and Design field in the request sheet had been writing one column to the left of its label since an earlier form change — 27 fields were being silently discarded on every submission and have now been restored</li>
+      <li>Fixed the Approve/Reject buttons writing status into the wrong sheet column entirely (overwriting Request Types instead of Status) — approvals had never actually been recorded correctly</li>
+      <li>Admin dashboard's request detail view now actually displays the type-specific fields for every request type (previously showed only generic wrapper fields, regardless of what was submitted)</li>
+    </ul>
   </div>
 
-  <div id="re-success" style="display:none;">
-    <div class="success-state">
-      <div class="success-icon"></div>
-      <h2>Return Confirmed</h2>
-      <p>Thanks — the Mun-Hwa Bu team has been notified that the equipment is back.</p>
+  <!-- ═══════════════════════ 24–26 AUGUST ═══════════════════════ -->
+  <div class="cl-entry">
+    <div class="cl-date">24–26 August 2026</div>
+
+    <div class="cl-section-title cl-added">Added — Equipment Rental Fulfillment</div>
+    <ul class="cl-list">
+      <li>New capability for tracking external Equipment Rental requests end-to-end: Culture logs exactly what was handed over (with a photo), and the external team can log the return themselves — including where the equipment was left — even if Culture isn't there to receive it in person</li>
+      <li>New dedicated "Equipment Rental Log" sheet, separate from internal Team Checkouts</li>
+      <li>New public return portal (no password needed), reachable via a direct link that pre-fills everything so there's no manual lookup step</li>
+      <li>"Log Items Given" built into the existing Admin Dashboard rather than a separate tool, appearing only once a request is Approved</li>
+    </ul>
+
+    <div class="cl-section-title">Daily Summary Report</div>
+    <ul class="cl-list">
+      <li>Replaced the old weekly Sunday-only equipment report with a genuine daily summary covering equipment status and Media Desk activity together</li>
+      <li>Overdue equipment now gets flagged every day until it's actually returned, rather than a one-time notice</li>
+    </ul>
+
+    <div class="cl-section-title">Media Desk</div>
+    <ul class="cl-list">
+      <li>Added an "All of the above" option for equipment operated solo, with the "Is anyone assisting you?" question moved above it so it's seen first</li>
+      <li>Selecting "Yes" to assistance now automatically clears "All of the above" and forces a genuine reselection — nobody can complete sign-in with a stale "I did it all myself" answer once help is involved</li>
+      <li>Fixed oversized native radio buttons overlapping their labels on iOS, across every form on the site</li>
+    </ul>
+
+    <div class="cl-section-title cl-fixed">Fixed</div>
+    <ul class="cl-list">
+      <li>Traced the actual root cause of a long-running mystery: the Sunday Report, daily reminders, admin dashboard, and "Mark Returned" button were all quietly reading from an unused legacy sheet instead of the real one everything actually writes to — all four now read the correct data</li>
+      <li>Fixed silent failures in Telegram photo delivery — a rejected photo (oversized, malformed) previously vanished with no error and no fallback message; now it's detected and a text-only message is sent instead so the notification is never lost entirely</li>
+      <li>Fixed submissions timing out too aggressively on slower connections, and replaced the generic "Something went wrong" message with an honest one that distinguishes "this may have still gone through" from "this definitely didn't send"</li>
+      <li>Added client-side photo compression across every upload point — uncompressed phone photos were causing slow uploads and Telegram rejections</li>
+      <li>Added an admin dashboard performance fix: it was re-fetching all three data sheets on every login and every click, regardless of which tab was open; now it only loads what's being viewed, with caching</li>
+      <li>Added a "Find & Return" option to Team Checkout for when the original Telegram return link has been lost — search by name instead</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════ 20–22 AUGUST ═══════════════════════ -->
+  <div class="cl-entry">
+    <div class="cl-date">20–22 August 2026</div>
+
+    <div class="cl-section-title cl-added">Added</div>
+    <ul class="cl-list">
+      <li>Restructured the Mun-Hwa Bu New Request form into four clear steps (Your Details → Request Type → Request Details → Confirm), replacing an earlier layout where the review step could be reached too easily by accident</li>
+      <li>Equipment Rental switched from a fixed quantity-clicker list to free-text item entry with quantities, matching the pattern used in Team Checkout</li>
+      <li>Automatic Telegram topic routing — Requests, Checkouts, and Media Desk now post to their own dedicated topics instead of one shared feed</li>
+      <li>Client-side error reporting — unexpected JavaScript errors now report themselves directly to a private channel instead of failing silently</li>
+      <li>Server-side validation added to the request form to back up client-side checks</li>
+    </ul>
+
+    <div class="cl-section-title cl-fixed">Fixed</div>
+    <ul class="cl-list">
+      <li>Diagnosed and fixed a serious HTML nesting bug from a stray extra closing tag that let the "Review Request" step render outside its intended step, regardless of which step a user was actually on — affected every visitor to the live form</li>
+      <li>Removed a large block of dead code in Team Checkout left over from an earlier design (a catalogue-based item picker) that was silently wiping the real item list on page load</li>
+      <li>Added Enter-to-add-next-row behaviour for equipment item entry, working consistently regardless of how a row was created</li>
+    </ul>
+  </div>
+
+  <!-- ═══════════════════════ ROADMAP ═══════════════════════ -->
+  <div class="section-label" style="margin-top:2.5rem;">Looking Ahead</div>
+  <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">Ideas raised in conversation, not yet committed to a specific date.</p>
+  <div class="card">
+    <div class="roadmap-item">
+      <span class="roadmap-status idea">Idea</span>
+      <div>Move the admin password check fully server-side, so the correct password is never sent to the browser at all</div>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-status idea">Idea</span>
+      <div>Extend the "assistance needed" and "date needed" pattern to other request types where it may also apply</div>
     </div>
   </div>
 
 </div>
-
-<script>
-const CONFIG = {
-  APPS_SCRIPT_URL: 'https://script.google.com/macros/s/AKfycbwA86mqargcUKG4wtxPFtFRH8th8aDalxHAnzyo5gVryxK5umZvnGzJviLhtMJZ6D_p0g/exec',
-};
-
-// ── CLIENT ERROR REPORTING ────────────────────────────────────────────────────
-(function() {
-  var reportedErrors = {};
-  function reportClientError(message, context) {
-    try {
-      var key = String(message).slice(0, 200);
-      if (reportedErrors[key]) return;
-      reportedErrors[key] = true;
-      fetch(CONFIG.APPS_SCRIPT_URL, {
-        method: 'POST',
-        body: JSON.stringify({
-          action: 'logClientError',
-          message: String(message).slice(0, 500),
-          context: context || '',
-          page: 'equipment-return.html',
-          hash: window.location.hash || '',
-        })
-      }).catch(function(){});
-    } catch(e) {}
-  }
-  window.addEventListener('error', function(e) {
-    reportClientError(e.message, (e.filename || '') + ':' + (e.lineno || ''));
-  });
-  window.addEventListener('unhandledrejection', function(e) {
-    var reason = e.reason;
-    reportClientError((reason && reason.message) || String(reason), 'unhandledrejection');
-  });
-  window.reportClientError = reportClientError;
-})();
-
-async function postToScript(payload) {
-  const controller = new AbortController();
-  const timer = setTimeout(function() { controller.abort(); }, 45000);
-  try {
-    const res = await fetch(CONFIG.APPS_SCRIPT_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload),
-      signal: controller.signal
-    });
-    clearTimeout(timer);
-    return await res.json();
-  } catch (err) {
-    clearTimeout(timer);
-    throw err;
-  }
-}
-
-let rePhotoFiles = [];
-let reFoundRecord = null;
-
-function reToggleDamage(show) {
-  document.getElementById('re-damage-details-group').style.display = show ? 'block' : 'none';
-}
-
-function rePreviewPhoto(input) {
-  const preview = document.getElementById('re-photo-preview');
-  preview.innerHTML = '';
-  rePhotoFiles = input.files ? Array.from(input.files) : [];
-  rePhotoFiles.forEach(function(file) {
-    const img = document.createElement('img');
-    img.className = 'photo-thumb';
-    img.src = URL.createObjectURL(file);
-    preview.appendChild(img);
-  });
-}
-
-async function reFindRental() {
-  const requestId = document.getElementById('re-request-id').value.trim();
-  if (!requestId) { alert('Please enter your Request ID.'); return; }
-
-  const btn = document.getElementById('re-find-btn');
-  if (btn) { btn.textContent = 'Searching...'; btn.disabled = true; }
-  const resultsEl = document.getElementById('re-find-results');
-  resultsEl.innerHTML = '';
-
-  try {
-    const result = await postToScript({ action: 'findRentalByRequestId', requestId: requestId });
-    if (result && (result.success === false || result.error)) {
-      resultsEl.innerHTML = '<div class="notice notice-red">' + (result.error || 'Something went wrong. Please try again.') + '</div>';
-      return;
-    }
-    if (!result.found) {
-      resultsEl.innerHTML = '<div class="notice notice-gold">No outstanding rental found for that Request ID. Double-check it matches what was given to you, or contact the team if you\'re still stuck.</div>';
-      return;
-    }
-    reFoundRecord = result;
-    document.getElementById('re-find-panel').style.display = 'none';
-    document.getElementById('re-return-panel').style.display = 'block';
-    document.getElementById('re-return-request-id').value = requestId;
-    document.getElementById('re-return-items').value = result.itemsGiven;
-  } catch(e) {
-    resultsEl.innerHTML = '<div class="notice notice-red">Could not reach the server. Please check your connection and try again.</div>';
-  } finally {
-    if (btn) { btn.textContent = 'Find My Request'; btn.disabled = false; }
-  }
-}
-
-async function reSubmitReturn() {
-  const requestId = document.getElementById('re-return-request-id').value;
-  const returnedBy = document.getElementById('re-return-name').value.trim();
-  if (!returnedBy) { alert('Please enter your name.'); return; }
-
-  const returnLocation = document.getElementById('re-return-location').value.trim();
-  if (!returnLocation) { alert('Please say where you have left the equipment.'); return; }
-
-  if (rePhotoFiles.length === 0) { alert('Please take or choose a photo of the returned equipment.'); return; }
-
-  const hasDamage = document.querySelector('input[name="re-has-damage"]:checked').value === 'yes';
-  const conditionNotes = hasDamage ? document.getElementById('re-damage-details').value.trim() : '';
-  if (hasDamage && !conditionNotes) { alert('Please describe the damage or issue.'); return; }
-
-  const btn = document.getElementById('re-return-btn');
-  if (btn) { btn.textContent = 'Submitting...'; btn.disabled = true; }
-
-  const returnTimeout = setTimeout(function() {
-    if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
-    alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before submitting again, so we don\'t end up with a duplicate.');
-  }, 50000);
-
-  try {
-    const photos = await Promise.all(rePhotoFiles.map(function(file) {
-      return new Promise(function(resolve, reject) {
-        const img = new Image();
-        img.onload = function() {
-          const canvas = document.createElement('canvas');
-          const maxSize = 1200;
-          let w = img.width, h = img.height;
-          if (w > maxSize || h > maxSize) {
-            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
-            else { w = Math.round(w * maxSize / h); h = maxSize; }
-          }
-          canvas.width = w; canvas.height = h;
-          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-          resolve({ base64: canvas.toDataURL('image/jpeg', 0.7).split(',')[1], mimeType: 'image/jpeg', name: 'returned.jpg' });
-        };
-        img.onerror = reject;
-        img.src = URL.createObjectURL(file);
-      });
-    }));
-
-    const result = await postToScript({
-      action: 'logRentalReturn',
-      requestId: requestId,
-      returnedBy: returnedBy,
-      returnLocation: returnLocation,
-      conditionNotes: conditionNotes,
-      photos: photos
-    });
-
-    clearTimeout(returnTimeout);
-    if (result && (result.success === false || result.error)) {
-      const msg = result.error || 'The return could not be confirmed. Please check the form and try again.';
-      if (window.reportClientError) window.reportClientError(msg, 'reSubmitReturn backend error');
-      if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
-      alert(msg);
-      return;
-    }
-
-    document.getElementById('re-return-panel').style.display = 'none';
-    document.getElementById('re-success').style.display = 'block';
-  } catch(e) {
-    clearTimeout(returnTimeout);
-    if (btn) { btn.textContent = 'Confirm Return'; btn.disabled = false; }
-    if (e && e.name === 'AbortError') {
-      alert('This is taking longer than expected. It may have still gone through on our end — please check with the team before submitting again, so we don\'t end up with a duplicate.');
-    } else {
-      alert('Could not reach the server. Please check your connection and try again.');
-    }
-  }
-}
-
-// If arrived via a direct link (?request=...), skip the manual lookup step
-// entirely and go straight to the return form -- this is what makes the
-// Telegram link genuinely "immediate" rather than just a bookmark to the page.
-document.addEventListener('DOMContentLoaded', () => {
-  const urlParams = new URLSearchParams(window.location.search);
-  const requestId = urlParams.get('request');
-  if (requestId) {
-    document.getElementById('re-request-id').value = requestId;
-    reFindRental();
-  }
-});
-</script>
 </body>
 </html>

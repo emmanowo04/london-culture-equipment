@@ -827,9 +827,19 @@ textarea { resize: vertical; min-height: 90px; }
  <div style="display:flex;flex-direction:column;gap:0.4rem;">
  <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;cursor:pointer;"><input type="checkbox" id="sub-filming-photos" style="width:16px;height:16px;" autocomplete="off"> Photos</label>
  <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;cursor:pointer;"><input type="checkbox" id="sub-filming-video" style="width:16px;height:16px;" autocomplete="off"> Videos & Recording</label>
- <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;cursor:pointer;"><input type="checkbox" id="sub-filming-other" onchange="document.getElementById('sub-filming-other-text').style.display=this.checked?'block':'none'; if(!this.checked) document.getElementById('sub-filming-other-text').value='';" style="width:16px;height:16px;" autocomplete="off"> Other</label>
- <textarea id="sub-filming-other-text" placeholder="Describe the other assistance needed..." style="display:none;min-height:60px;margin-top:0.2rem;"></textarea>
  </div>
+ </div>
+
+ <div class="assist-card" onclick="toggleAssist('other', this)" id="assist-other">
+ <div class="req-type-check"></div>
+ <div style="flex:1;">
+ <div class="req-type-label"> Other</div>
+ <div class="req-type-desc">Any other kind of assistance not covered above</div>
+ </div>
+ </div>
+ <div id="sub-other" style="display:none;padding:0.75rem 1rem;background:var(--blue-light);border-radius:8px;margin-top:-0.35rem;border:1px solid var(--border);">
+ <div class="hint" style="margin-bottom:0.6rem;font-weight:600;">Describe what's needed:</div>
+ <textarea id="sub-filming-other-text" placeholder="Describe the other assistance needed..." style="min-height:60px;"></textarea>
  </div>
 
  </div>
@@ -889,6 +899,11 @@ textarea { resize: vertical; min-height: 90px; }
  <button type="button" class="btn btn-ghost btn-sm" onclick="addEquipItemRow()" style="margin-top:0.5rem;width:100%;">+ Add another item</button>
  <input type="hidden" id="equip-items">
  </div>
+ <div class="form-group">
+ <label>Date Equipment is Needed For <span class="req">*</span></label>
+ <input type="date" id="equip-date-needed">
+ <div class="hint">The actual day you'll be using the equipment — this can be different from your pickup date.</div>
+ </div>
  <div class="form-row">
  <div class="form-group">
  <label>Pickup Date <span class="req">*</span></label>
@@ -897,6 +912,54 @@ textarea { resize: vertical; min-height: 90px; }
  <div class="form-group">
  <label>Return Date <span class="req">*</span></label>
  <input type="date" id="equip-return">
+ </div>
+ </div>
+ <div class="form-group">
+ <label>Do you require Mun-Hwa Bu assistance to set up the equipment? <span class="req">*</span></label>
+ <div class="yn-group">
+ <div class="yn-btn yes" onclick="setYN('equip-assistance', true, this)">Yes</div>
+ <div class="yn-btn no active" onclick="setYN('equip-assistance', false, this)">No</div>
+ </div>
+ <input type="hidden" id="equip-assistance" value="No">
+ </div>
+ <div id="equip-assist-panel" style="display:none;">
+ <div class="form-group">
+ <label>What kind of assistance is needed? <span class="req">*</span></label>
+ <div style="display:flex;flex-direction:column;gap:0.75rem;">
+ <div class="assist-card" onclick="toggleEquipAssist('media', this)" id="equip-assist-media">
+ <div class="req-type-check"></div>
+ <div style="flex:1;">
+ <div class="req-type-label"> Media / Broadcasting</div>
+ <div class="req-type-desc">Operating screens, managing lyrics, live stream and online broadcast</div>
+ </div>
+ </div>
+ <div class="assist-card" onclick="toggleEquipAssist('sound', this)" id="equip-assist-sound">
+ <div class="req-type-check"></div>
+ <div style="flex:1;">
+ <div class="req-type-label"> Sound Operation</div>
+ <div class="req-type-desc">Setting up and operating the sound desk, microphones and speakers</div>
+ </div>
+ </div>
+ <div class="assist-card" onclick="toggleEquipAssist('filming', this)" id="equip-assist-filming">
+ <div class="req-type-check"></div>
+ <div style="flex:1;">
+ <div class="req-type-label"> Filming & Photography</div>
+ <div class="req-type-desc">Capturing on camera, photography and video recording</div>
+ </div>
+ </div>
+ <div class="assist-card" onclick="toggleEquipAssist('other', this)" id="equip-assist-other">
+ <div class="req-type-check"></div>
+ <div style="flex:1;">
+ <div class="req-type-label"> Other</div>
+ <div class="req-type-desc">Any other kind of assistance not covered above</div>
+ </div>
+ </div>
+ <div id="equip-sub-other" style="display:none;padding:0.75rem 1rem;background:var(--blue-light);border-radius:8px;margin-top:-0.35rem;border:1px solid var(--border);">
+ <div class="hint" style="margin-bottom:0.6rem;font-weight:600;">Describe what's needed:</div>
+ <textarea id="equip-assist-other-text" placeholder="Describe the other assistance needed..." style="min-height:60px;"></textarea>
+ </div>
+ </div>
+ <input type="hidden" id="equip-assistance-types">
  </div>
  </div>
  <div class="form-group">
@@ -1431,9 +1494,9 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
 
       <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-        <button class="btn btn-dark btn-sm" onclick="showSATab('requests',this)">Pending Requests</button>
-        <button class="btn btn-ghost btn-sm" onclick="showSATab('checkouts',this)">Active Checkouts</button>
-        <button class="btn btn-ghost btn-sm" onclick="showSATab('support',this)">Support Requests</button>
+        <button class="btn btn-dark btn-sm" id="sa-tabbtn-requests" onclick="showSATab('requests',this)">Pending Requests</button>
+        <button class="btn btn-ghost btn-sm" id="sa-tabbtn-checkouts" onclick="showSATab('checkouts',this)">Active Checkouts</button>
+        <button class="btn btn-ghost btn-sm" id="sa-tabbtn-support" onclick="showSATab('support',this)">Support Requests</button>
       </div>
 
       <div id="sa-tab-requests">
@@ -1484,15 +1547,15 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
       <div class="form-group">
         <label>Photo of items <span class="opt">(optional)</span></label>
-        <input type="file" id="sa-given-photo" accept="image/*" capture="environment">
+        <input type="file" id="sa-given-photo" accept="image/*">
       </div>
       <button class="btn btn-dark btn-sm" id="sa-log-given-btn" onclick="saLogItemsGiven()" style="width:100%;">Log Items Given</button>
     </div>
 
     <div style="display:flex;gap:0.75rem;justify-content:flex-end;flex-wrap:wrap;">
       <button class="btn btn-ghost btn-sm" onclick="closeSAModal()">Close</button>
-      <button class="btn btn-sm" style="background:#c0392b;color:#fff;" onclick="updateSupportStatus('Rejected')">Reject</button>
-      <button class="btn btn-sm" style="background:#2563a8;color:#fff;" onclick="updateSupportStatus('Approved')">Approve</button>
+      <button class="btn btn-sm" id="sa-modal-reject-btn" style="background:#c0392b;color:#fff;" onclick="updateSupportStatus('Rejected')">Reject</button>
+      <button class="btn btn-sm" id="sa-modal-approve-btn" style="background:#2563a8;color:#fff;" onclick="updateSupportStatus('Approved')">Approve</button>
     </div>
   </div>
 </div>
@@ -1620,7 +1683,14 @@ function viewSupportRequest(requestId) {
   if (activeTypes.includes('equipment')) {
     details += '<div class="section-label" style="margin-top:1rem;">Equipment Rental</div>' +
       row('Purpose', req.equipPurpose) + row('Items', req.equipItems) +
-      row('Pickup', req.equipPickup) + row('Return', req.equipReturn) + row('Scope', req.equipScope);
+      row('Date Needed', req.equipDateNeeded ? formatDate(String(req.equipDateNeeded).split('T')[0]) : '') +
+      row('Pickup', req.equipPickup) + row('Return', req.equipReturn) + row('Scope', req.equipScope) +
+      (req.equipAssistance === 'Yes'
+        ? '<div style="margin-bottom:0.5rem;padding:0.5rem 0.75rem;background:var(--red-light);border-radius:6px;color:var(--red);font-weight:600;">⚠️ MHB assistance requested to set up this equipment' +
+          (req.equipAssistanceTypes ? '<br><span style="font-weight:400;">Type: ' + req.equipAssistanceTypes + '</span>' : '') +
+          (req.equipAssistanceOther ? '<br><span style="font-weight:400;">Other: ' + req.equipAssistanceOther + '</span>' : '') +
+          '</div>'
+        : row('MHB Assistance to Set Up?', req.equipAssistance));
   }
   if (activeTypes.includes('props')) {
     const isNew = !!req.propsNewScene;
@@ -1661,6 +1731,14 @@ function viewSupportRequest(requestId) {
 
   document.getElementById('sa-modal-body').innerHTML = details;
   document.getElementById('sa-modal-id').value = requestId;
+
+  // Approve/Reject only make sense while a request is still pending -- once
+  // it's Approved (or further along), leaving these visible next to the new
+  // Log Items Given button is exactly what caused a second, unintended
+  // approval to be sent by accident.
+  const isPending = (req.status || 'New') === 'New';
+  document.getElementById('sa-modal-approve-btn').style.display = isPending ? 'inline-flex' : 'none';
+  document.getElementById('sa-modal-reject-btn').style.display = isPending ? 'inline-flex' : 'none';
 
   // "Log Items Given" only makes sense for an Approved Equipment Rental
   // request that hasn't already had items logged out against it.
@@ -2080,7 +2158,10 @@ function setYN(hiddenId, isYes, btn) {
  document.getElementById(hiddenId).value = isYes ? 'Yes' : 'No';
 
  // Show/hide conditional fields
-
+ if (hiddenId === 'equip-assistance') {
+   const panel = document.getElementById('equip-assist-panel');
+   if (panel) panel.style.display = isYes ? 'block' : 'none';
+ }
 }
 
 function toggleWorshipFields(show) {
@@ -2229,7 +2310,7 @@ function toggleReqType(type, el) {
 }
 
 function toggleAssist(type, el) {
- const assistLabels = { media: 'Media / Broadcasting', sound: 'Sound Operation', filming: 'Filming & Photography' };
+ const assistLabels = { media: 'Media / Broadcasting', sound: 'Sound Operation', filming: 'Filming & Photography', other: 'Other' };
  if (selectedAssistance.has(type)) {
  selectedAssistance.delete(type);
  el.classList.remove('selected');
@@ -2242,6 +2323,21 @@ function toggleAssist(type, el) {
  if (sub) sub.style.display = 'block';
  }
  document.getElementById('coop-assistance').value = [...selectedAssistance].map(function(t) { return assistLabels[t] || t; }).join(', ');
+}
+
+let selectedEquipAssistance = new Set();
+function toggleEquipAssist(type, el) {
+ const assistLabels = { media: 'Media / Broadcasting', sound: 'Sound Operation', filming: 'Filming & Photography', other: 'Other' };
+ if (selectedEquipAssistance.has(type)) {
+ selectedEquipAssistance.delete(type);
+ el.classList.remove('selected');
+ if (type === 'other') document.getElementById('equip-sub-other').style.display = 'none';
+ } else {
+ selectedEquipAssistance.add(type);
+ el.classList.add('selected');
+ if (type === 'other') document.getElementById('equip-sub-other').style.display = 'block';
+ }
+ document.getElementById('equip-assistance-types').value = [...selectedEquipAssistance].map(function(t) { return assistLabels[t] || t; }).join(', ');
 }
 
 function nextReqStep(from) {
@@ -2312,8 +2408,13 @@ function validateReqStep(step) {
     // Validate Equipment Rental required fields
     if (selectedReqTypes.has('equipment')) {
       if (!get('equip-purpose')) { alert('Equipment Rental: please enter a purpose of use.'); return false; }
+      if (!get('equip-date-needed')) { alert('Equipment Rental: please enter the date the equipment is needed for.'); return false; }
       if (!get('equip-pickup')) { alert('Equipment Rental: please enter a pickup date.'); return false; }
       if (!get('equip-return')) { alert('Equipment Rental: please enter a return date.'); return false; }
+      if (get('equip-assistance') === 'Yes') {
+        if (selectedEquipAssistance.size === 0) { alert('Equipment Rental: please select what kind of assistance is needed.'); return false; }
+        if (selectedEquipAssistance.has('other') && !get('equip-assist-other-text')) { alert('Equipment Rental: please describe the other assistance needed.'); return false; }
+      }
       const equipSummary = get('equip-items');
       if (!equipSummary) { alert('Equipment Rental: please select at least one item.'); return false; }
     }
@@ -2494,7 +2595,7 @@ function buildReqReview() {
     html += '<div class="review-row"><span class="review-key">Venue</span><span class="review-val">' + get('coop-venue') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Purpose / Details</span><span class="review-val">' + get('coop-purpose') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Assistance</span><span class="review-val">' + (get('coop-assistance') || '—') + '</span></div>';
-    if (document.getElementById('sub-filming-other') && document.getElementById('sub-filming-other').checked && get('sub-filming-other-text')) {
+    if (selectedAssistance.has('other') && get('sub-filming-other-text')) {
       html += '<div class="review-row"><span class="review-key">Other Assistance</span><span class="review-val">' + get('sub-filming-other-text') + '</span></div>';
     }
   }
@@ -2502,10 +2603,18 @@ function buildReqReview() {
   // Equipment Rental
   if (selectedReqTypes.has('equipment')) {
     html += '<div class="section-label">Equipment Rental</div>';
+    html += '<div class="review-row"><span class="review-key">Date Needed</span><span class="review-val">' + formatDate(get('equip-date-needed')) + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Pickup</span><span class="review-val">' + formatDate(get('equip-pickup')) + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Return</span><span class="review-val">' + formatDate(get('equip-return')) + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Scope</span><span class="review-val">' + (get('equip-scope') || '—') + '</span></div>';
     html += '<div class="review-row"><span class="review-key">Items</span><span class="review-val">' + get('equip-items') + '</span></div>';
+    html += '<div class="review-row"><span class="review-key">MHB Assistance to Set Up?</span><span class="review-val">' + get('equip-assistance') + '</span></div>';
+    if (get('equip-assistance') === 'Yes') {
+      html += '<div class="review-row"><span class="review-key">Assistance Type</span><span class="review-val">' + get('equip-assistance-types') + '</span></div>';
+      if (selectedEquipAssistance.has('other')) {
+        html += '<div class="review-row"><span class="review-key">Other Assistance</span><span class="review-val">' + get('equip-assist-other-text') + '</span></div>';
+      }
+    }
   }
 
   // Material Request
@@ -2588,11 +2697,15 @@ async function submitCultureRequest() {
  coopVenue: get('coop-venue'),
  coopPurpose: get('coop-purpose'),
  coopAssistance: get('coop-assistance'),
- coopFilmingOther: document.getElementById('sub-filming-other') && document.getElementById('sub-filming-other').checked ? get('sub-filming-other-text') : '',
+ coopFilmingOther: selectedAssistance.has('other') ? get('sub-filming-other-text') : '',
  coopDocLink: document.getElementById('coop-no-doc') && document.getElementById('coop-no-doc').checked ? 'No document available' : get('coop-doc-link'),
  // Equipment
  equipPurpose: get('equip-purpose'),
+ equipDateNeeded: get('equip-date-needed'),
  equipPickup: get('equip-pickup'), equipReturn: get('equip-return'),
+ equipAssistance: get('equip-assistance'),
+ equipAssistanceTypes: get('equip-assistance-types'),
+ equipAssistanceOther: selectedEquipAssistance.has('other') ? get('equip-assist-other-text') : '',
  equipScope: get('equip-scope'), equipItems: get('equip-items'),
  // Material
  materialType: get('material-type'), materialPurpose: get('material-purpose'),
@@ -2653,6 +2766,7 @@ function resetCultureRequest() {
   reqStep = 1;
   selectedReqTypes.clear();
   selectedAssistance.clear();
+  selectedEquipAssistance.clear();
 
   // Reset steps UI
   document.querySelectorAll('#ext-request .form-step').forEach(s => s.classList.remove('active'));
@@ -2683,13 +2797,13 @@ function resetCultureRequest() {
   }
 
   // Hide all sub-panels
-  ['sub-media','sub-sound','sub-filming'].forEach(id => {
+  ['sub-media','sub-sound','sub-filming','sub-other','equip-sub-other'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });
 
   // Hide scope/event detail dropdowns
-  ['equip-event-fields','props-rental-external-fields','props-new-external-fields'].forEach(id => {
+  ['equip-event-fields','props-rental-external-fields','props-new-external-fields','equip-assist-panel'].forEach(id => {
     const el = document.getElementById(id);
     if (el) el.style.display = 'none';
   });

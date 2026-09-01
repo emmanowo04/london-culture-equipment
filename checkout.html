@@ -764,6 +764,81 @@ textarea { resize: vertical; min-height: 90px; }
     </div>
   </div>
 
+  <!-- ITEM SCAN (QR label -> ?item=<Asset ID>) -->
+  <div id="item-scan-panel" style="display:none;">
+
+    <div id="item-scan-loading">
+      <div class="page-header"><h1>Loading item&hellip;</h1></div>
+    </div>
+
+    <div id="item-scan-error" style="display:none;">
+      <div class="notice notice-red" id="item-scan-error-msg"></div>
+    </div>
+
+    <div id="item-scan-detail" style="display:none;">
+      <div class="page-header">
+        <h1 id="item-scan-name"></h1>
+        <p id="item-scan-sub"></p>
+      </div>
+      <div class="card">
+        <div class="review-row"><span class="review-key">Asset ID</span><span class="review-val" id="item-scan-id"></span></div>
+        <div class="review-row"><span class="review-key">Location</span><span class="review-val" id="item-scan-location"></span></div>
+        <div class="review-row"><span class="review-key">Status</span><span class="review-val" id="item-scan-status"></span></div>
+      </div>
+      <button class="btn btn-dark btn-full" id="item-scan-primary-btn" style="margin-bottom:0.75rem;"></button>
+      <button class="btn btn-ghost btn-full" onclick="itemScanShowIssueForm()">Log an Issue</button>
+    </div>
+
+    <div id="item-scan-checkout-form" style="display:none;">
+      <div class="page-header"><h1 id="item-scan-checkout-title"></h1></div>
+      <div class="card">
+        <div class="form-group">
+          <label>Your Name <span class="req">*</span></label>
+          <input type="text" id="item-scan-name-input" placeholder="Your name">
+        </div>
+        <div class="form-group" id="item-scan-qty-group" style="display:none;">
+          <label>Quantity <span class="req">*</span></label>
+          <input type="number" id="item-scan-qty-input" min="1" value="1">
+          <div class="hint" id="item-scan-qty-hint"></div>
+        </div>
+      </div>
+      <button class="btn btn-dark btn-full" id="item-scan-checkout-confirm-btn" onclick="itemScanSubmitCheckout()">Confirm</button>
+      <button class="btn btn-ghost btn-full" style="margin-top:0.5rem;" onclick="itemScanReset()">&larr; Back</button>
+    </div>
+
+    <div id="item-scan-issue-form" style="display:none;">
+      <div class="page-header"><h1>Log an Issue</h1></div>
+      <div class="card">
+        <div class="form-group">
+          <label>Your Name <span class="req">*</span></label>
+          <input type="text" id="item-scan-issue-name" placeholder="Your name">
+        </div>
+        <div class="form-group">
+          <label>Severity <span class="req">*</span></label>
+          <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.25rem;">
+            <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="item-scan-severity" value="broken" style="width:16px;height:16px;accent-color:#2563a8;"> Broken &mdash; not usable</label>
+            <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="item-scan-severity" value="issue" style="width:16px;height:16px;accent-color:#2563a8;"> Issue &mdash; still usable</label>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Describe the issue <span class="req">*</span></label>
+          <textarea id="item-scan-issue-desc" placeholder="What's wrong with it?"></textarea>
+        </div>
+      </div>
+      <button class="btn btn-red btn-full" onclick="itemScanSubmitIssue()">Submit Issue</button>
+      <button class="btn btn-ghost btn-full" style="margin-top:0.5rem;" onclick="itemScanReset()">&larr; Back</button>
+    </div>
+
+    <div id="item-scan-success" style="display:none;">
+      <div class="success-state">
+        <div class="success-icon"></div>
+        <h2 id="item-scan-success-title"></h2>
+        <p id="item-scan-success-msg"></p>
+      </div>
+    </div>
+
+  </div>
+
 </div>
 
 <script>
@@ -1221,15 +1296,187 @@ function coReset() {
 document.addEventListener('DOMContentLoaded', () => {
   const urlParams = new URLSearchParams(window.location.search);
   const returnId = urlParams.get('return');
+  const itemId = urlParams.get('item');
   if (returnId) {
     // Hide checkout form, show return form
     document.querySelectorAll('.co-steps, .co-form-step').forEach(el => el.style.display = 'none');
     document.getElementById('co-return-panel').style.display = 'block';
     document.getElementById('co-return-id').value = returnId;
+  } else if (itemId) {
+    document.querySelectorAll('.co-steps, .co-form-step').forEach(el => el.style.display = 'none');
+    document.getElementById('item-scan-panel').style.display = 'block';
+    itemScanInit(itemId);
   } else {
     coInit();
   }
 });
+
+// ── ITEM SCAN (QR label -> ?item=<Asset ID>) ──────────────────────────────
+let itemScanCurrent = null; // holds the looked-up item's data
+let itemScanMode = null;    // 'checkout' | 'return'
+
+function itemScanShowView(id) {
+  ['item-scan-loading', 'item-scan-error', 'item-scan-detail', 'item-scan-checkout-form', 'item-scan-issue-form', 'item-scan-success']
+    .forEach(function(v) { document.getElementById(v).style.display = (v === id) ? 'block' : 'none'; });
+}
+
+async function itemScanInit(assetId) {
+  itemScanShowView('item-scan-loading');
+  try {
+    const result = await postToScript({ action: 'findEquipmentItem', assetId: assetId });
+    if (!result || result.success === false || result.error) {
+      document.getElementById('item-scan-error-msg').textContent = (result && result.error) || 'Could not find this item.';
+      itemScanShowView('item-scan-error');
+      return;
+    }
+    itemScanCurrent = result.item;
+    itemScanRenderDetail();
+  } catch (e) {
+    document.getElementById('item-scan-error-msg').textContent = 'Could not reach the server. Please check your connection and try again.';
+    itemScanShowView('item-scan-error');
+  }
+}
+
+function itemScanRenderDetail() {
+  const item = itemScanCurrent;
+  const isBulk = item.totalQty > 1;
+
+  document.getElementById('item-scan-name').textContent = item.name;
+  document.getElementById('item-scan-sub').textContent = item.makeModel || '';
+  document.getElementById('item-scan-id').textContent = item.assetId;
+  document.getElementById('item-scan-location').textContent = item.location || '\u2014';
+
+  const btn = document.getElementById('item-scan-primary-btn');
+  if (isBulk) {
+    document.getElementById('item-scan-status').textContent = item.availableQty + ' of ' + item.totalQty + ' available';
+    btn.textContent = 'Check Out / Return';
+    btn.className = 'btn btn-dark btn-full';
+    btn.disabled = false;
+    btn.onclick = function() { itemScanShowCheckoutForm('checkout'); };
+  } else {
+    const checkedOut = item.status === 'Checked Out';
+    document.getElementById('item-scan-status').textContent = item.status;
+    if (checkedOut) {
+      btn.textContent = 'Return This Item';
+      btn.className = 'btn btn-green btn-full';
+      btn.onclick = function() { itemScanShowCheckoutForm('return'); };
+    } else if (item.status === 'Available') {
+      btn.textContent = 'Check Out';
+      btn.className = 'btn btn-dark btn-full';
+      btn.onclick = function() { itemScanShowCheckoutForm('checkout'); };
+    } else {
+      // Broken / Not Available -- block checkout, per the earlier decision
+      // to block clearly rather than just showing status
+      btn.textContent = 'Unavailable (' + item.status + ')';
+      btn.className = 'btn btn-ghost btn-full';
+      btn.disabled = true;
+      btn.onclick = null;
+    }
+  }
+  itemScanShowView('item-scan-detail');
+}
+
+function itemScanShowCheckoutForm(mode) {
+  itemScanMode = mode;
+  const item = itemScanCurrent;
+  const isBulk = item.totalQty > 1;
+  document.getElementById('item-scan-checkout-title').textContent =
+    (mode === 'return' ? 'Return: ' : 'Check Out: ') + item.name;
+  document.getElementById('item-scan-name-input').value = '';
+  document.getElementById('item-scan-checkout-confirm-btn').textContent = mode === 'return' ? 'Confirm Return' : 'Confirm Check Out';
+
+  const qtyGroup = document.getElementById('item-scan-qty-group');
+  if (isBulk) {
+    qtyGroup.style.display = 'block';
+    const qtyInput = document.getElementById('item-scan-qty-input');
+    qtyInput.value = 1;
+    const maxAvailable = mode === 'return' ? (item.totalQty - item.availableQty) : item.availableQty;
+    qtyInput.max = maxAvailable;
+    document.getElementById('item-scan-qty-hint').textContent =
+      mode === 'return' ? (maxAvailable + ' currently checked out') : (maxAvailable + ' available');
+  } else {
+    qtyGroup.style.display = 'none';
+  }
+  itemScanShowView('item-scan-checkout-form');
+}
+
+async function itemScanSubmitCheckout() {
+  const name = document.getElementById('item-scan-name-input').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+
+  const item = itemScanCurrent;
+  const isBulk = item.totalQty > 1;
+  let qty = 1;
+  if (isBulk) {
+    qty = parseInt(document.getElementById('item-scan-qty-input').value, 10);
+    if (!qty || qty < 1) { alert('Please enter a valid quantity.'); return; }
+  }
+
+  const btn = document.getElementById('item-scan-checkout-confirm-btn');
+  btn.disabled = true; btn.textContent = 'Submitting...';
+
+  try {
+    const result = await postToScript({
+      action: 'checkoutEquipmentItem',
+      assetId: item.assetId,
+      mode: itemScanMode,
+      qty: qty,
+      name: name
+    });
+    if (!result || result.success === false || result.error) {
+      alert((result && result.error) || 'Could not complete this. Please try again.');
+      btn.disabled = false; btn.textContent = itemScanMode === 'return' ? 'Confirm Return' : 'Confirm Check Out';
+      return;
+    }
+    document.getElementById('item-scan-success-title').textContent = itemScanMode === 'return' ? 'Returned' : 'Checked Out';
+    document.getElementById('item-scan-success-msg').textContent =
+      name + (itemScanMode === 'return' ? ' returned ' : ' checked out ') + qty + 'x ' + item.name + '.';
+    itemScanShowView('item-scan-success');
+  } catch (e) {
+    alert('Could not reach the server. Please check your connection and try again.');
+    btn.disabled = false; btn.textContent = itemScanMode === 'return' ? 'Confirm Return' : 'Confirm Check Out';
+  }
+}
+
+function itemScanShowIssueForm() {
+  document.getElementById('item-scan-issue-name').value = '';
+  document.getElementById('item-scan-issue-desc').value = '';
+  document.querySelectorAll('input[name="item-scan-severity"]').forEach(function(r) { r.checked = false; });
+  itemScanShowView('item-scan-issue-form');
+}
+
+async function itemScanSubmitIssue() {
+  const name = document.getElementById('item-scan-issue-name').value.trim();
+  if (!name) { alert('Please enter your name.'); return; }
+  const severityRadio = document.querySelector('input[name="item-scan-severity"]:checked');
+  if (!severityRadio) { alert('Please select a severity.'); return; }
+  const desc = document.getElementById('item-scan-issue-desc').value.trim();
+  if (!desc) { alert('Please describe the issue.'); return; }
+
+  try {
+    const result = await postToScript({
+      action: 'logEquipmentIssue',
+      assetId: itemScanCurrent.assetId,
+      reportedBy: name,
+      severity: severityRadio.value,
+      description: desc
+    });
+    if (!result || result.success === false || result.error) {
+      alert((result && result.error) || 'Could not submit this. Please try again.');
+      return;
+    }
+    document.getElementById('item-scan-success-title').textContent = 'Issue Logged';
+    document.getElementById('item-scan-success-msg').textContent = 'Thanks ' + name + ' \u2014 the team has been notified.';
+    itemScanShowView('item-scan-success');
+  } catch (e) {
+    alert('Could not reach the server. Please check your connection and try again.');
+  }
+}
+
+function itemScanReset() {
+  itemScanRenderDetail();
+}
+
 </script>
 </body>
 </html>

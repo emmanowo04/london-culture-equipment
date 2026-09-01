@@ -618,7 +618,8 @@ textarea { resize: vertical; min-height: 90px; }
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-cam" value="Camera controller" style="width:16px;height:16px;accent-color:#2563a8;"> Camera controller</label>
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-atem" value="ATEM" style="width:16px;height:16px;accent-color:#2563a8;"> ATEM</label>
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-pc" value="PC" style="width:16px;height:16px;accent-color:#2563a8;"> PC</label>
-          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;border-top:1px solid var(--border);padding-top:0.5rem;margin-top:0.15rem;"><input type="checkbox" id="md-eq-all" onchange="mdToggleAllEquipment(this)" style="width:16px;height:16px;accent-color:#2563a8;"> All of the above <span class="opt" style="margin-left:0.1rem;">(running the desk alone)</span></label>
+          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-board" value="Interactive Board" style="width:16px;height:16px;accent-color:#2563a8;"> Interactive Board</label>
+          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-all" onchange="mdToggleAllEquipment(this)" style="width:16px;height:16px;accent-color:#2563a8;"> All of the above <span class="opt" style="margin-left:0.1rem;">(running the desk alone)</span></label>
         </div>
       </div>
 
@@ -678,7 +679,7 @@ textarea { resize: vertical; min-height: 90px; }
       <div class="card-label">Sign Out</div>
       <div class="form-group">
         <label>Your name <span class="req">*</span></label>
-        <input type="text" id="md-entry-select" placeholder="Enter the name you signed in with">
+        <input type="text" id="md-entry-select" placeholder="Enter the name you signed in with" onblur="mdLookupSignoutHints()">
         <div class="hint">Enter the exact name you used when signing in today.</div>
       </div>
 
@@ -708,6 +709,7 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
       <div class="form-group">
         <label>Photos of media desk <span class="req">*</span> <span id="md-photo-issue-note" style="font-size:0.75rem;color:#c0392b;display:none;">— Required when reporting an issue</span></label>
+        <div id="md-photo-equip-hints" style="display:none;font-size:0.75rem;font-style:italic;color:var(--muted);margin-bottom:0.5rem;line-height:1.5;"></div>
         <label class="photo-drop">
           <input type="file" id="md-signout-photo" accept="image/*" multiple onchange="mdPreviewSignoutPhoto(this)">
           <div style="font-size:1.5rem;color:var(--muted);">📷</div>
@@ -716,10 +718,10 @@ textarea { resize: vertical; min-height: 90px; }
         <div id="md-signout-photo-preview" style="margin-top:0.75rem;"></div>
       </div>
       <div class="form-group">
-        <label>Any issues or damaged items to report? <span class="opt">(optional)</span></label>
+        <label>Any issues or damaged items to report? <span class="req">*</span></label>
         <div style="display:flex;gap:1.5rem;margin-top:0.25rem;margin-bottom:0.75rem;">
           <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-issue" value="yes" onchange="mdToggleIssue(true)" style="width:16px;height:16px;flex-shrink:0;accent-color:#2563a8;"> Yes</label>
-          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-issue" value="no" onchange="mdToggleIssue(false)" checked style="width:16px;height:16px;flex-shrink:0;accent-color:#2563a8;"> No</label>
+          <label style="display:flex;align-items:center;gap:0.5rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="radio" name="md-has-issue" value="no" onchange="mdToggleIssue(false)" style="width:16px;height:16px;flex-shrink:0;accent-color:#2563a8;"> No</label>
         </div>
         <div id="md-issue-block" style="display:none;">
           <textarea id="md-issue-details" placeholder="Describe the issue or damaged item in detail..." style="min-height:80px;width:100%;padding:0.6rem 0.75rem;font-size:0.85rem;border:1.5px solid #bbb;border-radius:7px;font-family:'Syne',sans-serif;resize:vertical;margin-bottom:0.75rem;"></textarea>
@@ -812,7 +814,15 @@ async function postToScript(payload) {
 // MEDIA DESK (/#mediadesk)
 // ══════════════════════════════════════════════════════════════════════════════
 
-const MD_EQUIPMENT = ['Mixer', 'Camera controller', 'ATEM', 'PC'];
+const MD_EQUIPMENT = ['Mixer', 'Camera controller', 'ATEM', 'PC', 'Interactive Board'];
+
+const MD_EQUIPMENT_HINTS = {
+  'Mixer': 'channels/faders reset to original levels',
+  'Interactive Board': 'board returned to original position',
+  'Camera controller': 'camera returned to home/preset position',
+  'ATEM': 'inputs/scene reset to default'
+};
+
 let mdAssistantCount = 0;
 
 function mdInit() {
@@ -996,6 +1006,37 @@ async function mdLoadOpenEntries() {
   }
 }
 
+async function mdLookupSignoutHints() {
+  const nameInput = document.getElementById('md-entry-select');
+  const hintsEl = document.getElementById('md-photo-equip-hints');
+  const name = nameInput.value.trim();
+  if (!name) { hintsEl.style.display = 'none'; hintsEl.innerHTML = ''; return; }
+  try {
+    const res = await postToScript({ action: 'mdGetOpenEntries', date: new Date().toISOString().split('T')[0] });
+    const entries = (res && res.entries) ? res.entries : [];
+    const match = entries.find(function(e) {
+      return e.name && e.name.trim().toLowerCase() === name.toLowerCase();
+    });
+    if (!match || !match.equipment || !match.equipment.length) {
+      hintsEl.style.display = 'none'; hintsEl.innerHTML = '';
+      return;
+    }
+    const hints = match.equipment
+      .map(function(eq) { return MD_EQUIPMENT_HINTS[eq]; })
+      .filter(Boolean);
+    if (hints.length === 0) {
+      hintsEl.style.display = 'none'; hintsEl.innerHTML = '';
+      return;
+    }
+    hintsEl.innerHTML = hints.map(function(h) { return '<div>' + h + '</div>'; }).join('');
+    hintsEl.style.display = 'block';
+  } catch(e) {
+    // Hints are a nice-to-have, not a blocker -- fail silently
+    hintsEl.style.display = 'none';
+    hintsEl.innerHTML = '';
+  }
+}
+
 async function mdSubmitSignOut() {
   const signOutName = document.getElementById('md-entry-select').value.trim();
   if (!signOutName) { alert('Please enter your name.'); return; }
@@ -1014,7 +1055,9 @@ async function mdSubmitSignOut() {
   const photoFiles = photoInput.files ? Array.from(photoInput.files) : [];
   if (photoFiles.length === 0) { alert('Please take or choose at least one photo of the media desk.'); return; }
 
-  const hasIssue = document.querySelector('input[name="md-has-issue"]:checked').value === 'yes';
+  const issueRadio = document.querySelector('input[name="md-has-issue"]:checked');
+  if (!issueRadio) { alert('Please indicate whether there are any issues or damaged items to report.'); return; }
+  const hasIssue = issueRadio.value === 'yes';
   const issueDetails = document.getElementById('md-issue-details').value.trim();
   if (hasIssue && !issueDetails) { alert('Please describe the issue or damaged item.'); return; }
 
@@ -1099,7 +1142,7 @@ function mdReset() {
   document.getElementById('md-telegram').value = '';
   document.getElementById('md-location').value = '';
   document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
-  document.querySelector('input[name="md-has-issue"][value="no"]').checked = true;
+  document.querySelectorAll('input[name="md-has-issue"]').forEach(function(r) { r.checked = false; });
   document.getElementById('md-signout-location').value = '';
   ['md-check-desktop', 'md-check-telegram-downloads', 'md-check-telegram-logout', 'md-check-pc-logout'].forEach(function(id) {
     document.getElementById(id).checked = false;
@@ -1108,6 +1151,10 @@ function mdReset() {
   document.getElementById('md-signout-photo-preview').innerHTML = '';
   document.getElementById('md-issue-block').style.display = 'none';
   document.getElementById('md-issue-details').value = '';
+  document.getElementById('md-photo-issue-note').style.display = 'none';
+  document.getElementById('md-photo-equip-hints').style.display = 'none';
+  document.getElementById('md-photo-equip-hints').innerHTML = '';
+  document.getElementById('md-entry-select').value = '';
   document.getElementById('md-success').style.display = 'none';
 
   // Re-init time

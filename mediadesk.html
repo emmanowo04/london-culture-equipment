@@ -645,7 +645,7 @@ textarea { resize: vertical; min-height: 90px; }
       <div class="form-group">
         <label>Purpose / Event <span class="req">*</span></label>
         <input type="text" id="md-purpose" placeholder="e.g. Sunday Service, Youth Meeting">
-        <div class="hint" style="font-style:italic;">Enter "Centre + Class Number" if this is being used for centre</div>
+        <div class="hint" style="font-style:italic;">Enter "Class + Centre Number" if this is being used for centre</div>
       </div>
 
       <div class="form-group">
@@ -718,11 +718,12 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
       <div class="form-group">
         <label>Photos of media desk <span class="req">*</span> <span id="md-photo-issue-note" style="font-size:0.75rem;color:#c0392b;display:none;">— Required when reporting an issue</span></label>
-        <div id="md-photo-equip-hints" style="display:none;font-size:0.75rem;font-style:italic;color:var(--muted);margin-bottom:0.5rem;line-height:1.5;"></div>
+        <div class="hint">Take photos of the media desk before leaving</div>
+        <div id="md-photo-equip-hints" style="display:none;margin:0.5rem 0;"></div>
         <label class="photo-drop">
           <input type="file" id="md-signout-photo" accept="image/*" multiple onchange="mdPreviewSignoutPhoto(this)">
           <div style="font-size:1.5rem;color:var(--muted);">📷</div>
-          <p>Take photos of the media desk before leaving</p>
+          <p>Tap to add photos</p>
         </label>
         <div id="md-signout-photo-preview" style="margin-top:0.75rem;"></div>
       </div>
@@ -826,9 +827,9 @@ async function postToScript(payload) {
 const MD_EQUIPMENT = ['Mixer', 'Camera controller', 'ATEM', 'PC', 'Interactive Board'];
 
 const MD_EQUIPMENT_HINTS = {
-  'Mixer': 'channels/faders reset to original levels',
-  'Interactive Board': 'board returned to original position',
-  'Camera controller': 'camera returned to home/preset position',
+  'Mixer': 'channels/faders returned to how you found them',
+  'Interactive Board': 'returned to its original position',
+  'Camera controller': 'returned to its home position',
   'ATEM': 'inputs/scene reset to default'
 };
 
@@ -1033,14 +1034,16 @@ async function mdLookupSignoutHints() {
       hintsEl.style.display = 'none'; hintsEl.innerHTML = '';
       return;
     }
-    const hints = match.equipment
-      .map(function(eq) { return MD_EQUIPMENT_HINTS[eq]; })
-      .filter(Boolean);
-    if (hints.length === 0) {
+    const rows = match.equipment
+      .filter(function(eq) { return MD_EQUIPMENT_HINTS[eq]; })
+      .map(function(eq) {
+        return '<div style="font-size:0.8rem;line-height:1.6;color:var(--black);"><strong>' + eq + ':</strong> <span style="color:var(--muted);">' + MD_EQUIPMENT_HINTS[eq] + '</span></div>';
+      });
+    if (rows.length === 0) {
       hintsEl.style.display = 'none'; hintsEl.innerHTML = '';
       return;
     }
-    hintsEl.innerHTML = hints.map(function(h) { return '<div>' + h + '</div>'; }).join('');
+    hintsEl.innerHTML = '<div class="hint" style="margin-bottom:0.3rem;">Before you photograph, please check:</div>' + rows.join('');
     hintsEl.style.display = 'block';
   } catch(e) {
     // Hints are a nice-to-have, not a blocker -- fail silently

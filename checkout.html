@@ -767,6 +767,17 @@ textarea { resize: vertical; min-height: 90px; }
   <!-- ITEM SCAN (QR label -> ?item=<Asset ID>) -->
   <div id="item-scan-panel" style="display:none;">
 
+    <!-- Persistent across scans (backed by localStorage) so items added on one
+         scan are still there after the next physical QR scan reloads the page -->
+    <div id="item-scan-list-bar" style="display:none;margin-bottom:1rem;">
+      <div class="card">
+        <div class="card-label">Checkout List (<span id="item-scan-list-count">0</span>)</div>
+        <div id="item-scan-list-items" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.75rem;"></div>
+        <button class="btn btn-dark btn-full" onclick="itemScanShowListCheckoutForm()">Check Out All</button>
+        <button class="btn btn-ghost btn-full" style="margin-top:0.5rem;" onclick="itemScanClearList()">Clear List</button>
+      </div>
+    </div>
+
     <div id="item-scan-loading">
       <div class="page-header"><h1>Loading item&hellip;</h1></div>
     </div>
@@ -785,7 +796,8 @@ textarea { resize: vertical; min-height: 90px; }
         <div class="review-row"><span class="review-key">Location</span><span class="review-val" id="item-scan-location"></span></div>
         <div class="review-row"><span class="review-key">Status</span><span class="review-val" id="item-scan-status"></span></div>
       </div>
-      <button class="btn btn-dark btn-full" id="item-scan-primary-btn" style="margin-bottom:0.75rem;"></button>
+      <button class="btn btn-dark btn-full" id="item-scan-primary-btn" style="margin-bottom:0.5rem;"></button>
+      <div class="hint" style="text-align:center;margin-bottom:0.75rem;">Taking more than one item? Add each to the list, then scan the next label.</div>
       <button class="btn btn-ghost btn-full" onclick="itemScanShowIssueForm()">Log an Issue</button>
     </div>
 
@@ -1313,7 +1325,52 @@ document.addEventListener('DOMContentLoaded', () => {
 
 // ── ITEM SCAN (QR label -> ?item=<Asset ID>) ──────────────────────────────
 let itemScanCurrent = null; // holds the looked-up item's data
-let itemScanMode = null;    // 'checkout' | 'return'
+let itemScanMode = null;    // 'return' | 'list' -- single check-out no longer exists separately, it goes through the checkout list
+
+const ITEM_SCAN_LIST_KEY = 'mhbItemScanList';
+
+function itemScanGetList() {
+  try {
+    return JSON.parse(localStorage.getItem(ITEM_SCAN_LIST_KEY) || '[]');
+  } catch (e) { return []; }
+}
+
+function itemScanSaveList(list) {
+  localStorage.setItem(ITEM_SCAN_LIST_KEY, JSON.stringify(list));
+  itemScanRenderListBar();
+}
+
+function itemScanRenderListBar() {
+  const list = itemScanGetList();
+  const bar = document.getElementById('item-scan-list-bar');
+  const listEl = document.getElementById('item-scan-list-items');
+  document.getElementById('item-scan-list-count').textContent = list.length;
+
+  if (list.length === 0) {
+    bar.style.display = 'none';
+    return;
+  }
+  bar.style.display = 'block';
+  listEl.innerHTML = list.map(function(c, i) {
+    return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">' +
+      '<span>' + c.name + (c.qty > 1 ? ' &times;' + c.qty : '') + '</span>' +
+      '<button onclick="itemScanRemoveFromList(' + i + ')" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);padding:0 4px;">&times;</button>' +
+      '</div>';
+  }).join('');
+}
+
+function itemScanRemoveFromList(index) {
+  const list = itemScanGetList();
+  list.splice(index, 1);
+  itemScanSaveList(list);
+  if (itemScanCurrent) itemScanRenderDetail(); // refresh the primary button's "on list" state
+}
+
+function itemScanClearList() {
+  if (!confirm('Clear the checkout list?')) return;
+  itemScanSaveList([]);
+  if (itemScanCurrent) itemScanRenderDetail();
+}
 
 function itemScanShowView(id) {
   ['item-scan-loading', 'item-scan-error', 'item-scan-detail', 'item-scan-checkout-form', 'item-scan-issue-form', 'item-scan-success']
@@ -1322,6 +1379,7 @@ function itemScanShowView(id) {
 
 async function itemScanInit(assetId) {
   itemScanShowView('item-scan-loading');
+  itemScanRenderListBar();
   try {
     const result = await postToScript({ action: 'findEquipmentItem', assetId: assetId });
     if (!result || result.success === false || result.error) {
@@ -1340,6 +1398,8 @@ async function itemScanInit(assetId) {
 function itemScanRenderDetail() {
   const item = itemScanCurrent;
   const isBulk = item.totalQty > 1;
+  const list = itemScanGetList();
+  const onList = list.some(function(c) { return c.assetId === item.assetId; });
 
   document.getElementById('item-scan-name').textContent = item.name;
   document.getElementById('item-scan-sub').textContent = item.makeModel || '';
@@ -1349,24 +1409,44 @@ function itemScanRenderDetail() {
   const btn = document.getElementById('item-scan-primary-btn');
   if (isBulk) {
     document.getElementById('item-scan-status').textContent = item.availableQty + ' of ' + item.totalQty + ' available';
-    btn.textContent = 'Check Out / Return';
-    btn.className = 'btn btn-dark btn-full';
-    btn.disabled = false;
-    btn.onclick = function() { itemScanShowCheckoutForm('checkout'); };
+    if (item.availableQty <= 0) {
+      btn.textContent = 'None Available';
+      btn.className = 'btn btn-ghost btn-full';
+      btn.disabled = true; btn.onclick = null;
+    } else if (onList) {
+      btn.textContent = '\u2713 On List \u2014 tap to remove';
+      btn.className = 'btn btn-green btn-full';
+      btn.disabled = false;
+      btn.onclick = function() { itemScanRemoveFromList(list.findIndex(function(c) { return c.assetId === item.assetId; })); itemScanRenderDetail(); };
+    } else {
+      btn.textContent = 'Add to List';
+      btn.className = 'btn btn-dark btn-full';
+      btn.disabled = false;
+      btn.onclick = function() { itemScanAddToList(); };
+    }
   } else {
     const checkedOut = item.status === 'Checked Out';
     document.getElementById('item-scan-status').textContent = item.status;
     if (checkedOut) {
       btn.textContent = 'Return This Item';
       btn.className = 'btn btn-green btn-full';
-      btn.onclick = function() { itemScanShowCheckoutForm('return'); };
+      btn.disabled = false;
+      btn.onclick = function() { itemScanShowSingleReturnForm(); };
     } else if (item.status === 'Available') {
-      btn.textContent = 'Check Out';
-      btn.className = 'btn btn-dark btn-full';
-      btn.onclick = function() { itemScanShowCheckoutForm('checkout'); };
+      if (onList) {
+        btn.textContent = '\u2713 On List \u2014 tap to remove';
+        btn.className = 'btn btn-green btn-full';
+        btn.disabled = false;
+        btn.onclick = function() { itemScanRemoveFromList(list.findIndex(function(c) { return c.assetId === item.assetId; })); itemScanRenderDetail(); };
+      } else {
+        btn.textContent = 'Add to List';
+        btn.className = 'btn btn-dark btn-full';
+        btn.disabled = false;
+        btn.onclick = function() { itemScanAddToList(); };
+      }
     } else {
-      // Broken / Not Available -- block checkout, per the earlier decision
-      // to block clearly rather than just showing status
+      // Broken / Not Available -- block, per the earlier decision to block
+      // clearly rather than just showing status
       btn.textContent = 'Unavailable (' + item.status + ')';
       btn.className = 'btn btn-ghost btn-full';
       btn.disabled = true;
@@ -1376,27 +1456,32 @@ function itemScanRenderDetail() {
   itemScanShowView('item-scan-detail');
 }
 
-function itemScanShowCheckoutForm(mode) {
-  itemScanMode = mode;
+function itemScanAddToList() {
   const item = itemScanCurrent;
   const isBulk = item.totalQty > 1;
-  document.getElementById('item-scan-checkout-title').textContent =
-    (mode === 'return' ? 'Return: ' : 'Check Out: ') + item.name;
-  document.getElementById('item-scan-name-input').value = '';
-  document.getElementById('item-scan-checkout-confirm-btn').textContent = mode === 'return' ? 'Confirm Return' : 'Confirm Check Out';
-
-  const qtyGroup = document.getElementById('item-scan-qty-group');
+  let qty = 1;
   if (isBulk) {
-    qtyGroup.style.display = 'block';
-    const qtyInput = document.getElementById('item-scan-qty-input');
-    qtyInput.value = 1;
-    const maxAvailable = mode === 'return' ? (item.totalQty - item.availableQty) : item.availableQty;
-    qtyInput.max = maxAvailable;
-    document.getElementById('item-scan-qty-hint').textContent =
-      mode === 'return' ? (maxAvailable + ' currently checked out') : (maxAvailable + ' available');
-  } else {
-    qtyGroup.style.display = 'none';
+    const entered = prompt('How many of "' + item.name + '" are you taking? (' + item.availableQty + ' available)', '1');
+    if (entered === null) return; // cancelled
+    qty = parseInt(entered, 10);
+    if (!qty || qty < 1) { alert('Please enter a valid quantity.'); return; }
+    if (qty > item.availableQty) { alert('Only ' + item.availableQty + ' available.'); return; }
   }
+  const list = itemScanGetList();
+  list.push({ assetId: item.assetId, name: item.name, qty: qty });
+  itemScanSaveList(list);
+  itemScanRenderDetail();
+}
+
+// Return stays single-item (returning several together wasn't asked for) --
+// this reuses the checkout-form view but bypasses the checkout list entirely.
+function itemScanShowSingleReturnForm() {
+  itemScanMode = 'return';
+  const item = itemScanCurrent;
+  document.getElementById('item-scan-checkout-title').textContent = 'Return: ' + item.name;
+  document.getElementById('item-scan-name-input').value = '';
+  document.getElementById('item-scan-checkout-confirm-btn').textContent = 'Confirm Return';
+  document.getElementById('item-scan-qty-group').style.display = 'none';
   itemScanShowView('item-scan-checkout-form');
 }
 
@@ -1404,38 +1489,65 @@ async function itemScanSubmitCheckout() {
   const name = document.getElementById('item-scan-name-input').value.trim();
   if (!name) { alert('Please enter your name.'); return; }
 
-  const item = itemScanCurrent;
-  const isBulk = item.totalQty > 1;
-  let qty = 1;
-  if (isBulk) {
-    qty = parseInt(document.getElementById('item-scan-qty-input').value, 10);
-    if (!qty || qty < 1) { alert('Please enter a valid quantity.'); return; }
-  }
-
   const btn = document.getElementById('item-scan-checkout-confirm-btn');
   btn.disabled = true; btn.textContent = 'Submitting...';
 
   try {
-    const result = await postToScript({
-      action: 'checkoutEquipmentItem',
-      assetId: item.assetId,
-      mode: itemScanMode,
-      qty: qty,
-      name: name
-    });
-    if (!result || result.success === false || result.error) {
-      alert((result && result.error) || 'Could not complete this. Please try again.');
-      btn.disabled = false; btn.textContent = itemScanMode === 'return' ? 'Confirm Return' : 'Confirm Check Out';
-      return;
+    if (itemScanMode === 'list') {
+      const list = itemScanGetList();
+      const result = await postToScript({
+        action: 'checkoutEquipmentItems',
+        items: list.map(function(c) { return { assetId: c.assetId, qty: c.qty }; }),
+        name: name
+      });
+      if (!result || result.success === false || (!result.checkedOut && result.error)) {
+        alert((result && result.error) || 'Could not complete this. Please try again.');
+        btn.disabled = false; btn.textContent = 'Confirm Check Out All';
+        return;
+      }
+      itemScanSaveList([]);
+      const checkedOutNames = (result.checkedOut || []).map(function(c) { return c.name + (c.qty > 1 ? ' x' + c.qty : ''); }).join(', ');
+      document.getElementById('item-scan-success-title').textContent = 'Checked Out';
+      let msg = name + ' checked out: ' + (checkedOutNames || 'nothing');
+      if (result.failed && result.failed.length > 0) {
+        msg += '. Could not check out: ' + result.failed.map(function(f) { return f.name + ' (' + f.reason + ')'; }).join(', ');
+      }
+      document.getElementById('item-scan-success-msg').textContent = msg;
+      itemScanShowView('item-scan-success');
+    } else {
+      // Single return
+      const item = itemScanCurrent;
+      const result = await postToScript({
+        action: 'checkoutEquipmentItem',
+        assetId: item.assetId,
+        mode: 'return',
+        qty: 1,
+        name: name
+      });
+      if (!result || result.success === false || result.error) {
+        alert((result && result.error) || 'Could not complete this. Please try again.');
+        btn.disabled = false; btn.textContent = 'Confirm Return';
+        return;
+      }
+      document.getElementById('item-scan-success-title').textContent = 'Returned';
+      document.getElementById('item-scan-success-msg').textContent = name + ' returned ' + item.name + '.';
+      itemScanShowView('item-scan-success');
     }
-    document.getElementById('item-scan-success-title').textContent = itemScanMode === 'return' ? 'Returned' : 'Checked Out';
-    document.getElementById('item-scan-success-msg').textContent =
-      name + (itemScanMode === 'return' ? ' returned ' : ' checked out ') + qty + 'x ' + item.name + '.';
-    itemScanShowView('item-scan-success');
   } catch (e) {
     alert('Could not reach the server. Please check your connection and try again.');
-    btn.disabled = false; btn.textContent = itemScanMode === 'return' ? 'Confirm Return' : 'Confirm Check Out';
+    btn.disabled = false; btn.textContent = itemScanMode === 'list' ? 'Confirm Check Out All' : 'Confirm Return';
   }
+}
+
+function itemScanShowListCheckoutForm() {
+  const list = itemScanGetList();
+  if (list.length === 0) { alert('Your checkout list is empty.'); return; }
+  itemScanMode = 'list';
+  document.getElementById('item-scan-checkout-title').textContent = 'Check Out ' + list.length + ' Item' + (list.length > 1 ? 's' : '');
+  document.getElementById('item-scan-name-input').value = '';
+  document.getElementById('item-scan-checkout-confirm-btn').textContent = 'Confirm Check Out All';
+  document.getElementById('item-scan-qty-group').style.display = 'none';
+  itemScanShowView('item-scan-checkout-form');
 }
 
 function itemScanShowIssueForm() {
@@ -1476,6 +1588,7 @@ async function itemScanSubmitIssue() {
 function itemScanReset() {
   itemScanRenderDetail();
 }
+
 
 </script>
 </body>

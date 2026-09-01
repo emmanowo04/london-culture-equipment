@@ -624,6 +624,8 @@ textarea { resize: vertical; min-height: 90px; }
     <button type="button" class="btn btn-ghost btn-sm" onclick="coShowFindPanel()">Already checked something out? Find &amp; return it here</button>
   </div>
 
+  <div id="item-scan-notice" class="notice" style="display:none;"></div>
+
   <div class="co-steps">
     <div class="co-step active" id="co-step-1">1. Your Details</div>
     <div class="co-step" id="co-step-2">2. Items</div>
@@ -765,26 +767,11 @@ textarea { resize: vertical; min-height: 90px; }
   </div>
 
   <!-- ITEM SCAN (QR label -> ?item=<Asset ID>) -->
+  <!-- For an Available item, scanning just adds it straight into the normal
+       checkout form above (co-items-list) -- no separate screen. This panel
+       only appears for the two genuinely different actions: returning an
+       item that's already checked out, and reporting an issue with one. -->
   <div id="item-scan-panel" style="display:none;">
-
-    <!-- Persistent across scans (backed by localStorage) so items added on one
-         scan are still there after the next physical QR scan reloads the page -->
-    <div id="item-scan-list-bar" style="display:none;margin-bottom:1rem;">
-      <div class="card">
-        <div class="card-label">Checkout List (<span id="item-scan-list-count">0</span>)</div>
-        <div id="item-scan-list-items" style="display:flex;flex-direction:column;gap:0.4rem;margin-bottom:0.75rem;"></div>
-        <button class="btn btn-dark btn-full" onclick="itemScanContinueToCheckout()">Continue to Checkout</button>
-        <button class="btn btn-ghost btn-full" style="margin-top:0.5rem;" onclick="itemScanClearList()">Clear List</button>
-      </div>
-    </div>
-
-    <div id="item-scan-loading">
-      <div class="page-header"><h1>Loading item&hellip;</h1></div>
-    </div>
-
-    <div id="item-scan-error" style="display:none;">
-      <div class="notice notice-red" id="item-scan-error-msg"></div>
-    </div>
 
     <div id="item-scan-detail" style="display:none;">
       <div class="page-header">
@@ -797,7 +784,6 @@ textarea { resize: vertical; min-height: 90px; }
         <div class="review-row"><span class="review-key">Status</span><span class="review-val" id="item-scan-status"></span></div>
       </div>
       <button class="btn btn-dark btn-full" id="item-scan-primary-btn" style="margin-bottom:0.5rem;"></button>
-      <div class="hint" style="text-align:center;margin-bottom:0.75rem;">Taking more than one item? Add each to the list, then scan the next label.</div>
       <button class="btn btn-ghost btn-full" onclick="itemScanShowIssueForm()">Log an Issue</button>
     </div>
 
@@ -808,10 +794,22 @@ textarea { resize: vertical; min-height: 90px; }
           <label>Your Name <span class="req">*</span></label>
           <input type="text" id="item-scan-name-input" placeholder="Your name">
         </div>
-        <div class="form-group" id="item-scan-qty-group" style="display:none;">
-          <label>Quantity <span class="req">*</span></label>
-          <input type="number" id="item-scan-qty-input" min="1" value="1">
-          <div class="hint" id="item-scan-qty-hint"></div>
+        <div class="form-group">
+          <label>Return Location <span class="req">*</span></label>
+          <select id="item-scan-return-location">
+            <option value="">&mdash; Select a return location &mdash;</option>
+            <option value="EH Culture Office">EH Culture Office</option>
+            <option value="U15 Culture Office">U15 Culture Office</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Photo <span class="req">*</span></label>
+          <label class="photo-drop">
+            <input type="file" id="item-scan-return-photo" accept="image/*" multiple onchange="itemScanPreviewReturnPhoto(this)">
+            <div style="font-size:1.5rem;color:var(--muted);">&#128247;</div>
+            <p>Tap to add a photo</p>
+          </label>
+          <div id="item-scan-return-photo-preview" class="photo-preview"></div>
         </div>
       </div>
       <button class="btn btn-dark btn-full" id="item-scan-checkout-confirm-btn" onclick="itemScanSubmitCheckout()">Confirm</button>
@@ -1155,7 +1153,10 @@ function coAddScannedItemRow(name, assetId, qty) {
   return row;
 }
 
-function coInit() {
+let coInitDone = false;
+function coInit(force) {
+  if (coInitDone && !force) return;
+  coInitDone = true;
   const today = new Date();
   const fmt = d => d.toISOString().split('T')[0];
   document.getElementById('co-date-out').value = fmt(today);
@@ -1332,7 +1333,7 @@ function coReset() {
   document.getElementById('co-photo-preview').innerHTML = '';
   const list = document.getElementById('co-items-list');
   if (list) { list.innerHTML = '<div class="co-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;"><input type="text" placeholder="e.g. Sony A7 IV camera" style="flex:1;"><button onclick="this.closest(\'.co-item-row\').remove()" style="background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;">×</button></div>'; }
-  coInit();
+  coInit(true);
   coGoStep(1);
 }
 
@@ -1348,8 +1349,6 @@ document.addEventListener('DOMContentLoaded', () => {
     document.getElementById('co-return-panel').style.display = 'block';
     document.getElementById('co-return-id').value = returnId;
   } else if (itemId) {
-    document.querySelectorAll('.co-steps, .co-form-step').forEach(el => el.style.display = 'none');
-    document.getElementById('item-scan-panel').style.display = 'block';
     itemScanInit(itemId);
   } else {
     coInit();
@@ -1357,8 +1356,13 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // ── ITEM SCAN (QR label -> ?item=<Asset ID>) ──────────────────────────────
-let itemScanCurrent = null; // holds the looked-up item's data
-let itemScanMode = null;    // 'return' | 'list' -- single check-out no longer exists separately, it goes through the checkout list
+// An Available item just gets added straight into the normal checkout form's
+// item list -- no separate screen. Persisted in localStorage purely because
+// each physical QR scan is a fresh page load (the phone's camera app opens a
+// new tab), so previously-added items would otherwise vanish on the next
+// scan. Scan everything first, then fill in your name/dates/photo once at
+// the end -- Step 1 isn't persisted across scans, only the item list is.
+let itemScanCurrent = null; // holds the looked-up item's data, for the return/issue screens only
 
 const ITEM_SCAN_LIST_KEY = 'mhbItemScanList';
 
@@ -1370,69 +1374,67 @@ function itemScanGetList() {
 
 function itemScanSaveList(list) {
   localStorage.setItem(ITEM_SCAN_LIST_KEY, JSON.stringify(list));
-  itemScanRenderListBar();
 }
 
-function itemScanRenderListBar() {
-  const list = itemScanGetList();
-  const bar = document.getElementById('item-scan-list-bar');
-  const listEl = document.getElementById('item-scan-list-items');
-  document.getElementById('item-scan-list-count').textContent = list.length;
+function itemScanShowNotice(message, isError) {
+  const el = document.getElementById('item-scan-notice');
+  el.textContent = message;
+  el.className = 'notice ' + (isError ? 'notice-red' : 'notice-blue');
+  el.style.display = 'block';
+}
 
-  if (list.length === 0) {
-    bar.style.display = 'none';
-    return;
+// Renders the persisted scan list into the checkout form's own item list
+// (the same co-items-list every manually-typed item also lives in), then
+// makes sure the wizard itself is visible and lands on the Items step.
+function itemScanShowWizardWithList() {
+  document.getElementById('item-scan-panel').style.display = 'none';
+  document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = ''; });
+  coInit();
+
+  const list = itemScanGetList();
+  document.getElementById('co-items-list').innerHTML = '';
+  if (list.length > 0) {
+    list.forEach(function(c) { coAddScannedItemRow(c.name, c.assetId, c.qty); });
+    coGoStep(2);
+  } else {
+    coAddItemRow(false);
+    coGoStep(1);
   }
-  bar.style.display = 'block';
-  listEl.innerHTML = list.map(function(c, i) {
-    return '<div style="display:flex;justify-content:space-between;align-items:center;font-size:0.85rem;">' +
-      '<span>' + c.name + (c.qty > 1 ? ' &times;' + c.qty : '') + '</span>' +
-      '<button onclick="itemScanRemoveFromList(' + i + ')" style="background:none;border:none;cursor:pointer;font-size:1rem;color:var(--muted);padding:0 4px;">&times;</button>' +
-      '</div>';
-  }).join('');
-}
-
-function itemScanRemoveFromList(index) {
-  const list = itemScanGetList();
-  list.splice(index, 1);
-  itemScanSaveList(list);
-  if (itemScanCurrent) itemScanRenderDetail(); // refresh the primary button's "on list" state
-}
-
-function itemScanClearList() {
-  if (!confirm('Clear the checkout list?')) return;
-  itemScanSaveList([]);
-  if (itemScanCurrent) itemScanRenderDetail();
 }
 
 function itemScanShowView(id) {
-  ['item-scan-loading', 'item-scan-error', 'item-scan-detail', 'item-scan-checkout-form', 'item-scan-issue-form', 'item-scan-success']
+  ['item-scan-detail', 'item-scan-checkout-form', 'item-scan-issue-form', 'item-scan-success']
     .forEach(function(v) { document.getElementById(v).style.display = (v === id) ? 'block' : 'none'; });
+  document.getElementById('item-scan-panel').style.display = 'block';
+  document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = 'none'; });
 }
 
 async function itemScanInit(assetId) {
-  itemScanShowView('item-scan-loading');
-  itemScanRenderListBar();
   try {
     const result = await postToScript({ action: 'findEquipmentItem', assetId: assetId });
     if (!result || result.success === false || result.error) {
-      document.getElementById('item-scan-error-msg').textContent = (result && result.error) || 'Could not find this item.';
-      itemScanShowView('item-scan-error');
+      itemScanShowNotice((result && result.error) || 'Could not find this item.', true);
+      itemScanShowWizardWithList();
       return;
     }
     itemScanCurrent = result.item;
-    itemScanRenderDetail();
+    itemScanHandleLookup();
   } catch (e) {
-    document.getElementById('item-scan-error-msg').textContent = 'Could not reach the server. Please check your connection and try again.';
-    itemScanShowView('item-scan-error');
+    itemScanShowNotice('Could not reach the server. Please check your connection and try again.', true);
+    itemScanShowWizardWithList();
   }
 }
 
+function itemScanHandleLookup() {
+  itemScanRenderDetail();
+}
+
+// The scan-landing screen for every item -- Check Out or Log an Issue.
+// "Check Out" now leads straight into the real checkout form's item list
+// (itemScanAddToWizard), not a separate mini-form.
 function itemScanRenderDetail() {
   const item = itemScanCurrent;
   const isBulk = item.totalQty > 1;
-  const list = itemScanGetList();
-  const onList = list.some(function(c) { return c.assetId === item.assetId; });
 
   document.getElementById('item-scan-name').textContent = item.name;
   document.getElementById('item-scan-sub').textContent = item.makeModel || '';
@@ -1440,99 +1442,130 @@ function itemScanRenderDetail() {
   document.getElementById('item-scan-location').textContent = item.location || '\u2014';
 
   const btn = document.getElementById('item-scan-primary-btn');
+
   if (isBulk) {
     document.getElementById('item-scan-status').textContent = item.availableQty + ' of ' + item.totalQty + ' available';
     if (item.availableQty <= 0) {
       btn.textContent = 'None Available';
       btn.className = 'btn btn-ghost btn-full';
       btn.disabled = true; btn.onclick = null;
-    } else if (onList) {
-      btn.textContent = '\u2713 On List \u2014 tap to remove';
-      btn.className = 'btn btn-green btn-full';
-      btn.disabled = false;
-      btn.onclick = function() { itemScanRemoveFromList(list.findIndex(function(c) { return c.assetId === item.assetId; })); itemScanRenderDetail(); };
     } else {
-      btn.textContent = 'Add to List';
+      btn.textContent = 'Check Out';
       btn.className = 'btn btn-dark btn-full';
       btn.disabled = false;
-      btn.onclick = function() { itemScanAddToList(); };
+      btn.onclick = function() { itemScanPromptBulkCheckout(item); };
     }
-  } else {
-    const checkedOut = item.status === 'Checked Out';
+  } else if (item.status === 'Checked Out') {
     document.getElementById('item-scan-status').textContent = item.status;
-    if (checkedOut) {
-      btn.textContent = 'Return This Item';
-      btn.className = 'btn btn-green btn-full';
-      btn.disabled = false;
-      btn.onclick = function() { itemScanShowSingleReturnForm(); };
-    } else if (item.status === 'Available') {
-      if (onList) {
-        btn.textContent = '\u2713 On List \u2014 tap to remove';
-        btn.className = 'btn btn-green btn-full';
-        btn.disabled = false;
-        btn.onclick = function() { itemScanRemoveFromList(list.findIndex(function(c) { return c.assetId === item.assetId; })); itemScanRenderDetail(); };
-      } else {
-        btn.textContent = 'Add to List';
-        btn.className = 'btn btn-dark btn-full';
-        btn.disabled = false;
-        btn.onclick = function() { itemScanAddToList(); };
-      }
-    } else {
-      // Broken / Not Available -- block, per the earlier decision to block
-      // clearly rather than just showing status
-      btn.textContent = 'Unavailable (' + item.status + ')';
-      btn.className = 'btn btn-ghost btn-full';
-      btn.disabled = true;
-      btn.onclick = null;
-    }
+    btn.textContent = 'Return This Item';
+    btn.className = 'btn btn-green btn-full';
+    btn.disabled = false;
+    btn.onclick = function() { itemScanShowSingleReturnForm(); };
+  } else if (item.status === 'Available') {
+    document.getElementById('item-scan-status').textContent = item.status;
+    btn.textContent = 'Check Out';
+    btn.className = 'btn btn-dark btn-full';
+    btn.disabled = false;
+    btn.onclick = function() { itemScanAddToWizard(item, 1); };
+  } else {
+    // Broken / Not Available -- block clearly, Log an Issue stays available
+    document.getElementById('item-scan-status').textContent = item.status;
+    btn.textContent = 'Unavailable (' + item.status + ')';
+    btn.className = 'btn btn-ghost btn-full';
+    btn.disabled = true; btn.onclick = null;
   }
+
   itemScanShowView('item-scan-detail');
 }
 
-function itemScanAddToList() {
-  const item = itemScanCurrent;
-  const isBulk = item.totalQty > 1;
-  let qty = 1;
-  if (isBulk) {
-    const entered = prompt('How many of "' + item.name + '" are you taking? (' + item.availableQty + ' available)', '1');
-    if (entered === null) return; // cancelled
-    qty = parseInt(entered, 10);
-    if (!qty || qty < 1) { alert('Please enter a valid quantity.'); return; }
-    if (qty > item.availableQty) { alert('Only ' + item.availableQty + ' available.'); return; }
-  }
-  const list = itemScanGetList();
-  list.push({ assetId: item.assetId, name: item.name, qty: qty });
-  itemScanSaveList(list);
-  itemScanRenderDetail();
+function itemScanPromptBulkCheckout(item) {
+  const entered = prompt('How many of "' + item.name + '" are you taking? (' + item.availableQty + ' available)', '1');
+  if (entered === null) return;
+  const qty = parseInt(entered, 10);
+  if (!qty || qty < 1 || qty > item.availableQty) { alert('Please enter a valid quantity.'); return; }
+  itemScanAddToWizard(item, qty);
 }
 
-// Return stays single-item (returning several together wasn't asked for) --
-// this reuses the checkout-form view but bypasses the checkout list entirely.
+function itemScanAddToWizard(item, qty) {
+  const list = itemScanGetList();
+  if (list.some(function(c) { return c.assetId === item.assetId; })) {
+    itemScanShowNotice(item.name + ' is already on your list.', false);
+  } else {
+    list.push({ assetId: item.assetId, name: item.name, qty: qty });
+    itemScanSaveList(list);
+    itemScanShowNotice('\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added \u2014 scan another item or continue below.', false);
+  }
+  itemScanShowWizardWithList();
+}
+
+// Return stays single-item (returning several together wasn't asked for).
 function itemScanShowSingleReturnForm() {
-  itemScanMode = 'return';
   const item = itemScanCurrent;
   document.getElementById('item-scan-checkout-title').textContent = 'Return: ' + item.name;
   document.getElementById('item-scan-name-input').value = '';
+  document.getElementById('item-scan-return-location').value = '';
+  document.getElementById('item-scan-return-photo').value = '';
+  document.getElementById('item-scan-return-photo-preview').innerHTML = '';
   document.getElementById('item-scan-checkout-confirm-btn').textContent = 'Confirm Return';
-  document.getElementById('item-scan-qty-group').style.display = 'none';
   itemScanShowView('item-scan-checkout-form');
+}
+
+function itemScanPreviewReturnPhoto(input) {
+  const preview = document.getElementById('item-scan-return-photo-preview');
+  preview.innerHTML = '';
+  if (input.files) {
+    Array.from(input.files).forEach(function(file) {
+      const img = document.createElement('img');
+      img.className = 'photo-thumb';
+      img.src = URL.createObjectURL(file);
+      preview.appendChild(img);
+    });
+  }
 }
 
 async function itemScanSubmitCheckout() {
   const name = document.getElementById('item-scan-name-input').value.trim();
   if (!name) { alert('Please enter your name.'); return; }
+  const returnLocation = document.getElementById('item-scan-return-location').value;
+  if (!returnLocation) { alert('Please select a return location.'); return; }
+  const photoInput = document.getElementById('item-scan-return-photo');
+  const photoFiles = photoInput.files ? Array.from(photoInput.files) : [];
+  if (photoFiles.length === 0) { alert('Please attach a photo.'); return; }
 
   const btn = document.getElementById('item-scan-checkout-confirm-btn');
   btn.disabled = true; btn.textContent = 'Submitting...';
 
   try {
+    const photos = await Promise.all(photoFiles.map(function(file) {
+      return new Promise(function(resolve, reject) {
+        const img = new Image();
+        img.onload = function() {
+          const canvas = document.createElement('canvas');
+          const maxSize = 1200;
+          let w = img.width, h = img.height;
+          if (w > maxSize || h > maxSize) {
+            if (w > h) { h = Math.round(h * maxSize / w); w = maxSize; }
+            else { w = Math.round(w * maxSize / h); h = maxSize; }
+          }
+          canvas.width = w; canvas.height = h;
+          canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+          const base64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+          resolve({ base64, mimeType: 'image/jpeg', name: (file.name || 'return').replace(/\.[^.]+$/, '.jpg') });
+        };
+        img.onerror = reject;
+        img.src = URL.createObjectURL(file);
+      });
+    }));
+
     const item = itemScanCurrent;
     const result = await postToScript({
       action: 'checkoutEquipmentItem',
       assetId: item.assetId,
       mode: 'return',
       qty: 1,
-      name: name
+      name: name,
+      returnLocation: returnLocation,
+      photos: photos
     });
     if (!result || result.success === false || result.error) {
       alert((result && result.error) || 'Could not complete this. Please try again.');
@@ -1540,33 +1573,12 @@ async function itemScanSubmitCheckout() {
       return;
     }
     document.getElementById('item-scan-success-title').textContent = 'Returned';
-    document.getElementById('item-scan-success-msg').textContent = name + ' returned ' + item.name + '.';
+    document.getElementById('item-scan-success-msg').textContent = name + ' returned ' + item.name + ' to ' + returnLocation + '.';
     itemScanShowView('item-scan-success');
   } catch (e) {
     alert('Could not reach the server. Please check your connection and try again.');
     btn.disabled = false; btn.textContent = 'Confirm Return';
   }
-}
-
-// Hands off the scanned-items queue into the normal, full Team Equipment
-// Checkout wizard (name, telegram, date/time out & return, purpose,
-// location, storage, one final photo, existing submitCheckout()/
-// logTeamCheckout backend) -- scanning is just an alternative to free-typing
-// item names, not a separate checkout path with its own rules.
-function itemScanContinueToCheckout() {
-  const list = itemScanGetList();
-  if (list.length === 0) { alert('Your checkout list is empty.'); return; }
-
-  document.getElementById('item-scan-panel').style.display = 'none';
-  document.getElementById('item-scan-list-bar').style.display = 'none';
-  document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = ''; });
-
-  coInit();
-  document.getElementById('co-items-list').innerHTML = '';
-  list.forEach(function(c) { coAddScannedItemRow(c.name, c.assetId, c.qty); });
-  coGoStep(1);
-
-  itemScanSaveList([]); // handed off to the DOM now; clear the persisted queue
 }
 
 function itemScanShowIssueForm() {
@@ -1607,6 +1619,7 @@ async function itemScanSubmitIssue() {
 function itemScanReset() {
   itemScanRenderDetail();
 }
+
 
 
 </script>

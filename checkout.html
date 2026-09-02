@@ -627,25 +627,12 @@ textarea { resize: vertical; min-height: 90px; }
   <div id="item-scan-notice" class="notice" style="display:none;"></div>
 
   <div class="co-steps">
-    <div class="co-step active" id="co-step-1">1. Your Details</div>
-    <div class="co-step" id="co-step-2">2. Items</div>
+    <div class="co-step active" id="co-step-1">1. Items</div>
+    <div class="co-step" id="co-step-2">2. Your Details</div>
     <div class="co-step" id="co-step-3">3. Usage & Review</div>
   </div>
 
   <div class="co-form-step active" id="co-form-1">
-    <div class="card">
-      <div class="card-label">Your Details</div>
-      <div class="form-group"><label>Your Name <span class="req">*</span></label><input type="text" id="co-name" placeholder="e.g. Michael JPSN"></div>
-      <div class="form-group"><label>Telegram Username <span class="opt">(optional)</span></label><input type="text" id="co-telegram" placeholder="@yourusername"><div class="hint">You will receive your approval and return link via Telegram</div></div>
-      <div class="form-row">
-        <div class="form-group"><label>Date &amp; Time Out <span class="req">*</span></label><input type="date" id="co-date-out"><input type="time" id="co-time-out" style="margin-top:0.4rem;"></div>
-        <div class="form-group"><label>Date &amp; Time of Return <span class="req">*</span></label><input type="date" id="co-date-return"><input type="time" id="co-time-return" style="margin-top:0.4rem;"></div>
-      </div>
-    </div>
-    <div style="display:flex;justify-content:flex-end;"><button class="btn btn-dark" onclick="coNextStep(1)">Continue</button></div>
-  </div>
-
-  <div class="co-form-step" id="co-form-2">
     <div class="card">
       <div class="card-label">Items being taken out</div>
       <div class="hint" style="margin-bottom:0.75rem;">Add each item separately. Be as specific as possible — this helps us understand how equipment is referred to.</div>
@@ -657,6 +644,19 @@ textarea { resize: vertical; min-height: 90px; }
         </div>
       </div>
       <button type="button" class="btn btn-ghost btn-sm" onclick="coAddItemRow()" style="margin-top:0.5rem;width:100%;">+ Add another item</button>
+    </div>
+    <div style="display:flex;justify-content:flex-end;"><button class="btn btn-dark" onclick="coNextStep(1)">Continue</button></div>
+  </div>
+
+  <div class="co-form-step" id="co-form-2">
+    <div class="card">
+      <div class="card-label">Your Details</div>
+      <div class="form-group"><label>Your Name <span class="req">*</span></label><input type="text" id="co-name" placeholder="e.g. Michael JPSN"></div>
+      <div class="form-group"><label>Telegram Username <span class="opt">(optional)</span></label><input type="text" id="co-telegram" placeholder="@yourusername"><div class="hint">You will receive your approval and return link via Telegram</div></div>
+      <div class="form-row">
+        <div class="form-group"><label>Date &amp; Time Out <span class="req">*</span></label><input type="date" id="co-date-out"><input type="time" id="co-time-out" style="margin-top:0.4rem;"></div>
+        <div class="form-group"><label>Date &amp; Time of Return <span class="req">*</span></label><input type="date" id="co-date-return"><input type="time" id="co-time-return" style="margin-top:0.4rem;"></div>
+      </div>
     </div>
     <div style="display:flex;justify-content:space-between;"><button class="btn btn-ghost" onclick="coGoStep(1)">Back</button><button class="btn btn-dark" onclick="coNextStep(2)">Continue</button></div>
   </div>
@@ -701,6 +701,24 @@ textarea { resize: vertical; min-height: 90px; }
       <button class="btn btn-dark" onclick="coReset()">Submit Another Request</button>
     </div>
   </div>
+
+  <script>
+    // Runs synchronously as the parser reaches this point -- before the
+    // browser has painted the wizard above, and well before the deferred
+    // logic at the bottom of the page runs. Without this, landing here via
+    // a QR scan briefly flashes "Your Details" before the choice screen
+    // takes over, since that logic only runs after DOMContentLoaded plus an
+    // async lookup.
+    (function() {
+      var params = new URLSearchParams(window.location.search);
+      if (params.get('item') || params.get('return')) {
+        document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = 'none'; });
+      }
+      if (params.get('item')) {
+        document.getElementById('item-scan-panel').style.display = 'block';
+      }
+    })();
+  </script>
 
   <!-- RETURN FORM -->
   <div id="co-find-panel" style="display:none;">
@@ -773,6 +791,10 @@ textarea { resize: vertical; min-height: 90px; }
        only appears for the two genuinely different actions: returning an
        item that's already checked out, and reporting an issue with one. -->
   <div id="item-scan-panel" style="display:none;">
+
+    <div id="item-scan-loading">
+      <div class="page-header"><h1>Loading item&hellip;</h1></div>
+    </div>
 
     <div id="item-scan-detail" style="display:none;">
       <div class="page-header">
@@ -1125,12 +1147,16 @@ function toTitleCase(str) {
 function coGetItems() {
   return Array.from(document.querySelectorAll('#co-items-list .co-item-row input'))
     .map(function(el) {
-      var val = toTitleCase(el.value.trim());
-      if (!val) return null;
       if (el.dataset.assetId) {
-        return { name: val, assetId: el.dataset.assetId, qty: el.dataset.qty ? parseInt(el.dataset.qty, 10) : 1 };
+        // Use the clean stored name, never the visible value -- the visible
+        // value has "(Asset ID)" appended for on-screen clarity, and reading
+        // that back as the canonical name would compound the suffix every
+        // time the form gets saved and restored across scans.
+        var cleanName = el.dataset.itemName || el.value.trim();
+        return { name: cleanName, assetId: el.dataset.assetId, qty: el.dataset.qty ? parseInt(el.dataset.qty, 10) : 1 };
       }
-      return val;
+      var val = toTitleCase(el.value.trim());
+      return val || null;
     })
     .filter(function(v) { return v !== null; });
 }
@@ -1139,6 +1165,9 @@ function coGetItems() {
 // what the catalogue says it is, not free text) with a small badge, but still
 // removable like any other row. Carries the Asset ID/qty via dataset so
 // coGetItems() can send it through to the backend for catalogue syncing.
+// The clean name is stored separately from the displayed value (see
+// coGetItems above) so re-saving/restoring the form never compounds the
+// "(Asset ID)" suffix shown on screen.
 function coAddScannedItemRow(name, assetId, qty) {
   const list = document.getElementById('co-items-list');
   const row = document.createElement('div');
@@ -1149,6 +1178,7 @@ function coAddScannedItemRow(name, assetId, qty) {
   inp.value = name + ' (' + assetId + ')' + (qty > 1 ? ' x' + qty : '');
   inp.readOnly = true;
   inp.style.cssText = 'flex:1;background:var(--blue-light);';
+  inp.dataset.itemName = name;
   inp.dataset.assetId = assetId;
   inp.dataset.qty = qty;
   const btn = document.createElement('button');
@@ -1189,12 +1219,12 @@ function coGoStep(n) {
 
 function coNextStep(from) {
   if (from === 1) {
+    if (coGetItems().length === 0) { alert('Please add at least one item.'); return; }
+  }
+  if (from === 2) {
     if (!document.getElementById('co-name').value.trim()) { alert('Please enter your name.'); return; }
     if (!document.getElementById('co-date-out').value) { alert('Please enter a date out.'); return; }
     if (!document.getElementById('co-date-return').value) { alert('Please enter a return date.'); return; }
-  }
-  if (from === 2) {
-    if (coGetItems().length === 0) { alert('Please add at least one item.'); return; }
   }
   coGoStep(from + 1);
 }
@@ -1245,8 +1275,11 @@ function coBuildReview() {
   html += '<div class="review-row"><span class="review-key">Storage</span><span class="review-val">' + storage + '</span></div>';
   html += '<div class="section-label" style="margin-top:0.75rem;">Items</div>';
 
-  coGetItems().forEach(function(itemName) {
-    html += '<div class="review-row"><span class="review-key">' + itemName + '</span><span class="review-val"></span></div>';
+  coGetItems().forEach(function(it) {
+    var label = (it && typeof it === 'object')
+      ? it.name + (it.assetId ? ' (' + it.assetId + ')' : '') + (it.qty > 1 ? ' x' + it.qty : '')
+      : it;
+    html += '<div class="review-row"><span class="review-key">' + label + '</span><span class="review-val"></span></div>';
   });
 
   document.getElementById('co-review-content').innerHTML = html;
@@ -1452,11 +1485,11 @@ function itemScanShowWizardWithList() {
     coInit();
     coAddItemRow(false);
   }
-  coGoStep(coGetItems().length > 0 ? 2 : 1);
+  coGoStep(1); // Items is Step 1
 }
 
 function itemScanShowView(id) {
-  ['item-scan-detail', 'item-scan-checkout-form', 'item-scan-issue-form', 'item-scan-success']
+  ['item-scan-loading', 'item-scan-detail', 'item-scan-checkout-form', 'item-scan-issue-form', 'item-scan-success']
     .forEach(function(v) { document.getElementById(v).style.display = (v === id) ? 'block' : 'none'; });
   document.getElementById('item-scan-panel').style.display = 'block';
   document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = 'none'; });
@@ -1560,7 +1593,7 @@ function itemScanAddToWizard(item, qty) {
     itemScanShowNotice('\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added \u2014 scan another item with your camera, or continue below.', false);
   }
   coSaveFormState();
-  coGoStep(2);
+  coGoStep(1); // Items is Step 1
 }
 
 // Return stays single-item (returning several together wasn't asked for).

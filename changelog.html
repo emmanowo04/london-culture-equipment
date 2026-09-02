@@ -639,6 +639,49 @@ textarea { resize: vertical; min-height: 90px; }
 
   <div class="notice notice-gold">This starts from when detailed build records began being kept — it doesn't cover the platform's full history from before that point.</div>
 
+  <!-- ═══════════════════════ 1–2 SEPTEMBER ═══════════════════════ -->
+  <div class="cl-entry">
+    <div class="cl-date">1–2 September 2026</div>
+
+    <div class="cl-section-title cl-added">Added — Equipment Catalogue &amp; QR Item Scanning</div>
+    <ul class="cl-list">
+      <li>New "Media Equipment Catalogue" sheet with a stable Asset ID scheme (e.g. MED-CAM-001) — one row per physical item for individually-tracked equipment, one row per type with a running quantity for bulk/interchangeable stock</li>
+      <li>New "Issue Log" sheet, linked by Asset ID, so a reported fault keeps full history instead of only ever showing the most recent issue</li>
+      <li>Printed QR labels for the first three Sony A7 IV bodies, each linking straight to that item on the checkout page</li>
+      <li>Scanning a label shows the item and a clear choice: Check Out, or Log an Issue with severity and a description — a Broken/Not Available item is blocked from checkout but can still have an issue logged against it</li>
+      <li>Checking out a scanned item adds it directly into the existing Team Equipment Checkout form's item list rather than a separate flow, so name, dates, purpose, and photo all still work exactly as before</li>
+      <li>The whole in-progress checkout form — not just the scanned items — now survives across multiple physical scans, since each scan reloads the page; nothing already typed is lost when a second or third item is scanned</li>
+      <li>Scanning an already-checked-out item offers a dedicated Return flow, with a return location and a photo required, matching every other return flow already on the site</li>
+      <li>Bulk/quantity items support taking out and returning a specific amount, tracked via Available Qty rather than a simple Available/Checked Out flag</li>
+    </ul>
+
+    <div class="cl-section-title">Team Equipment Checkout</div>
+    <ul class="cl-list">
+      <li>Reordered the wizard to Items → Your Details → Usage &amp; Review (previously Your Details came first) to match the physical reality of scanning equipment before sitting down to fill in the rest</li>
+      <li>The Telegram checkout report and daily summary now show the Asset ID alongside scanned items, so multiple units of the same model are distinguishable</li>
+    </ul>
+
+    <div class="cl-section-title">Media Desk</div>
+    <ul class="cl-list">
+      <li>Added "Interactive Board" as an equipment option on sign-in</li>
+      <li>The sign-out "any issues to report" question is now a required Yes/No with no default answer, instead of silently defaulting to No</li>
+      <li>Sign-out now shows equipment-specific photo reminders (e.g. "Mixer: channels/faders returned to how you found them"), pulled from what was actually signed in against that entry</li>
+      <li>Added four new locations: U7 Ground Floor, U7 1st Floor, U7 2nd Floor, EH 1st Floor</li>
+      <li>Telegram Username is now mandatory on sign-in, with guidance to create one first if needed</li>
+      <li>Added a note under Purpose/Event to enter "Class + Centre Number" if being used for Centre</li>
+      <li>Sign-out Telegram report now includes Purpose, Equipment Operated, Assistants, and the confirmed "Before You Go" checklist — previously showed only who signed out, where, and when</li>
+      <li>New scheduled check flags anyone still signed in more than 2 hours after their Time In, reminding them (and tagging their Telegram username) to sign out</li>
+    </ul>
+
+    <div class="cl-section-title cl-fixed">Fixed</div>
+    <ul class="cl-list">
+      <li>Fixed a display bug where an item's Asset ID could appear duplicated in its own name after the in-progress checkout form was restored</li>
+      <li>Fixed a brief flash of the old "Your Details" step before the scan choice screen appeared, caused by the page rendering before an in-progress lookup had finished</li>
+      <li>Fixed the Review step showing "[object Object]" for scanned items instead of their name</li>
+      <li>Fixed the internal audit tool treating everything between two separate &lt;script&gt; tags as one JavaScript block, which broke syntax checking on pages using more than one</li>
+    </ul>
+  </div>
+
   <!-- ═══════════════════════ 27 AUGUST ═══════════════════════ -->
   <div class="cl-entry">
     <div class="cl-date">27 August 2026</div>
@@ -747,6 +790,14 @@ textarea { resize: vertical; min-height: 90px; }
   <div class="section-label" style="margin-top:2.5rem;">Looking Ahead</div>
   <p style="font-size:0.85rem;color:var(--muted);margin-bottom:1rem;">Ideas raised in conversation, not yet committed to a specific date.</p>
   <div class="card">
+    <div class="roadmap-item">
+      <span class="roadmap-status planned">Planned</span>
+      <div>Phase 2 QR scanning: scan additional items from directly within the checkout page's camera, rather than needing the phone's own Camera app and a page reload per item</div>
+    </div>
+    <div class="roadmap-item">
+      <span class="roadmap-status idea">Idea</span>
+      <div>Location-specific QR codes for Media Desk sign-in/out that auto-fill the location field</div>
+    </div>
     <div class="roadmap-item">
       <span class="roadmap-status idea">Idea</span>
       <div>Move the admin password check fully server-side, so the correct password is never sent to the browser at all</div>

@@ -649,6 +649,7 @@ textarea { resize: vertical; min-height: 90px; }
     <div class="card">
       <div class="card-label">Items being taken out</div>
       <div class="hint" style="margin-bottom:0.75rem;">Add each item separately. Be as specific as possible — this helps us understand how equipment is referred to.</div>
+      <div class="hint" style="margin-bottom:0.75rem;">Have a QR label to scan? Use your phone's Camera app on the label — it'll come back here with the item added.</div>
       <div id="co-items-list">
         <div class="co-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
           <input type="text" placeholder="e.g. Sony A7 IV camera" style="flex:1;">
@@ -1109,6 +1110,13 @@ document.addEventListener('DOMContentLoaded', function() {
   });
 });
 
+// Persists the whole in-progress checkout form on every keystroke/change, so
+// that if the person scans another item mid-way through (a fresh page load),
+// whatever they've already typed -- name, dates, other items -- survives.
+document.addEventListener('input', function(evt) {
+  if (evt.target.closest('.co-form-step')) coSaveFormState();
+});
+
 function toTitleCase(str) {
   if (!str) return str;
   return str.split(' ').map(function(w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(' ');
@@ -1138,7 +1146,7 @@ function coAddScannedItemRow(name, assetId, qty) {
   row.style.cssText = 'display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;';
   const inp = document.createElement('input');
   inp.type = 'text';
-  inp.value = name + (qty > 1 ? ' x' + qty : '');
+  inp.value = name + ' (' + assetId + ')' + (qty > 1 ? ' x' + qty : '');
   inp.readOnly = true;
   inp.style.cssText = 'flex:1;background:var(--blue-light);';
   inp.dataset.assetId = assetId;
@@ -1315,6 +1323,7 @@ async function submitCheckout() {
       return;
     }
     coGoStep(4);
+    coClearFormState();
   } catch(e) {
     clearTimeout(timeout);
     resetBtn();
@@ -1329,6 +1338,7 @@ async function submitCheckout() {
 function coReset() {
   coStep = 1;
   coPhotos = [];
+  coClearFormState();
   document.querySelectorAll('#standalone-checkout input[type="text"], #standalone-checkout textarea').forEach(el => el.value = '');
   document.getElementById('co-photo-preview').innerHTML = '';
   const list = document.getElementById('co-items-list');
@@ -1351,7 +1361,8 @@ document.addEventListener('DOMContentLoaded', () => {
   } else if (itemId) {
     itemScanInit(itemId);
   } else {
-    coInit();
+    if (!coRestoreFormState()) coInit();
+    if (document.querySelectorAll('#co-items-list .co-item-row').length === 0) coAddItemRow(false);
   }
 });
 
@@ -1359,21 +1370,67 @@ document.addEventListener('DOMContentLoaded', () => {
 // An Available item just gets added straight into the normal checkout form's
 // item list -- no separate screen. Persisted in localStorage purely because
 // each physical QR scan is a fresh page load (the phone's camera app opens a
-// new tab), so previously-added items would otherwise vanish on the next
-// scan. Scan everything first, then fill in your name/dates/photo once at
-// the end -- Step 1 isn't persisted across scans, only the item list is.
+// new tab/reloads the page), so anything already typed -- name, dates,
+// purpose, other items -- would otherwise vanish on the next scan. The whole
+// in-progress form is saved on every change and restored on load, not just
+// the scanned items, so scanning mid-way through filling the form doesn't
+// lose anything.
 let itemScanCurrent = null; // holds the looked-up item's data, for the return/issue screens only
 
-const ITEM_SCAN_LIST_KEY = 'mhbItemScanList';
+const CO_FORM_STATE_KEY = 'mhbCoFormState';
 
-function itemScanGetList() {
+function coSaveFormState() {
   try {
-    return JSON.parse(localStorage.getItem(ITEM_SCAN_LIST_KEY) || '[]');
-  } catch (e) { return []; }
+    localStorage.setItem(CO_FORM_STATE_KEY, JSON.stringify({
+      name: document.getElementById('co-name').value,
+      telegram: document.getElementById('co-telegram').value,
+      dateOut: document.getElementById('co-date-out').value,
+      timeOut: document.getElementById('co-time-out').value,
+      dateReturn: document.getElementById('co-date-return').value,
+      timeReturn: document.getElementById('co-time-return').value,
+      purpose: document.getElementById('co-purpose').value,
+      location: document.getElementById('co-location').value,
+      storage: document.getElementById('co-storage').value,
+      returnLoc: document.getElementById('co-return-loc').value,
+      items: coGetItems()
+    }));
+  } catch (e) {}
 }
 
-function itemScanSaveList(list) {
-  localStorage.setItem(ITEM_SCAN_LIST_KEY, JSON.stringify(list));
+function coClearFormState() {
+  try { localStorage.removeItem(CO_FORM_STATE_KEY); } catch (e) {}
+}
+
+// Returns true if a saved form was actually found and restored.
+function coRestoreFormState() {
+  var state = null;
+  try { state = JSON.parse(localStorage.getItem(CO_FORM_STATE_KEY) || 'null'); } catch (e) {}
+  if (!state) return false;
+
+  document.getElementById('co-name').value = state.name || '';
+  document.getElementById('co-telegram').value = state.telegram || '';
+  if (state.dateOut) document.getElementById('co-date-out').value = state.dateOut;
+  if (state.timeOut) document.getElementById('co-time-out').value = state.timeOut;
+  if (state.dateReturn) document.getElementById('co-date-return').value = state.dateReturn;
+  if (state.timeReturn) document.getElementById('co-time-return').value = state.timeReturn;
+  document.getElementById('co-purpose').value = state.purpose || '';
+  document.getElementById('co-location').value = state.location || '';
+  document.getElementById('co-storage').value = state.storage || '';
+  if (state.returnLoc) document.getElementById('co-return-loc').value = state.returnLoc;
+
+  const list = document.getElementById('co-items-list');
+  list.innerHTML = '';
+  (state.items || []).forEach(function(it) {
+    if (it && typeof it === 'object' && it.assetId) {
+      coAddScannedItemRow(it.name, it.assetId, it.qty);
+    } else if (it) {
+      const row = coAddItemRow(false);
+      row.querySelector('input').value = it;
+    }
+  });
+
+  coInitDone = true; // dates were just restored (or intentionally left as typed) -- don't let coInit() overwrite them
+  return true;
 }
 
 function itemScanShowNotice(message, isError) {
@@ -1383,23 +1440,19 @@ function itemScanShowNotice(message, isError) {
   el.style.display = 'block';
 }
 
-// Renders the persisted scan list into the checkout form's own item list
-// (the same co-items-list every manually-typed item also lives in), then
-// makes sure the wizard itself is visible and lands on the Items step.
+// Reveals the real checkout wizard and restores whatever was already
+// in progress (used for the error/blocked-item cases, where nothing new
+// is being added).
 function itemScanShowWizardWithList() {
   document.getElementById('item-scan-panel').style.display = 'none';
   document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = ''; });
-  coInit();
 
-  const list = itemScanGetList();
-  document.getElementById('co-items-list').innerHTML = '';
-  if (list.length > 0) {
-    list.forEach(function(c) { coAddScannedItemRow(c.name, c.assetId, c.qty); });
-    coGoStep(2);
-  } else {
+  const restored = coRestoreFormState();
+  if (!restored) {
+    coInit();
     coAddItemRow(false);
-    coGoStep(1);
   }
+  coGoStep(coGetItems().length > 0 ? 2 : 1);
 }
 
 function itemScanShowView(id) {
@@ -1487,15 +1540,27 @@ function itemScanPromptBulkCheckout(item) {
 }
 
 function itemScanAddToWizard(item, qty) {
-  const list = itemScanGetList();
-  if (list.some(function(c) { return c.assetId === item.assetId; })) {
-    itemScanShowNotice(item.name + ' is already on your list.', false);
+  document.getElementById('item-scan-panel').style.display = 'none';
+  document.querySelectorAll('.co-steps, .co-form-step').forEach(function(el) { el.style.display = ''; });
+
+  const restored = coRestoreFormState();
+  if (!restored) coInit();
+
+  const existingItems = coGetItems();
+  const alreadyOnList = existingItems.some(function(it) { return it && typeof it === 'object' && it.assetId === item.assetId; });
+
+  if (alreadyOnList) {
+    itemScanShowNotice(item.name + ' (' + item.assetId + ') is already on your list.', false);
   } else {
-    list.push({ assetId: item.assetId, name: item.name, qty: qty });
-    itemScanSaveList(list);
-    itemScanShowNotice('\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added \u2014 scan another item or continue below.', false);
+    // Remove a single lingering empty placeholder row before adding, so
+    // scanning doesn't leave a stray blank input alongside real items.
+    const rows = document.querySelectorAll('#co-items-list .co-item-row');
+    if (rows.length === 1 && !rows[0].querySelector('input').value.trim()) rows[0].remove();
+    coAddScannedItemRow(item.name, item.assetId, qty);
+    itemScanShowNotice('\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added \u2014 scan another item with your camera, or continue below.', false);
   }
-  itemScanShowWizardWithList();
+  coSaveFormState();
+  coGoStep(2);
 }
 
 // Return stays single-item (returning several together wasn't asked for).

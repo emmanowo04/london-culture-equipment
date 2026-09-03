@@ -1500,6 +1500,7 @@ textarea { resize: vertical; min-height: 90px; }
     <h3 style="font-family:'Playfair Display',serif;font-size:1.3rem;margin-bottom:1rem;">Request Details</h3>
     <div id="sa-modal-body" style="font-size:0.88rem;line-height:1.8;margin-bottom:1.5rem;color:#333;"></div>
     <input type="hidden" id="sa-modal-id">
+    <input type="hidden" id="sa-modal-timestamp">
 
     <div id="sa-log-given-section" style="display:none;border-top:1px solid var(--border);padding-top:1.25rem;margin-bottom:1rem;">
       <div class="card-label">Log Items Given</div>
@@ -1616,8 +1617,10 @@ function saAdminLogout() {
   document.getElementById('sa-admin-pw').value = '';
 }
 
-function viewSupportRequest(requestId) {
-  const req = saSupportRequests.find(r => r.requestId === requestId);
+function viewSupportRequest(requestId, timestamp) {
+  const req = timestamp
+    ? saSupportRequests.find(r => r.requestId === requestId && String(r.timestamp) === String(timestamp))
+    : saSupportRequests.find(r => r.requestId === requestId);
   if (!req) return;
   const typeLabels = {
     cooperation: 'Work Cooperation', equipment: 'Equipment Rental',
@@ -1696,6 +1699,7 @@ function viewSupportRequest(requestId) {
 
   document.getElementById('sa-modal-body').innerHTML = details;
   document.getElementById('sa-modal-id').value = requestId;
+  document.getElementById('sa-modal-timestamp').value = req.timestamp || '';
 
   // Approve/Reject only make sense while a request is still pending -- once
   // it's Approved (or further along), leaving these visible next to the new
@@ -1794,10 +1798,11 @@ function closeSAModal() {
 
 async function updateSupportStatus(status) {
   const requestId = document.getElementById('sa-modal-id').value;
+  const timestamp = document.getElementById('sa-modal-timestamp').value;
   try {
     await fetch(CONFIG.APPS_SCRIPT_URL, {
       method: 'POST',
-      body: JSON.stringify({ action: 'updateSupportStatus', requestId, status, password: CONFIG.ADMIN_PASSWORD })
+      body: JSON.stringify({ action: 'updateSupportStatus', requestId, timestamp, status, password: CONFIG.ADMIN_PASSWORD })
     });
   } catch(e) { console.warn('Update error:', e); }
   closeSAModal();
@@ -1853,7 +1858,7 @@ function renderSADashboard() {
           const typeLabels = { cooperation:'Work Cooperation', equipment:'Equipment Rental', props:'Props Request', video:'Video Production', design:'Design Work', material:'Material Request' };
           const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
           const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
-          return '<tr style="cursor:pointer;" onclick="viewSupportRequest(\'' + req.requestId + '\')">' +
+          return '<tr style="cursor:pointer;" onclick="viewSupportRequest(\'' + req.requestId + '\', \'' + req.timestamp + '\')">' +
             '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
             '<td><strong>' + req.name + '</strong><div style="font-size:0.73rem;color:var(--muted);">' + (req.position || '') + ' — ' + (req.department || '') + '</div></td>' +
             '<td style="font-size:0.78rem;">' + (types || '—') + '</td>' +

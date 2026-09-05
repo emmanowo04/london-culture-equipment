@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mun-Hwa Bu — Media Desk</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <style>
 
@@ -613,14 +614,14 @@ textarea { resize: vertical; min-height: 90px; }
 
       <div class="form-group">
         <label>What are you operating? <span class="req">*</span></label>
-        <div style="display:flex;flex-direction:column;gap:0.5rem;margin-top:0.25rem;">
-          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-mixer" value="Mixer" style="width:16px;height:16px;accent-color:#2563a8;"> Mixer</label>
-          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-cam" value="Camera controller" style="width:16px;height:16px;accent-color:#2563a8;"> Camera controller</label>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.5rem 1rem;margin-top:0.25rem;">
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-atem" value="ATEM" style="width:16px;height:16px;accent-color:#2563a8;"> ATEM</label>
-          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-pc" value="PC" style="width:16px;height:16px;accent-color:#2563a8;"> PC</label>
+          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-cam" value="Camera controller" style="width:16px;height:16px;accent-color:#2563a8;"> Camera controller</label>
           <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-board" value="Interactive Board" style="width:16px;height:16px;accent-color:#2563a8;"> Interactive Board</label>
-          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-all" onchange="mdToggleAllEquipment(this)" style="width:16px;height:16px;accent-color:#2563a8;"> All of the above <span class="opt" style="margin-left:0.1rem;">(running the desk alone)</span></label>
+          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-mixer" value="Mixer" style="width:16px;height:16px;accent-color:#2563a8;"> Mixer</label>
+          <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;"><input type="checkbox" id="md-eq-pc" value="PC" style="width:16px;height:16px;accent-color:#2563a8;"> PC</label>
         </div>
+        <label style="display:flex;align-items:center;gap:0.6rem;font-weight:400;font-size:0.88rem;cursor:pointer;border-top:1px solid var(--border);padding-top:0.6rem;margin-top:0.6rem;"><input type="checkbox" id="md-eq-all" onchange="mdToggleAllEquipment(this)" style="width:16px;height:16px;accent-color:#2563a8;"> All of the above <span class="opt" style="margin-left:0.1rem;">(running the desk alone)</span></label>
       </div>
 
       <div class="form-group">
@@ -662,17 +663,6 @@ textarea { resize: vertical; min-height: 90px; }
           <option value="EH Basement">EH Basement</option>
         </select>
       </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label>Date <span class="req">*</span></label>
-          <input type="date" id="md-date">
-        </div>
-        <div class="form-group">
-          <label>Time In <span class="req">*</span></label>
-          <input type="time" id="md-time-in">
-        </div>
-      </div>
     </div>
 
     <button class="btn btn-dark btn-full" id="md-signin-btn" onclick="mdSubmitSignIn()">Sign In</button>
@@ -701,10 +691,6 @@ textarea { resize: vertical; min-height: 90px; }
           <option value="EH 1st Floor">EH 1st Floor</option>
           <option value="EH Basement">EH Basement</option>
         </select>
-      </div>
-      <div class="form-group">
-        <label>Time Out <span class="req">*</span></label>
-        <input type="time" id="md-time-out">
       </div>
       <div class="form-group">
         <label>Before you go <span class="req">*</span></label>
@@ -836,14 +822,38 @@ const MD_EQUIPMENT_HINTS = {
 let mdAssistantCount = 0;
 
 function mdInit() {
-  // Default time in to now
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('md-time-in').value = hh + ':' + mm;
-  document.getElementById('md-time-out').value = hh + ':' + mm;
-  document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
+  mdApplyTelegramContext();
   mdShowTab('in');
+}
+
+// If opened as a Telegram Mini App (via the bot's "Sign In" button), Telegram
+// hands us the person's real username directly -- no need to ask for it or
+// trust anyone typing it correctly. Falls through harmlessly when opened as
+// a normal webpage outside Telegram, where none of this is available.
+function mdApplyTelegramContext() {
+  try {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) {
+      tg.ready();
+      tg.expand();
+      var telegramInput = document.getElementById('md-telegram');
+      telegramInput.value = tg.initDataUnsafe.user.username;
+      telegramInput.readOnly = true;
+      telegramInput.style.background = '#f0f0f0';
+      telegramInput.style.color = 'var(--muted)';
+      var hint = telegramInput.parentElement.querySelector('.hint');
+      if (hint) hint.textContent = 'Confirmed via Telegram';
+    }
+  } catch (e) {}
+
+  // A location-specific QR code (via the bot's deep link) can pre-fill this.
+  var params = new URLSearchParams(window.location.search);
+  var location = params.get('location');
+  if (location) {
+    var locationSelect = document.getElementById('md-location');
+    var hasOption = Array.from(locationSelect.options).some(function(o) { return o.value === location; });
+    if (hasOption) locationSelect.value = location;
+  }
 }
 
 function mdShowTab(tab) {
@@ -941,10 +951,6 @@ async function mdSubmitSignIn() {
   if (!purpose) { alert('Please enter a purpose or event name.'); return; }
   const location = document.getElementById('md-location').value;
   if (!location) { alert('Please select a location.'); return; }
-  const date = document.getElementById('md-date').value;
-  if (!date) { alert('Please select a date.'); return; }
-  const timeIn = document.getElementById('md-time-in').value;
-  if (!timeIn) { alert('Please enter a time in.'); return; }
 
   const hasAssistant = document.querySelector('input[name="md-has-assistant"]:checked').value === 'yes';
   const assistants = [];
@@ -972,9 +978,7 @@ async function mdSubmitSignIn() {
       equipment: equipment,
       purpose: purpose,
       location: location,
-      timeIn: timeIn,
-      assistants: assistants,
-      date: date
+      assistants: assistants
     });
     clearTimeout(signInTimeout);
     if (result && (result.success === false || result.error)) {
@@ -986,7 +990,7 @@ async function mdSubmitSignIn() {
     document.getElementById('md-signin-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed In';
-    document.getElementById('md-success-msg').textContent = name + ' signed in at ' + timeIn + ' on ' + equipment.join(', ') + '.';
+    document.getElementById('md-success-msg').textContent = name + ' signed in at ' + (result.timeIn || 'now') + ' on ' + equipment.join(', ') + '.';
   } catch(e) {
     clearTimeout(signInTimeout);
     if (e && e.name === 'AbortError') {
@@ -1059,9 +1063,6 @@ async function mdSubmitSignOut() {
   const signOutLocation = document.getElementById('md-signout-location').value;
   if (!signOutLocation) { alert('Please select a location.'); return; }
 
-  const timeOut = document.getElementById('md-time-out').value;
-  if (!timeOut) { alert('Please enter a time out.'); return; }
-
   const checklistIds = ['md-check-desktop', 'md-check-telegram-downloads', 'md-check-telegram-logout', 'md-check-pc-logout'];
   const checklistDone = checklistIds.every(function(id) { return document.getElementById(id).checked; });
   if (!checklistDone) { alert('Please confirm all items in the "Before you go" checklist before signing out.'); return; }
@@ -1110,7 +1111,6 @@ async function mdSubmitSignOut() {
       action: 'mdSignOut',
       signOutName: signOutName,
       signOutLocation: signOutLocation,
-      timeOut: timeOut,
       issueDetails: hasIssue ? issueDetails : '',
       photos: photos
     });
@@ -1127,7 +1127,7 @@ async function mdSubmitSignOut() {
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed Out';
     const issueNote = hasIssue ? ' Issue reported.' : '';
-    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + timeOut + ' from ' + signOutLocation + '.' + issueNote;
+    document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + (result.timeOut || 'now') + ' from ' + signOutLocation + '.' + issueNote;
   } catch(e) {
     clearTimeout(signOutTimeout);
     if (e && e.name === 'AbortError') {
@@ -1156,7 +1156,6 @@ function mdReset() {
   document.getElementById('md-purpose').value = '';
   document.getElementById('md-telegram').value = '';
   document.getElementById('md-location').value = '';
-  document.getElementById('md-date').value = new Date().toISOString().split('T')[0];
   document.querySelectorAll('input[name="md-has-issue"]').forEach(function(r) { r.checked = false; });
   document.getElementById('md-signout-location').value = '';
   ['md-check-desktop', 'md-check-telegram-downloads', 'md-check-telegram-logout', 'md-check-pc-logout'].forEach(function(id) {
@@ -1172,13 +1171,7 @@ function mdReset() {
   document.getElementById('md-entry-select').value = '';
   document.getElementById('md-success').style.display = 'none';
 
-  // Re-init time
-  const now = new Date();
-  const hh = String(now.getHours()).padStart(2, '0');
-  const mm = String(now.getMinutes()).padStart(2, '0');
-  document.getElementById('md-time-in').value = hh + ':' + mm;
-  document.getElementById('md-time-out').value = hh + ':' + mm;
-
+  mdApplyTelegramContext();
   mdShowTab('in');
 }
 

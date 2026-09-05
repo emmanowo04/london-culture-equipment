@@ -8,15 +8,23 @@ Usage: python3 test.py [--skip-telegram]
 import sys
 import json
 import time
+import os
 import urllib.request
 import urllib.error
 import urllib.parse
 import datetime
 
 # ── Config ────────────────────────────────────────────────────────────────────
+# APPS_SCRIPT_URL is fine to keep here -- it's already embedded in every public
+# HTML file on the site, so there's nothing new exposed by it also being here.
+# TELEGRAM_TOKEN and TELEGRAM_CHATID are real secrets and must NEVER be
+# hardcoded in a file that gets committed -- set them as environment
+# variables before running this script, e.g.:
+#   export MHB_TELEGRAM_TOKEN='your-bot-token-here'
+#   export MHB_TELEGRAM_CHATID='your-chat-id-here'
 APPS_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbwA86mqargcUKG4wtxPFtFRH8th8aDalxHAnzyo5gVryxK5umZvnGzJviLhtMJZ6D_p0g/exec'
-TELEGRAM_TOKEN  = '8658158239:AAGdaVadkSuMkIucFmTO5JWsg8WAuk2ujcA'
-TELEGRAM_CHATID = '1113306289'
+TELEGRAM_TOKEN  = os.environ.get('MHB_TELEGRAM_TOKEN', '')
+TELEGRAM_CHATID = os.environ.get('MHB_TELEGRAM_CHATID', '')
 
 GREEN  = '\033[92m'
 RED    = '\033[91m'
@@ -337,6 +345,11 @@ def main():
             sys.exit(0)
         return
     
+    if not skip_telegram and not TELEGRAM_TOKEN:
+        print(f"\n{YELLOW}No MHB_TELEGRAM_TOKEN environment variable set -- skipping Telegram checks.{RESET}")
+        print(f"{YELLOW}Set it first if you want those to run: export MHB_TELEGRAM_TOKEN='...'{RESET}")
+        skip_telegram = True
+
     if not skip_telegram:
         check_telegram_reachable()
     

@@ -4,6 +4,29 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mun-Hwa Bu — Media Desk</title>
+<script>
+  // A plain load of this page with no params at all (exactly what an
+  // already-printed sign's QR code produces, since its pattern can't be
+  // edited after printing) gets bounced straight to the Telegram bot
+  // instead -- lets an old printed sign start going through the reliable
+  // bot/relay flow without needing to reprint anything. Skipped entirely if
+  // the URL carries its own params (e.g. ?signout from an existing reminder
+  // link), or if we're already inside Telegram as the Mini App.
+  //
+  // Deliberately checks for Telegram's own URL markers (added to the hash
+  // when it opens a Mini App) rather than window.Telegram.WebApp -- that
+  // depends on the external SDK script (loaded separately, below) having
+  // loaded and initialized successfully first. Keeping this check
+  // independent of that script means a problem with the SDK can't prevent
+  // this redirect decision from running.
+  try {
+    var hasParams = window.location.search.length > 1;
+    var inTelegram = window.location.hash.indexOf('tgWebApp') > -1;
+    if (!hasParams && !inTelegram) {
+      window.location.replace('https://t.me/LondonCultureEquipment_bot?start=md_signin');
+    }
+  } catch (e) {}
+</script>
 <script src="https://telegram.org/js/telegram-web-app.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <style>
@@ -1128,6 +1151,17 @@ async function mdSubmitSignOut() {
     document.getElementById('md-success-title').textContent = 'Signed Out';
     const issueNote = hasIssue ? ' Issue reported.' : '';
     document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + (result.timeOut || 'now') + ' from ' + signOutLocation + '.' + issueNote;
+
+    // Reached from the pinned desk widget -- return to it automatically so
+    // it's ready for the next person, rather than sitting on this success
+    // screen indefinitely. Only applies here, not to a normal sign-out
+    // someone reaches from their own phone/Telegram DM.
+    if (new URLSearchParams(window.location.search).get('from') === 'widget') {
+      document.getElementById('md-success-msg').textContent += ' Returning to the sign-in screen shortly...';
+      setTimeout(function() {
+        window.location.href = 'mediadesk-qr-widget.html';
+      }, 4000);
+    }
   } catch(e) {
     clearTimeout(signOutTimeout);
     if (e && e.name === 'AbortError') {

@@ -4,6 +4,28 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Mun-Hwa Bu — Team Checkout</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<script>
+  // Bounces a plain load of this page (no params at all -- opening the site
+  // directly) or a scanned item label (?item=...) through the Telegram bot
+  // first, same reasoning as Media Desk: it's what captures a chat_id for
+  // real reminders and lets Telegram identity auto-fill the username field.
+  // Left alone if we're already inside Telegram, or if the URL carries any
+  // other param (e.g. ?return=... from an existing personalised reminder
+  // link) -- those already have defined behavior.
+  try {
+    var params = new URLSearchParams(window.location.search);
+    var itemParam = params.get('item');
+    var hasOtherParams = Array.from(params.keys()).some(function(k) { return k !== 'item'; });
+    var inTelegram = window.location.hash.indexOf('tgWebApp') > -1;
+    if (!hasOtherParams && !inTelegram) {
+      var target = itemParam
+        ? 'https://t.me/LondonCultureEquipment_bot?start=item_' + encodeURIComponent(itemParam)
+        : 'https://t.me/LondonCultureEquipment_bot?start=checkout';
+      window.location.replace(target);
+    }
+  } catch (e) {}
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html5-qrcode/2.3.8/html5-qrcode.min.js"></script>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Syne:wght@400;500;600;700&family=Syne+Mono&display=swap" rel="stylesheet">
 <style>
@@ -637,7 +659,7 @@ textarea { resize: vertical; min-height: 90px; }
     <div class="card">
       <div class="card-label">Items being taken out</div>
       <div class="hint" style="margin-bottom:0.75rem;">Add each item separately. Be as specific as possible — this helps us understand how equipment is referred to.</div>
-      <div class="hint" style="margin-bottom:0.75rem;">Have a QR label? Tap "Scan Item" below to add it without leaving this page — scan as many as you need, one after another.</div>
+      <div class="hint" style="margin-bottom:0.75rem;">Have a QR label? Tap "Scan Item" below to add it without leaving this page. Adding another one just means tapping "Scan Item" again.</div>
       <div id="co-items-list">
         <div class="co-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
           <input type="text" placeholder="e.g. Sony A7 IV camera" style="flex:1;">
@@ -1304,7 +1326,8 @@ function addScannedItemLive(item, qty, feedback) {
   if (rows.length === 1 && !rows[0].querySelector('input').value.trim()) rows[0].remove();
   coAddScannedItemRow(item.name, item.assetId, qty);
   coSaveFormState();
-  feedback.textContent = '\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added \u2014 keep scanning, or tap Done Scanning below.';
+  feedback.textContent = '\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added!';
+  setTimeout(closeScanModal, 1100); // brief confirmation, then back to the list -- tap Scan Item again for another
 }
 
 let coInitDone = false;
@@ -1318,6 +1341,28 @@ function coInit(force) {
   document.getElementById('co-date-return').value = fmt(ret);
   document.getElementById('co-time-out').value = '09:00';
   document.getElementById('co-time-return').value = '18:00';
+  coApplyTelegramContext();
+}
+
+// If opened as a Telegram Mini App, Telegram hands us the person's real
+// username directly -- no need to ask for it or trust anyone typing it
+// correctly. Falls through harmlessly outside Telegram, where none of this
+// is available.
+function coApplyTelegramContext() {
+  try {
+    var tg = window.Telegram && window.Telegram.WebApp;
+    if (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.username) {
+      tg.ready();
+      tg.expand();
+      var telegramInput = document.getElementById('co-telegram');
+      telegramInput.value = tg.initDataUnsafe.user.username;
+      telegramInput.readOnly = true;
+      telegramInput.style.background = '#f0f0f0';
+      telegramInput.style.color = 'var(--muted)';
+      var hint = telegramInput.parentElement.querySelector('.hint');
+      if (hint) hint.textContent = 'Confirmed via Telegram';
+    }
+  } catch (e) {}
 }
 
 function coGoStep(n) {
@@ -1579,6 +1624,7 @@ function coRestoreFormState() {
   });
 
   coInitDone = true; // dates were just restored (or intentionally left as typed) -- don't let coInit() overwrite them
+  coApplyTelegramContext();
   return true;
 }
 

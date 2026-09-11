@@ -1607,6 +1607,18 @@ async function saAdminLogin() {
   }
   document.getElementById('sa-login-gate').style.display = 'none';
   document.getElementById('sa-dashboard').style.display = 'block';
+
+  // A "Approve in Portal" button from Telegram links here with these params
+  // -- open straight to that specific request rather than the default tab.
+  const params = new URLSearchParams(window.location.search);
+  const openRequestId = params.get('openRequest');
+  const openTs = params.get('ts');
+  if (openRequestId) {
+    await showSATab('support', document.getElementById('sa-tabbtn-support'));
+    viewSupportRequest(openRequestId, openTs);
+    return;
+  }
+
   await saLoadTabData('requests');
   renderSADashboard();
 }
@@ -1619,7 +1631,7 @@ function saAdminLogout() {
 
 function viewSupportRequest(requestId, timestamp) {
   const req = timestamp
-    ? saSupportRequests.find(r => r.requestId === requestId && String(r.timestamp) === String(timestamp))
+    ? saSupportRequests.find(r => r.requestId === requestId && Math.floor(new Date(r.timestamp).getTime() / 1000) === Math.floor(new Date(timestamp).getTime() / 1000))
     : saSupportRequests.find(r => r.requestId === requestId);
   if (!req) return;
   const typeLabels = {
@@ -1639,7 +1651,8 @@ function viewSupportRequest(requestId, timestamp) {
     row('From', req.name + ' ' + (req.position || '') + ' — ' + (req.department || '')) +
     row('Request Types', types) +
     row('Meeting', (req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) : '—') + ' ' + (req.meetingTime || '')) +
-    row('Status', req.status || 'New');
+    row('Status', req.status || 'New') +
+    (req.pdfUrl ? '<div style="margin-bottom:0.75rem;"><a href="' + req.pdfUrl + '" target="_blank" rel="noopener" style="color:var(--blue);font-weight:600;">\u2b07\ufe0f Download full request PDF</a></div>' : '');
 
   if (activeTypes.includes('cooperation')) {
     details += '<div class="section-label" style="margin-top:1rem;">Work Cooperation</div>' +

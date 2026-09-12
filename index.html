@@ -1453,23 +1453,23 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
 
       <div class="stats-row">
-        <div class="stat-card warn"><div class="stat-num" id="sa-stat-pending">0</div><div class="stat-lbl">Pending</div></div>
+        <div class="stat-card warn"><div class="stat-num" id="sa-stat-pending">0</div><div class="stat-lbl">Active Requests</div></div>
         <div class="stat-card accent"><div class="stat-num" id="sa-stat-active">0</div><div class="stat-lbl">Checked Out</div></div>
-        <div class="stat-card"><div class="stat-num" id="sa-stat-overdue">0</div><div class="stat-lbl">Overdue</div></div>
         <div class="stat-card success"><div class="stat-num" id="sa-stat-available">0</div><div class="stat-lbl">Support Reqs</div></div>
       </div>
 
-      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;">
-        <button class="btn btn-dark btn-sm" id="sa-tabbtn-requests" onclick="showSATab('requests',this)">Pending Requests</button>
+      <div style="display:flex;gap:0.5rem;margin-bottom:1rem;align-items:center;">
+        <button class="btn btn-dark btn-sm" id="sa-tabbtn-requests" onclick="showSATab('requests',this)">Active Requests</button>
         <button class="btn btn-ghost btn-sm" id="sa-tabbtn-checkouts" onclick="showSATab('checkouts',this)">Active Checkouts</button>
         <button class="btn btn-ghost btn-sm" id="sa-tabbtn-support" onclick="showSATab('support',this)">Support Requests</button>
         <button class="btn btn-ghost btn-sm" id="sa-tabbtn-expired" onclick="showSATab('expired',this)">Expired Requests</button>
+        <button class="btn btn-ghost btn-sm" id="sa-refresh-btn" onclick="saManualRefresh(this)" style="margin-left:auto;" title="Refresh this tab now">&#8635; Refresh</button>
       </div>
 
       <div id="sa-tab-requests">
         <div class="card" style="padding:0;overflow:hidden;">
           <table class="data-table">
-            <thead><tr><th>ID</th><th>Requestor</th><th>Items</th><th>Collect</th><th>Return</th><th>Actions</th></tr></thead>
+            <thead><tr><th>ID</th><th>Requestor</th><th>Items</th><th>Pickup</th><th>Return</th></tr></thead>
             <tbody id="sa-pending-tbody"></tbody>
           </table>
         </div>
@@ -1478,7 +1478,7 @@ textarea { resize: vertical; min-height: 90px; }
       <div id="sa-tab-checkouts" style="display:none;">
         <div class="card" style="padding:0;overflow:hidden;">
           <table class="data-table">
-            <thead><tr><th>ID</th><th>Borrower</th><th>Items</th><th>Due Back</th><th>Status</th><th>Actions</th></tr></thead>
+            <thead><tr><th>Asset ID</th><th>Item</th><th>Out</th><th>Actions</th></tr></thead>
             <tbody id="sa-active-tbody"></tbody>
           </table>
         </div>
@@ -1626,6 +1626,7 @@ async function saAdminLogin() {
   }
   document.getElementById('sa-login-gate').style.display = 'none';
   document.getElementById('sa-dashboard').style.display = 'block';
+  saStartAutoRefresh();
 
   // A "Approve in Portal" button from Telegram links here with these params
   // -- open straight to that specific request rather than the default tab.
@@ -1640,6 +1641,33 @@ async function saAdminLogin() {
 
   await saLoadTabData('requests');
   renderSADashboard();
+}
+
+let saCurrentTab = 'requests';
+let saAutoRefreshTimer = null;
+
+// Polls the currently-visible tab every 20 seconds so a new request or
+// checkout just appears on its own -- previously the dashboard cached each
+// tab's data and only refreshed it on an action you took yourself (approve,
+// reject, mark returned), so a request that came in while you were just
+// looking at the screen wouldn't show up until you switched tabs away and
+// back, which forces a fresh fetch. Only runs while the dashboard is
+// actually open, and only refreshes the one tab you're looking at, not all
+// of them, to avoid needless background calls.
+function saStartAutoRefresh() {
+  if (saAutoRefreshTimer) return;
+  saAutoRefreshTimer = setInterval(async () => {
+    if (document.getElementById('sa-dashboard').style.display === 'none') return;
+    await saLoadTabData(saCurrentTab, true);
+    renderSADashboard();
+  }, 20000);
+}
+
+async function saManualRefresh(btn) {
+  if (btn) { btn.disabled = true; btn.innerHTML = '&#8635; Refreshing...'; }
+  await saLoadTabData(saCurrentTab, true);
+  renderSADashboard();
+  if (btn) { btn.disabled = false; btn.innerHTML = '&#8635; Refresh'; }
 }
 
 function saAdminLogout() {
@@ -1853,20 +1881,27 @@ let saTabLoaded = { requests: false, checkouts: false, support: false };
 function saInvalidateCache(tab) { saTabLoaded[tab] = false; }
 
 async function saLoadTabData(tab, force) {
-  const dataTab = tab === 'expired' ? 'support' : tab; // expired is just a filtered view of the same support-requests data
-  if (saTabLoaded[dataTab] && !force) return;
-  const actionMap = { requests: 'getPending', checkouts: 'getActive', support: 'getSupport' };
+  // Expired Requests is a filtered view spanning both Support Requests and
+  // legacy Pending Requests -- load both underlying sources for it.
+  if (tab === 'expired') {
+    await saLoadTabData('support', force);
+    await saLoadTabData('requests', force);
+    return;
+  }
+  if (saTabLoaded[tab] && !force) return;
+  const actionMap = { requests: 'getActiveEquipmentRequests', checkouts: 'getActiveEquipmentCheckouts', support: 'getSupport' };
   try {
-    const res = await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionMap[dataTab], password: CONFIG.ADMIN_PASSWORD }) });
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionMap[tab], password: CONFIG.ADMIN_PASSWORD }) });
     const data = await res.json();
-    if (dataTab === 'requests') saPendingRequests = data.success ? data.requests : [];
-    if (dataTab === 'checkouts') saActiveCheckouts = data.success ? data.checkouts : [];
-    if (dataTab === 'support') saSupportRequests = data.success ? data.requests : [];
-    saTabLoaded[dataTab] = true;
+    if (tab === 'requests') saPendingRequests = data.success ? data.requests : [];
+    if (tab === 'checkouts') saActiveCheckouts = data.success ? data.checkouts : [];
+    if (tab === 'support') saSupportRequests = data.success ? data.requests : [];
+    saTabLoaded[tab] = true;
   } catch(e) { console.warn('Tab data error:', e); }
 }
 
 async function showSATab(tab, btn) {
+  saCurrentTab = tab;
   ['requests','checkouts','support','expired'].forEach(t => {
     document.getElementById('sa-tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
@@ -1877,9 +1912,8 @@ async function showSATab(tab, btn) {
 }
 
 function renderSADashboard() {
-  document.getElementById('sa-stat-pending').textContent = saTabLoaded.requests ? saPendingRequests.filter(r => !r.isExpired).length : '—';
+  document.getElementById('sa-stat-pending').textContent = saTabLoaded.requests ? saPendingRequests.length : '—';
   document.getElementById('sa-stat-active').textContent = saTabLoaded.checkouts ? saActiveCheckouts.length : '—';
-  document.getElementById('sa-stat-overdue').textContent = saTabLoaded.checkouts ? saActiveCheckouts.filter(c => c.overdue).length : '—';
   document.getElementById('sa-stat-available').textContent = saTabLoaded.support ? saSupportRequests.filter(r => !r.isExpired).length : '—';
 
   // Support requests -- split into active (this tab) and expired (its own tab)
@@ -1912,55 +1946,69 @@ function renderSADashboard() {
       : expiredSupportRequests.map(buildSupportRow).join('');
   }
 
-  // Pending equipment requests -- split into active (this tab, actionable)
-  // and expired (its own tab, read-only) the same way Support Requests is.
+  // Active equipment requests -- pulled from Approved, Equipment Rental-type
+  // Support Requests now, not the retired legacy Requests sheet. Read-only
+  // here since these are already Approved -- nothing left to action.
   const activePendingRequests = saPendingRequests.filter(r => !r.isExpired);
   const expiredPendingRequests = saPendingRequests.filter(r => r.isExpired);
 
   document.getElementById('sa-pending-tbody').innerHTML = activePendingRequests.length === 0
-    ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
+    ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No active equipment requests.</td></tr>'
     : activePendingRequests.map(function(req) {
       return '<tr>' +
         '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
         '<td><strong>' + req.name + '</strong></td>' +
         '<td class="items-list">' + (Array.isArray(req.items) ? req.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
-        '<td style="font-size:0.78rem;">' + formatDate(req.collectDate) + '</td>' +
+        '<td style="font-size:0.78rem;">' + formatDate(req.pickupDate) + '</td>' +
         '<td style="font-size:0.78rem;">' + formatDate(req.returnDate) + '</td>' +
-        '<td><div style="display:flex;gap:0.4rem;">' +
-          '<button class="btn btn-green btn-sm" onclick="saApprove(\'' + req.requestId + '\')">Approve</button>' +
-          '<button class="btn btn-red btn-sm" onclick="saReject(\'' + req.requestId + '\')">Reject</button>' +
-        '</div></td>' +
       '</tr>';
     }).join('');
 
   const expiredPendingTbody = document.getElementById('sa-expired-pending-tbody');
   if (expiredPendingTbody) {
     expiredPendingTbody.innerHTML = expiredPendingRequests.length === 0
-      ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired pending requests.</td></tr>'
+      ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired equipment requests.</td></tr>'
       : expiredPendingRequests.map(function(req) {
         return '<tr>' +
           '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
           '<td><strong>' + req.name + '</strong></td>' +
           '<td class="items-list">' + (Array.isArray(req.items) ? req.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
-          '<td style="font-size:0.78rem;">' + formatDate(req.collectDate) + '</td>' +
+          '<td style="font-size:0.78rem;">' + formatDate(req.pickupDate) + '</td>' +
           '<td style="font-size:0.78rem;">' + formatDate(req.returnDate) + '</td>' +
         '</tr>';
       }).join('');
   }
 
-  // Active checkouts
+  // Active checkouts -- pulled directly from the Media Equipment Catalogue
+  // now, not the retired Team Checkouts sheet. No borrower or due date here
+  // deliberately -- the Catalogue only ever records that an item is out,
+  // never who has it or when it's due back, since that detail has only
+  // ever lived in Team Checkouts.
   document.getElementById('sa-active-tbody').innerHTML = saActiveCheckouts.length === 0
-    ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
+    ? '<tr><td colspan="4" style="text-align:center;color:var(--muted);padding:2rem;">No active checkouts.</td></tr>'
     : saActiveCheckouts.map(function(chk) {
+      const outLabel = chk.totalQty > 1 ? (chk.outCount + ' of ' + chk.totalQty) : 'Checked Out';
       return '<tr>' +
-        '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + chk.checkoutId + '</td>' +
+        '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + chk.assetId + '</td>' +
         '<td><strong>' + chk.name + '</strong></td>' +
-        '<td class="items-list">' + (Array.isArray(chk.items) ? chk.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
-        '<td style="font-size:0.78rem;' + (chk.overdue ? 'color:var(--red);font-weight:600;' : '') + '">' + formatDate(chk.dueDate) + '</td>' +
-        '<td>' + (chk.overdue ? '<span class="badge badge-overdue">Overdue</span>' : '<span class="badge badge-out">Out</span>') + '</td>' +
-        '<td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned(\'' + chk.checkoutId + '\', this, ' + JSON.stringify(chk.name) + ', ' + JSON.stringify((Array.isArray(chk.items) ? chk.items : []).join(', ')) + ')">Mark Returned</button></td>' +
+        '<td><span class="badge badge-out">' + outLabel + '</span></td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="saMarkAvailable(\'' + chk.assetId + '\', this, ' + JSON.stringify(chk.name) + ', ' + chk.totalQty + ')">Mark Available</button></td>' +
       '</tr>';
     }).join('');
+}
+
+async function saMarkAvailable(assetId, btn, itemName, totalQty) {
+  var qty = 1;
+  if (totalQty > 1) {
+    var entered = prompt('How many of "' + itemName + '" are being marked available?', '1');
+    if (entered === null) return;
+    qty = parseInt(entered, 10);
+    if (!qty || qty < 1) { alert('Please enter a valid quantity.'); return; }
+  }
+  if (!confirm('Mark ' + (totalQty > 1 ? qty + 'x ' : '') + itemName + ' as available?\n\nThis skips any borrower confirmation -- only use this if you\'re certain the item is genuinely back.')) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Marking...'; }
+  await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'markCatalogueAvailable', assetId, qty, password: CONFIG.ADMIN_PASSWORD }) });
+  saInvalidateCache('checkouts'); await saLoadTabData('checkouts'); renderSADashboard();
 }
 
 async function saApprove(reqId) {

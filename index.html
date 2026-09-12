@@ -1494,10 +1494,19 @@ textarea { resize: vertical; min-height: 90px; }
       </div>
 
       <div id="sa-tab-expired" style="display:none;">
-        <div class="card" style="padding:0;overflow:hidden;">
+        <div class="card-label" style="margin-bottom:0.5rem;">Expired Support Requests</div>
+        <div class="card" style="padding:0;overflow:hidden;margin-bottom:1.5rem;">
           <table class="data-table">
             <thead><tr><th>ID</th><th>From</th><th>Types</th><th>Meeting</th><th>Status</th></tr></thead>
             <tbody id="sa-expired-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired requests.</td></tr></tbody>
+          </table>
+        </div>
+
+        <div class="card-label" style="margin-bottom:0.5rem;">Expired Pending Requests (Legacy)</div>
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>Requestor</th><th>Items</th><th>Collect</th><th>Return</th></tr></thead>
+            <tbody id="sa-expired-pending-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired pending requests.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1868,7 +1877,7 @@ async function showSATab(tab, btn) {
 }
 
 function renderSADashboard() {
-  document.getElementById('sa-stat-pending').textContent = saTabLoaded.requests ? saPendingRequests.length : '—';
+  document.getElementById('sa-stat-pending').textContent = saTabLoaded.requests ? saPendingRequests.filter(r => !r.isExpired).length : '—';
   document.getElementById('sa-stat-active').textContent = saTabLoaded.checkouts ? saActiveCheckouts.length : '—';
   document.getElementById('sa-stat-overdue').textContent = saTabLoaded.checkouts ? saActiveCheckouts.filter(c => c.overdue).length : '—';
   document.getElementById('sa-stat-available').textContent = saTabLoaded.support ? saSupportRequests.filter(r => !r.isExpired).length : '—';
@@ -1903,10 +1912,14 @@ function renderSADashboard() {
       : expiredSupportRequests.map(buildSupportRow).join('');
   }
 
-  // Pending equipment requests
-  document.getElementById('sa-pending-tbody').innerHTML = saPendingRequests.length === 0
+  // Pending equipment requests -- split into active (this tab, actionable)
+  // and expired (its own tab, read-only) the same way Support Requests is.
+  const activePendingRequests = saPendingRequests.filter(r => !r.isExpired);
+  const expiredPendingRequests = saPendingRequests.filter(r => r.isExpired);
+
+  document.getElementById('sa-pending-tbody').innerHTML = activePendingRequests.length === 0
     ? '<tr><td colspan="6" style="text-align:center;color:var(--muted);padding:2rem;">No pending requests.</td></tr>'
-    : saPendingRequests.map(function(req) {
+    : activePendingRequests.map(function(req) {
       return '<tr>' +
         '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
         '<td><strong>' + req.name + '</strong></td>' +
@@ -1919,6 +1932,21 @@ function renderSADashboard() {
         '</div></td>' +
       '</tr>';
     }).join('');
+
+  const expiredPendingTbody = document.getElementById('sa-expired-pending-tbody');
+  if (expiredPendingTbody) {
+    expiredPendingTbody.innerHTML = expiredPendingRequests.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired pending requests.</td></tr>'
+      : expiredPendingRequests.map(function(req) {
+        return '<tr>' +
+          '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
+          '<td><strong>' + req.name + '</strong></td>' +
+          '<td class="items-list">' + (Array.isArray(req.items) ? req.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
+          '<td style="font-size:0.78rem;">' + formatDate(req.collectDate) + '</td>' +
+          '<td style="font-size:0.78rem;">' + formatDate(req.returnDate) + '</td>' +
+        '</tr>';
+      }).join('');
+  }
 
   // Active checkouts
   document.getElementById('sa-active-tbody').innerHTML = saActiveCheckouts.length === 0

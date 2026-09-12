@@ -1463,6 +1463,7 @@ textarea { resize: vertical; min-height: 90px; }
         <button class="btn btn-dark btn-sm" id="sa-tabbtn-requests" onclick="showSATab('requests',this)">Pending Requests</button>
         <button class="btn btn-ghost btn-sm" id="sa-tabbtn-checkouts" onclick="showSATab('checkouts',this)">Active Checkouts</button>
         <button class="btn btn-ghost btn-sm" id="sa-tabbtn-support" onclick="showSATab('support',this)">Support Requests</button>
+        <button class="btn btn-ghost btn-sm" id="sa-tabbtn-expired" onclick="showSATab('expired',this)">Expired Requests</button>
       </div>
 
       <div id="sa-tab-requests">
@@ -1488,6 +1489,15 @@ textarea { resize: vertical; min-height: 90px; }
           <table class="data-table">
             <thead><tr><th>ID</th><th>From</th><th>Types</th><th>Meeting</th><th>Status</th></tr></thead>
             <tbody id="sa-support-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No support requests yet.</td></tr></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div id="sa-tab-expired" style="display:none;">
+        <div class="card" style="padding:0;overflow:hidden;">
+          <table class="data-table">
+            <thead><tr><th>ID</th><th>From</th><th>Types</th><th>Meeting</th><th>Status</th></tr></thead>
+            <tbody id="sa-expired-tbody"><tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired requests.</td></tr></tbody>
           </table>
         </div>
       </div>
@@ -1834,20 +1844,21 @@ let saTabLoaded = { requests: false, checkouts: false, support: false };
 function saInvalidateCache(tab) { saTabLoaded[tab] = false; }
 
 async function saLoadTabData(tab, force) {
-  if (saTabLoaded[tab] && !force) return;
+  const dataTab = tab === 'expired' ? 'support' : tab; // expired is just a filtered view of the same support-requests data
+  if (saTabLoaded[dataTab] && !force) return;
   const actionMap = { requests: 'getPending', checkouts: 'getActive', support: 'getSupport' };
   try {
-    const res = await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionMap[tab], password: CONFIG.ADMIN_PASSWORD }) });
+    const res = await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: actionMap[dataTab], password: CONFIG.ADMIN_PASSWORD }) });
     const data = await res.json();
-    if (tab === 'requests') saPendingRequests = data.success ? data.requests : [];
-    if (tab === 'checkouts') saActiveCheckouts = data.success ? data.checkouts : [];
-    if (tab === 'support') saSupportRequests = data.success ? data.requests : [];
-    saTabLoaded[tab] = true;
+    if (dataTab === 'requests') saPendingRequests = data.success ? data.requests : [];
+    if (dataTab === 'checkouts') saActiveCheckouts = data.success ? data.checkouts : [];
+    if (dataTab === 'support') saSupportRequests = data.success ? data.requests : [];
+    saTabLoaded[dataTab] = true;
   } catch(e) { console.warn('Tab data error:', e); }
 }
 
 async function showSATab(tab, btn) {
-  ['requests','checkouts','support'].forEach(t => {
+  ['requests','checkouts','support','expired'].forEach(t => {
     document.getElementById('sa-tab-' + t).style.display = t === tab ? 'block' : 'none';
   });
   document.querySelectorAll('#standalone-admin .btn').forEach(b => b.className = 'btn btn-ghost btn-sm');
@@ -1860,25 +1871,36 @@ function renderSADashboard() {
   document.getElementById('sa-stat-pending').textContent = saTabLoaded.requests ? saPendingRequests.length : '—';
   document.getElementById('sa-stat-active').textContent = saTabLoaded.checkouts ? saActiveCheckouts.length : '—';
   document.getElementById('sa-stat-overdue').textContent = saTabLoaded.checkouts ? saActiveCheckouts.filter(c => c.overdue).length : '—';
-  document.getElementById('sa-stat-available').textContent = saTabLoaded.support ? saSupportRequests.length : '—';
+  document.getElementById('sa-stat-available').textContent = saTabLoaded.support ? saSupportRequests.filter(r => !r.isExpired).length : '—';
 
-  // Support requests
+  // Support requests -- split into active (this tab) and expired (its own tab)
+  function buildSupportRow(req) {
+    const typeLabels = { cooperation:'Work Cooperation', equipment:'Equipment Rental', props:'Props Request', video:'Video Production', design:'Design Work', material:'Material Request' };
+    const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
+    const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
+    return '<tr style="cursor:pointer;" onclick="viewSupportRequest(\'' + req.requestId + '\', \'' + req.timestamp + '\')">' +
+      '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
+      '<td><strong>' + req.name + '</strong><div style="font-size:0.73rem;color:var(--muted);">' + (req.position || '') + ' — ' + (req.department || '') + '</div></td>' +
+      '<td style="font-size:0.78rem;">' + (types || '—') + '</td>' +
+      '<td style="font-size:0.78rem;">' + meetingDisplay + '</td>' +
+      '<td><span class="badge badge-pending">' + (req.status || 'New') + '</span></td>' +
+    '</tr>';
+  }
+  const activeSupportRequests = saSupportRequests.filter(r => !r.isExpired);
+  const expiredSupportRequests = saSupportRequests.filter(r => r.isExpired);
+
   const supportTbody = document.getElementById('sa-support-tbody');
   if (supportTbody) {
-    supportTbody.innerHTML = saSupportRequests.length === 0
+    supportTbody.innerHTML = activeSupportRequests.length === 0
       ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No support requests yet.</td></tr>'
-      : saSupportRequests.map(req => {
-          const typeLabels = { cooperation:'Work Cooperation', equipment:'Equipment Rental', props:'Props Request', video:'Video Production', design:'Design Work', material:'Material Request' };
-          const types = (req.requestTypes || '').split(', ').map(t => typeLabels[t.trim()] || t).join(', ');
-          const meetingDisplay = req.meetingDate ? formatDate(String(req.meetingDate).split('T')[0]) + (req.meetingTime ? ' at ' + String(req.meetingTime).split('T')[0] : '') : '—';
-          return '<tr style="cursor:pointer;" onclick="viewSupportRequest(\'' + req.requestId + '\', \'' + req.timestamp + '\')">' +
-            '<td style="font-family:Syne Mono,monospace;font-size:0.72rem;">' + req.requestId + '</td>' +
-            '<td><strong>' + req.name + '</strong><div style="font-size:0.73rem;color:var(--muted);">' + (req.position || '') + ' — ' + (req.department || '') + '</div></td>' +
-            '<td style="font-size:0.78rem;">' + (types || '—') + '</td>' +
-            '<td style="font-size:0.78rem;">' + meetingDisplay + '</td>' +
-            '<td><span class="badge badge-pending">' + (req.status || 'New') + '</span></td>' +
-          '</tr>';
-        }).join('');
+      : activeSupportRequests.map(buildSupportRow).join('');
+  }
+
+  const expiredTbody = document.getElementById('sa-expired-tbody');
+  if (expiredTbody) {
+    expiredTbody.innerHTML = expiredSupportRequests.length === 0
+      ? '<tr><td colspan="5" style="text-align:center;color:var(--muted);padding:2rem;">No expired requests.</td></tr>'
+      : expiredSupportRequests.map(buildSupportRow).join('');
   }
 
   // Pending equipment requests
@@ -1908,7 +1930,7 @@ function renderSADashboard() {
         '<td class="items-list">' + (Array.isArray(chk.items) ? chk.items : []).map(function(i){ return '<span class="chip">' + i + '</span>'; }).join('') + '</td>' +
         '<td style="font-size:0.78rem;' + (chk.overdue ? 'color:var(--red);font-weight:600;' : '') + '">' + formatDate(chk.dueDate) + '</td>' +
         '<td>' + (chk.overdue ? '<span class="badge badge-overdue">Overdue</span>' : '<span class="badge badge-out">Out</span>') + '</td>' +
-        '<td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned(\'' + chk.checkoutId + '\')">Mark Returned</button></td>' +
+        '<td><button class="btn btn-ghost btn-sm" onclick="saMarkReturned(\'' + chk.checkoutId + '\', this, ' + JSON.stringify(chk.name) + ', ' + JSON.stringify((Array.isArray(chk.items) ? chk.items : []).join(', ')) + ')">Mark Returned</button></td>' +
       '</tr>';
     }).join('');
 }
@@ -1925,8 +1947,9 @@ async function saReject(reqId) {
   saInvalidateCache('requests'); await saLoadTabData('requests'); renderSADashboard();
 }
 
-async function saMarkReturned(chkId) {
-  if (!confirm('Mark as returned?')) return;
+async function saMarkReturned(chkId, btn, borrowerName, itemsSummary) {
+  if (!confirm('Mark as returned?\n\nBorrower: ' + (borrowerName || 'Unknown') + '\nItems: ' + (itemsSummary || 'Unknown') + '\n\nThis skips the borrower\'s own return confirmation (no photo, no self-report) -- only use this if you\'re certain the item is genuinely back.')) return;
+  if (btn) { btn.disabled = true; btn.textContent = 'Marking...'; }
   await fetch(CONFIG.APPS_SCRIPT_URL, { method: 'POST', body: JSON.stringify({ action: 'markReturned', checkoutId: chkId, password: CONFIG.ADMIN_PASSWORD }) });
   saInvalidateCache('checkouts'); await saLoadTabData('checkouts'); renderSADashboard();
 }

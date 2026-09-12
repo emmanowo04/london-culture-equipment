@@ -659,7 +659,7 @@ textarea { resize: vertical; min-height: 90px; }
     <div class="card">
       <div class="card-label">Items being taken out</div>
       <div class="hint" style="margin-bottom:0.75rem;">Add each item separately. Be as specific as possible — this helps us understand how equipment is referred to.</div>
-      <div class="hint" style="margin-bottom:0.75rem;">Have a QR label? Tap "Scan Item" below to add it without leaving this page. Adding another one just means tapping "Scan Item" again.</div>
+      <div class="hint" style="margin-bottom:0.75rem;">Have a QR label? Tap "Scan Item" below to add it without leaving this page. Adding another one just means tapping "Scan Item" again. If a label won't scan, "Choose from List" adds the same item without needing the camera at all.</div>
       <div id="co-items-list">
         <div class="co-item-row" style="display:flex;gap:0.5rem;align-items:center;margin-bottom:0.5rem;">
           <input type="text" placeholder="e.g. Sony A7 IV camera" style="flex:1;">
@@ -667,6 +667,7 @@ textarea { resize: vertical; min-height: 90px; }
         </div>
       </div>
       <button type="button" class="btn btn-dark btn-sm" onclick="openScanModal()" style="margin-top:0.5rem;width:100%;">📷 Scan Item</button>
+      <button type="button" class="btn btn-ghost btn-sm" onclick="openCatalogueListModal()" style="margin-top:0.5rem;width:100%;">📋 Choose from List</button>
       <button type="button" class="btn btn-ghost btn-sm" onclick="coAddItemRow()" style="margin-top:0.5rem;width:100%;">+ Add another item</button>
     </div>
     <div style="display:flex;justify-content:flex-end;"><button class="btn btn-dark" onclick="coNextStep(1)">Continue</button></div>
@@ -681,6 +682,20 @@ textarea { resize: vertical; min-height: 90px; }
     <div id="qr-reader" style="width:100%;max-width:480px;margin:0 auto;"></div>
     <div id="scan-feedback" style="color:#fff;text-align:center;padding:1rem 1.25rem;font-size:0.88rem;min-height:1.4em;"></div>
     <button onclick="closeScanModal()" class="btn btn-dark btn-full" style="margin:0.5rem auto 1.5rem;width:85%;max-width:400px;">Done Scanning</button>
+  </div>
+
+  <!-- CATALOGUE LIST FALLBACK (for when scanning isn't working) -->
+  <div id="catalogue-list-modal" style="display:none;position:fixed;inset:0;background:rgba(10,10,10,0.94);z-index:500;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;color:#fff;">
+      <span style="font-weight:700;font-family:'Syne',sans-serif;">Choose from List</span>
+      <button onclick="closeCatalogueListModal()" style="background:none;border:none;color:#fff;font-size:1.6rem;line-height:1;cursor:pointer;padding:0.25rem 0.5rem;">&times;</button>
+    </div>
+    <div style="padding:0 1.25rem 0.75rem;">
+      <input type="text" id="catalogue-list-search" placeholder="Search items..." oninput="renderCatalogueList()" style="width:100%;box-sizing:border-box;padding:0.6rem 0.8rem;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#fff;font-size:0.9rem;">
+    </div>
+    <div id="catalogue-list-items" style="flex:1;overflow-y:auto;padding:0 1.25rem;"></div>
+    <div id="catalogue-list-feedback" style="color:#fff;text-align:center;padding:0.75rem 1.25rem;font-size:0.85rem;min-height:1.2em;"></div>
+    <button onclick="closeCatalogueListModal()" class="btn btn-dark btn-full" style="margin:0.5rem auto 1.5rem;width:85%;max-width:400px;">Done</button>
   </div>
 
   <div class="co-form-step" id="co-form-2">
@@ -1261,6 +1276,83 @@ function closeScanModal() {
   document.getElementById('scan-modal').style.display = 'none';
 }
 
+// ── CATALOGUE LIST FALLBACK ──────────────────────────────────────────────────
+// A "Choose from List" option for when scanning a label just isn't working
+// (damaged label, bad lighting, an uncooperative camera) -- lets someone add
+// the exact same catalogued item without needing to scan anything. Fetched
+// once per page load and cached, since the list itself doesn't change
+// mid-session; unlike the scan flow, this stays open after each pick so
+// several items can be added in a row before tapping Done.
+let catalogueItemsCache = null;
+
+async function openCatalogueListModal() {
+  document.getElementById('catalogue-list-modal').style.display = 'flex';
+  document.getElementById('catalogue-list-search').value = '';
+  document.getElementById('catalogue-list-feedback').textContent = '';
+  if (!catalogueItemsCache) {
+    document.getElementById('catalogue-list-items').innerHTML = '<div style="color:#aaa;text-align:center;padding:2rem;">Loading items...</div>';
+    try {
+      const result = await postToScript({ action: 'getCatalogueItemsList' });
+      catalogueItemsCache = (result && result.success) ? result.items : [];
+    } catch (e) {
+      catalogueItemsCache = [];
+    }
+  }
+  renderCatalogueList();
+}
+
+function closeCatalogueListModal() {
+  document.getElementById('catalogue-list-modal').style.display = 'none';
+}
+
+function renderCatalogueList() {
+  const container = document.getElementById('catalogue-list-items');
+  const query = document.getElementById('catalogue-list-search').value.trim().toLowerCase();
+  const items = (catalogueItemsCache || []).filter(function(it) {
+    return !query || it.name.toLowerCase().indexOf(query) > -1 || it.assetId.toLowerCase().indexOf(query) > -1;
+  });
+  if (items.length === 0) {
+    container.innerHTML = '<div style="color:#aaa;text-align:center;padding:2rem;">' + ((catalogueItemsCache || []).length === 0 ? 'Could not load the catalogue. Try again shortly.' : 'No matching items.') + '</div>';
+    return;
+  }
+  container.innerHTML = items.map(function(it) {
+    const isBulk = it.totalQty > 1;
+    const availableNow = isBulk ? (it.availableQty > 0) : (it.status === 'Available');
+    const statusText = isBulk ? (it.availableQty + ' of ' + it.totalQty + ' available') : it.status;
+    const style = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid #333;color:#fff;' + (availableNow ? 'cursor:pointer;' : 'opacity:0.45;');
+    const onclick = availableNow ? ' onclick="selectCatalogueItem(\'' + it.assetId + '\')"' : '';
+    return '<div' + onclick + ' style="' + style + '">' +
+      '<div><div style="font-weight:600;">' + it.name + '</div><div style="font-size:0.75rem;color:#999;font-family:monospace;">' + it.assetId + '</div></div>' +
+      '<div style="font-size:0.78rem;color:' + (availableNow ? '#8fd19e' : '#e0855a') + ';">' + statusText + '</div>' +
+    '</div>';
+  }).join('');
+}
+
+function selectCatalogueItem(assetId) {
+  const item = (catalogueItemsCache || []).find(function(it) { return it.assetId === assetId; });
+  if (!item) return;
+  const feedback = document.getElementById('catalogue-list-feedback');
+  const isBulk = item.totalQty > 1;
+  let qty = 1;
+  if (isBulk) {
+    const entered = prompt('How many of "' + item.name + '" are you taking? (' + item.availableQty + ' available)', '1');
+    if (entered === null) return;
+    qty = parseInt(entered, 10);
+    if (!qty || qty < 1 || qty > item.availableQty) {
+      feedback.textContent = 'Invalid quantity \u2014 ' + item.name + ' was not added.';
+      return;
+    }
+  }
+  // Reuses the exact same add-to-wizard logic a successful scan uses --
+  // stays open (no modal-close callback) so more items can be picked next.
+  addScannedItemLive({ name: item.name, assetId: item.assetId }, qty, feedback, function() {});
+  // Keep the cached list's numbers roughly current so re-picking without a
+  // full reload doesn't show stale availability.
+  if (isBulk) { item.availableQty = Math.max(0, item.availableQty - qty); }
+  else { item.status = 'Checked Out'; }
+  renderCatalogueList();
+}
+
 async function onScanDecoded(decodedText) {
   let assetId = null;
   try {
@@ -1315,7 +1407,7 @@ async function onScanDecoded(decodedText) {
   }
 }
 
-function addScannedItemLive(item, qty, feedback) {
+function addScannedItemLive(item, qty, feedback, onDone) {
   const existingItems = coGetItems();
   const alreadyOnList = existingItems.some(function(it) { return it && typeof it === 'object' && it.assetId === item.assetId; });
   if (alreadyOnList) {
@@ -1327,7 +1419,7 @@ function addScannedItemLive(item, qty, feedback) {
   coAddScannedItemRow(item.name, item.assetId, qty);
   coSaveFormState();
   feedback.textContent = '\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added!';
-  setTimeout(closeScanModal, 1100); // brief confirmation, then back to the list -- tap Scan Item again for another
+  setTimeout(onDone || closeScanModal, 1100); // brief confirmation, then close -- defaults to the scan modal, but the "Choose from List" flow passes its own
 }
 
 let coInitDone = false;

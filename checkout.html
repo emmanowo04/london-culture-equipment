@@ -685,17 +685,18 @@ textarea { resize: vertical; min-height: 90px; }
   </div>
 
   <!-- CATALOGUE LIST FALLBACK (for when scanning isn't working) -->
-  <div id="catalogue-list-modal" style="display:none;position:fixed;inset:0;background:rgba(10,10,10,0.94);z-index:500;flex-direction:column;">
-    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;color:#fff;">
-      <span style="font-weight:700;font-family:'Syne',sans-serif;">Choose from List</span>
-      <button onclick="closeCatalogueListModal()" style="background:none;border:none;color:#fff;font-size:1.6rem;line-height:1;cursor:pointer;padding:0.25rem 0.5rem;">&times;</button>
+  <div id="catalogue-list-modal" style="display:none;position:fixed;inset:0;background:var(--white);z-index:500;flex-direction:column;">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:1rem 1.25rem;border-bottom:1px solid var(--border);">
+      <span style="font-weight:700;font-family:'Syne',sans-serif;font-size:1.05rem;">Choose from List</span>
+      <button onclick="closeCatalogueListModal()" style="background:none;border:none;color:var(--muted);font-size:1.6rem;line-height:1;cursor:pointer;padding:0.25rem 0.5rem;">&times;</button>
     </div>
-    <div style="padding:0 1.25rem 0.75rem;">
-      <input type="text" id="catalogue-list-search" placeholder="Search items..." oninput="renderCatalogueList()" style="width:100%;box-sizing:border-box;padding:0.6rem 0.8rem;border-radius:8px;border:1px solid #444;background:#1a1a1a;color:#fff;font-size:0.9rem;">
+    <div style="padding:0.85rem 1.25rem 0.5rem;">
+      <input type="text" id="catalogue-list-search" placeholder="Search all items..." oninput="renderCatalogueList()">
     </div>
-    <div id="catalogue-list-items" style="flex:1;overflow-y:auto;padding:0 1.25rem;"></div>
-    <div id="catalogue-list-feedback" style="color:#fff;text-align:center;padding:0.75rem 1.25rem;font-size:0.85rem;min-height:1.2em;"></div>
-    <button onclick="closeCatalogueListModal()" class="btn btn-dark btn-full" style="margin:0.5rem auto 1.5rem;width:85%;max-width:400px;">Done</button>
+    <div id="catalogue-list-nav" style="padding:0 1.25rem;min-height:2.2rem;display:flex;align-items:center;gap:0.6rem;font-size:0.82rem;color:var(--muted);"></div>
+    <div id="catalogue-list-items" style="flex:1;overflow-y:auto;padding:0.25rem 1.25rem 0.5rem;"></div>
+    <div id="catalogue-list-feedback" style="color:var(--black);font-weight:600;text-align:center;padding:0.5rem 1.25rem;font-size:0.85rem;min-height:1.2em;"></div>
+    <button onclick="closeCatalogueListModal()" class="btn btn-dark btn-full" style="margin:0.25rem auto 1.5rem;width:85%;max-width:400px;">Done</button>
   </div>
 
   <div class="co-form-step" id="co-form-2">
@@ -1234,7 +1235,20 @@ function coAddScannedItemRow(name, assetId, qty) {
   const btn = document.createElement('button');
   btn.textContent = '\u00d7';
   btn.style.cssText = 'background:none;border:none;cursor:pointer;font-size:1.2rem;color:var(--muted);padding:0 6px;flex-shrink:0;';
-  btn.onclick = function() { row.remove(); };
+  btn.onclick = function() {
+    // Revert the "Choose from List" picker's cached availability for this
+    // item -- otherwise it keeps showing as Selected even after being
+    // removed from this checkout list, despite nothing having actually
+    // been submitted or written to the real sheet yet.
+    if (catalogueItemsCache) {
+      const cached = catalogueItemsCache.find(function(it) { return it.assetId === assetId; });
+      if (cached) {
+        if (cached.totalQty > 1) cached.availableQty = Math.min(cached.availableQty + Number(qty), cached.totalQty);
+        else cached.pendingSelection = false;
+      }
+    }
+    row.remove();
+  };
   row.appendChild(inp);
   row.appendChild(btn);
   list.appendChild(row);
@@ -1289,8 +1303,11 @@ async function openCatalogueListModal() {
   document.getElementById('catalogue-list-modal').style.display = 'flex';
   document.getElementById('catalogue-list-search').value = '';
   document.getElementById('catalogue-list-feedback').textContent = '';
+  catalogueListCat = null;
+  catalogueListSub = null;
+  catalogueListSkippedSub = false;
   if (!catalogueItemsCache) {
-    document.getElementById('catalogue-list-items').innerHTML = '<div style="color:#aaa;text-align:center;padding:2rem;">Loading items...</div>';
+    document.getElementById('catalogue-list-items').innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;">Loading items...</div>';
     try {
       const result = await postToScript({ action: 'getCatalogueItemsList' });
       catalogueItemsCache = (result && result.success) ? result.items : [];
@@ -1305,27 +1322,139 @@ function closeCatalogueListModal() {
   document.getElementById('catalogue-list-modal').style.display = 'none';
 }
 
+// Browse state for the picker: Category -> Subcategory -> items, like an
+// online shop. Blank Category/Subcategory values fall into "Miscellaneous".
+// catalogueListSub is null on the subcategory screen, '__all' for every item
+// in the category. A category with a single subcategory or 5 or fewer items
+// skips the subcategory screen (catalogueListSkippedSub) as there's nothing
+// to narrow down.
+const CL_UNCAT = 'Miscellaneous';
+let catalogueListCat = null;
+let catalogueListSub = null;
+let catalogueListSkippedSub = false;
+let catalogueListGroups = [];
+
+function clEsc(s) {
+  return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+function clCat(it) { return String(it.category || '').trim() || CL_UNCAT; }
+function clSub(it) { return String(it.subcategory || '').trim() || CL_UNCAT; }
+
+// Groups items by a name function (case-insensitive), "Miscellaneous" last.
+function clGroup(items, nameFn) {
+  const map = {}, order = [];
+  items.forEach(function(it) {
+    const name = nameFn(it), key = name.toLowerCase();
+    if (!map[key]) { map[key] = { name: name, items: [] }; order.push(map[key]); }
+    map[key].items.push(it);
+  });
+  return order.sort(function(a, b) {
+    if (a.name === CL_UNCAT) return 1;
+    if (b.name === CL_UNCAT) return -1;
+    return a.name.localeCompare(b.name);
+  });
+}
+
+function catalogueListOpen(i) {
+  if (catalogueListCat === null) {
+    const g = catalogueListGroups[i];
+    if (!g) return;
+    catalogueListCat = g.name;
+    catalogueListSkippedSub = clGroup(g.items, clSub).length <= 1 || g.items.length <= 5;
+    catalogueListSub = catalogueListSkippedSub ? '__all' : null;
+  } else {
+    // -1 is the "All in <category>" row
+    const g = catalogueListGroups[i];
+    if (i !== -1 && !g) return;
+    catalogueListSub = i === -1 ? '__all' : g.name;
+  }
+  document.getElementById('catalogue-list-items').scrollTop = 0;
+  renderCatalogueList();
+}
+
+function catalogueListBack() {
+  if (catalogueListSub !== null && !catalogueListSkippedSub) {
+    catalogueListSub = null;
+  } else {
+    catalogueListCat = null;
+    catalogueListSub = null;
+    catalogueListSkippedSub = false;
+  }
+  document.getElementById('catalogue-list-items').scrollTop = 0;
+  renderCatalogueList();
+}
+
+function clItemRow(it, showPath) {
+  const isBulk = it.totalQty > 1;
+  const availableNow = isBulk ? (it.availableQty > 0) : (it.status === 'Available' && !it.pendingSelection);
+  const statusText = isBulk
+    ? (it.availableQty + ' of ' + it.totalQty + ' available')
+    : (it.pendingSelection ? 'Selected' : it.status);
+  const statusColor = availableNow ? 'var(--green)' : (it.pendingSelection ? 'var(--blue)' : 'var(--red)');
+  const style = 'display:flex;justify-content:space-between;align-items:center;gap:0.75rem;padding:0.75rem 0.9rem;margin-bottom:0.5rem;border:1px solid var(--border);border-radius:10px;background:#fff;' + (availableNow ? 'cursor:pointer;' : 'opacity:0.55;');
+  const onclick = availableNow ? ' onclick="selectCatalogueItem(\'' + it.assetId + '\')"' : '';
+  const path = showPath ? ' \u00b7 ' + clEsc(clCat(it)) + ' / ' + clEsc(clSub(it)) : '';
+  return '<div' + onclick + ' style="' + style + '">' +
+    '<div><div style="font-weight:600;">' + clEsc(it.name) + '</div><div style="font-size:0.75rem;color:var(--muted);font-family:monospace;">' + clEsc(it.assetId) + path + '</div></div>' +
+    '<div style="font-size:0.78rem;font-weight:600;color:' + statusColor + ';white-space:nowrap;">' + statusText + '</div>' +
+  '</div>';
+}
+
+function clGroupRow(label, count, i) {
+  return '<div onclick="catalogueListOpen(' + i + ')" style="display:flex;justify-content:space-between;align-items:center;padding:0.85rem 0.9rem;margin-bottom:0.5rem;border:1px solid var(--border);border-radius:10px;background:#fff;cursor:pointer;">' +
+    '<span style="font-weight:600;">' + clEsc(label) + '</span>' +
+    '<span style="font-size:0.8rem;color:var(--muted);white-space:nowrap;">' + count + (count === 1 ? ' item' : ' items') + ' &rsaquo;</span>' +
+  '</div>';
+}
+
 function renderCatalogueList() {
   const container = document.getElementById('catalogue-list-items');
+  const nav = document.getElementById('catalogue-list-nav');
   const query = document.getElementById('catalogue-list-search').value.trim().toLowerCase();
-  const items = (catalogueItemsCache || []).filter(function(it) {
-    return !query || it.name.toLowerCase().indexOf(query) > -1 || it.assetId.toLowerCase().indexOf(query) > -1;
-  });
-  if (items.length === 0) {
-    container.innerHTML = '<div style="color:#aaa;text-align:center;padding:2rem;">' + ((catalogueItemsCache || []).length === 0 ? 'Could not load the catalogue. Try again shortly.' : 'No matching items.') + '</div>';
+  const all = catalogueItemsCache || [];
+  if (all.length === 0) {
+    nav.innerHTML = '';
+    container.innerHTML = '<div style="color:var(--muted);text-align:center;padding:2rem;">Could not load the catalogue. Try again shortly.</div>';
     return;
   }
-  container.innerHTML = items.map(function(it) {
-    const isBulk = it.totalQty > 1;
-    const availableNow = isBulk ? (it.availableQty > 0) : (it.status === 'Available');
-    const statusText = isBulk ? (it.availableQty + ' of ' + it.totalQty + ' available') : it.status;
-    const style = 'display:flex;justify-content:space-between;align-items:center;padding:0.75rem 0;border-bottom:1px solid #333;color:#fff;' + (availableNow ? 'cursor:pointer;' : 'opacity:0.45;');
-    const onclick = availableNow ? ' onclick="selectCatalogueItem(\'' + it.assetId + '\')"' : '';
-    return '<div' + onclick + ' style="' + style + '">' +
-      '<div><div style="font-weight:600;">' + it.name + '</div><div style="font-size:0.75rem;color:#999;font-family:monospace;">' + it.assetId + '</div></div>' +
-      '<div style="font-size:0.78rem;color:' + (availableNow ? '#8fd19e' : '#e0855a') + ';">' + statusText + '</div>' +
-    '</div>';
-  }).join('');
+  const backBtn = '<button type="button" class="btn btn-ghost btn-sm" onclick="catalogueListBack()">&larr; Back</button>';
+
+  // Searching looks across everything, from any level
+  if (query) {
+    const found = all.filter(function(it) {
+      return String(it.name).toLowerCase().indexOf(query) > -1 || String(it.assetId).toLowerCase().indexOf(query) > -1;
+    });
+    nav.textContent = found.length + (found.length === 1 ? ' result' : ' results') + ' across all categories';
+    container.innerHTML = found.length
+      ? found.map(function(it) { return clItemRow(it, true); }).join('')
+      : '<div style="color:var(--muted);text-align:center;padding:2rem;">No matching items.</div>';
+    return;
+  }
+
+  if (catalogueListCat === null) {
+    nav.textContent = 'Choose a category';
+    catalogueListGroups = clGroup(all, clCat);
+    container.innerHTML = catalogueListGroups.map(function(g, i) { return clGroupRow(g.name, g.items.length, i); }).join('');
+    return;
+  }
+
+  const inCat = all.filter(function(it) { return clCat(it).toLowerCase() === catalogueListCat.toLowerCase(); });
+
+  if (catalogueListSub === null) {
+    nav.innerHTML = backBtn + '<span>' + clEsc(catalogueListCat) + '</span>';
+    catalogueListGroups = clGroup(inCat, clSub);
+    container.innerHTML = clGroupRow('All in ' + catalogueListCat, inCat.length, -1) +
+      catalogueListGroups.map(function(g, i) { return clGroupRow(g.name, g.items.length, i); }).join('');
+    return;
+  }
+
+  const shown = catalogueListSub === '__all'
+    ? inCat
+    : inCat.filter(function(it) { return clSub(it).toLowerCase() === catalogueListSub.toLowerCase(); });
+  nav.innerHTML = backBtn + '<span>' + clEsc(catalogueListCat) + (catalogueListSub === '__all' ? '' : ' / ' + clEsc(catalogueListSub)) + '</span>';
+  container.innerHTML = shown.length
+    ? shown.map(function(it) { return clItemRow(it, false); }).join('')
+    : '<div style="color:var(--muted);text-align:center;padding:2rem;">No items here.</div>';
 }
 
 function selectCatalogueItem(assetId) {
@@ -1345,11 +1474,8 @@ function selectCatalogueItem(assetId) {
   }
   // Reuses the exact same add-to-wizard logic a successful scan uses --
   // stays open (no modal-close callback) so more items can be picked next.
+  // Cache availability is updated inside addScannedItemLive itself now.
   addScannedItemLive({ name: item.name, assetId: item.assetId }, qty, feedback, function() {});
-  // Keep the cached list's numbers roughly current so re-picking without a
-  // full reload doesn't show stale availability.
-  if (isBulk) { item.availableQty = Math.max(0, item.availableQty - qty); }
-  else { item.status = 'Checked Out'; }
   renderCatalogueList();
 }
 
@@ -1419,6 +1545,16 @@ function addScannedItemLive(item, qty, feedback, onDone) {
   coAddScannedItemRow(item.name, item.assetId, qty);
   coSaveFormState();
   feedback.textContent = '\u2713 ' + item.name + (qty > 1 ? ' x' + qty : '') + ' added!';
+  // Keep the "Choose from List" picker's cached availability in sync,
+  // whether this item arrived via scanning or the list itself -- so it
+  // never shows something as available that's already on this checkout.
+  if (catalogueItemsCache) {
+    const cached = catalogueItemsCache.find(function(it) { return it.assetId === item.assetId; });
+    if (cached) {
+      if (cached.totalQty > 1) cached.availableQty = Math.max(0, cached.availableQty - qty);
+      else cached.pendingSelection = true;
+    }
+  }
   setTimeout(onDone || closeScanModal, 1100); // brief confirmation, then close -- defaults to the scan modal, but the "Choose from List" flow passes its own
 }
 

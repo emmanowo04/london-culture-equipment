@@ -757,6 +757,7 @@ textarea { resize: vertical; min-height: 90px; }
       <div class="success-icon"></div>
       <h2 id="md-success-title"></h2>
       <p id="md-success-msg"></p>
+      <p id="md-bot-start-note" style="display:none;">We couldn't send you a sign-out reminder because you haven't started the bot yet. <a href="https://t.me/LondonCultureEquipment_bot" target="_blank" rel="noopener">Open @LondonCultureEquipment_bot</a> in Telegram and press <b>Start</b>, then you'll get reminders next time. (Make sure the username you entered is spelled correctly.)</p>
       <button class="btn btn-dark" onclick="mdReset()">Done</button>
     </div>
   </div>
@@ -1013,7 +1014,8 @@ async function mdSubmitSignIn() {
     document.getElementById('md-signin-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed In';
-    document.getElementById('md-success-msg').textContent = name + ' signed in at ' + (result.timeIn || 'now') + ' on ' + equipment.join(', ') + '.';
+    document.getElementById('md-success-msg').textContent = name + ' signed in at ' + (result.timeIn || 'now') + ' on ' + equipment.join(', ') + '.' + (result.sameLocationWarning ? ' \u26a0\ufe0f ' + result.sameLocationWarning : '');
+    document.getElementById('md-bot-start-note').style.display = result.needsBotStart ? 'block' : 'none';
   } catch(e) {
     clearTimeout(signInTimeout);
     if (e && e.name === 'AbortError') {
@@ -1149,6 +1151,7 @@ async function mdSubmitSignOut() {
     document.getElementById('md-signout-panel').style.display = 'none';
     document.getElementById('md-success').style.display = 'block';
     document.getElementById('md-success-title').textContent = 'Signed Out';
+    document.getElementById('md-bot-start-note').style.display = 'none';
     const issueNote = hasIssue ? ' Issue reported.' : '';
     document.getElementById('md-success-msg').textContent = signOutName + ' signed out at ' + (result.timeOut || 'now') + ' from ' + signOutLocation + '.' + issueNote;
 
